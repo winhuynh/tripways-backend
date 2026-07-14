@@ -175,9 +175,11 @@ supabase/functions/v1/user/delete-account/
 
 Migration files are created through the Supabase CLI and kept consistent with maintainable
 `sql_src` sources. Each table and PostgreSQL function remains in its own source file. Profile reads
-use an exposed invoker RPC. Profile mutation uses the unexposed
-`private.update_user_profile(p_user_id, p_input)` security-definer function; only Edge calls it with
-the user ID obtained from a verified JWT.
+use an exposed invoker RPC. Profile mutation uses
+`public.update_user_profile(p_user_id, p_input)` as a security-invoker function with execution
+revoked from public clients and granted only to `service_role`; Edge calls it with the user ID
+obtained from a verified JWT. This keeps the function callable through PostgREST without granting
+client mutation access or placing a security-definer function in an exposed schema.
 
 ## Testing and Verification
 

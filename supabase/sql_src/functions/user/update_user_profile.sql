@@ -1,13 +1,13 @@
--- Function: private.update_user_profile
+-- Function: public.update_user_profile
 -- Feature: User profile
--- Purpose: Update a verified Edge caller's display name through an unexposed boundary.
+-- Purpose: Update a verified Edge caller's display name through a service-role-only RPC.
 -- Responsibilities: Validate identity and input, mutate one profile, and return a stable envelope.
 -- Notes: p_user_id must come from a JWT verified by the calling Edge Function.
 
-create or replace function private.update_user_profile(p_user_id uuid, p_input jsonb)
+create or replace function public.update_user_profile(p_user_id uuid, p_input jsonb)
 returns jsonb
 language plpgsql
-security definer
+security invoker
 set search_path = ''
 as $$
 declare
@@ -76,5 +76,5 @@ begin
 end;
 $$;
 
-revoke all on function private.update_user_profile(uuid, jsonb) from public, anon, authenticated;
-grant execute on function private.update_user_profile(uuid, jsonb) to service_role;
+revoke all on function public.update_user_profile(uuid, jsonb) from public, anon, authenticated;
+grant execute on function public.update_user_profile(uuid, jsonb) to service_role;

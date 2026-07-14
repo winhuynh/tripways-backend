@@ -81,13 +81,14 @@ Deno.test('profile read RPC derives identity and never exposes the user UUID', a
   assert.ok(sql.includes('to authenticated, service_role'));
 });
 
-Deno.test('profile mutation is private and executable only by service role', async () => {
+Deno.test('profile mutation is invoker-only and executable only by service role', async () => {
   const sql = await readSource(
     '../../../../sql_src/functions/user/update_user_profile.sql',
   );
 
-  assert.ok(sql.includes('private.update_user_profile(p_user_id uuid, p_input jsonb)'));
-  assert.ok(sql.includes('security definer'));
+  assert.ok(sql.includes('public.update_user_profile(p_user_id uuid, p_input jsonb)'));
+  assert.ok(sql.includes('security invoker'));
+  assert.equal(sql.includes('security definer'), false);
   assert.ok(sql.includes("set search_path = ''"));
   assert.ok(sql.includes('ERR_DISPLAY_NAME_INVALID'));
   assert.ok(sql.includes('USER_PROFILE_UPDATED'));
@@ -96,12 +97,12 @@ Deno.test('profile mutation is private and executable only by service role', asy
   assert.equal(sql.includes("'user_id'"), false);
   assert.ok(
     sql.includes(
-      'revoke all on function private.update_user_profile(uuid, jsonb) from public, anon, authenticated',
+      'revoke all on function public.update_user_profile(uuid, jsonb) from public, anon, authenticated',
     ),
   );
   assert.ok(
     sql.includes(
-      'grant execute on function private.update_user_profile(uuid, jsonb) to service_role',
+      'grant execute on function public.update_user_profile(uuid, jsonb) to service_role',
     ),
   );
 });
