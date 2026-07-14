@@ -65,3 +65,43 @@ Deno.test('auth bootstrap trigger runs only after user creation', async () => {
   assert.ok(sql.includes('execute function private.handle_new_auth_user()'));
   assert.equal(sql.includes('after insert or update'), false);
 });
+
+Deno.test('profile read RPC derives identity and never exposes the user UUID', async () => {
+  const sql = await readSource(
+    '../../../../sql_src/functions/user/rpc_get_user_profile.sql',
+  );
+
+  assert.ok(sql.includes('public.rpc_get_user_profile()'));
+  assert.ok(sql.includes('security invoker'));
+  assert.ok(sql.includes('auth.uid()'));
+  assert.ok(sql.includes('ERR_UNAUTHORIZED'));
+  assert.ok(sql.includes('ERR_USER_PROFILE_NOT_FOUND'));
+  assert.ok(sql.includes('USER_PROFILE_READ'));
+  assert.equal(sql.includes("'user_id'"), false);
+  assert.ok(sql.includes('to authenticated, service_role'));
+});
+
+Deno.test('profile mutation is private and executable only by service role', async () => {
+  const sql = await readSource(
+    '../../../../sql_src/functions/user/update_user_profile.sql',
+  );
+
+  assert.ok(sql.includes('private.update_user_profile(p_user_id uuid, p_input jsonb)'));
+  assert.ok(sql.includes('security definer'));
+  assert.ok(sql.includes("set search_path = ''"));
+  assert.ok(sql.includes('ERR_DISPLAY_NAME_INVALID'));
+  assert.ok(sql.includes('USER_PROFILE_UPDATED'));
+  assert.ok(sql.includes('where user_id = p_user_id'));
+  assert.ok(sql.includes('update public.users'));
+  assert.equal(sql.includes("'user_id'"), false);
+  assert.ok(
+    sql.includes(
+      'revoke all on function private.update_user_profile(uuid, jsonb) from public, anon, authenticated',
+    ),
+  );
+  assert.ok(
+    sql.includes(
+      'grant execute on function private.update_user_profile(uuid, jsonb) to service_role',
+    ),
+  );
+});
