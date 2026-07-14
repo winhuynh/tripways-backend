@@ -55,7 +55,7 @@ secure_password_change = true
 max_frequency = "1m"
 
 [edge_runtime]
-enabled = false
+enabled = true
 policy = "per_worker"
 inspector_port = 8083
 

@@ -27,6 +27,14 @@ Deno.test('access token lifetime bounds revoked-session exposure', () => {
   assert.equal(config.includes('enable_manual_linking = true'), false);
 });
 
+Deno.test('user auth edge functions enable the local edge runtime', () => {
+  const edgeRuntime = config.match(/\[edge_runtime\]\n([\s\S]*?)(?=\n\[|$)/)?.[1] ?? '';
+  assert.ok(edgeRuntime.includes('enabled = true'));
+  assert.ok(config.includes('[functions.user-profile]'));
+  assert.ok(config.includes('[functions.user-account-security]'));
+  assert.ok(config.includes('[functions.user-delete-account]'));
+});
+
 Deno.test('users table is minimal, constrained, and self-readable only', async () => {
   const sql = await readSource('../../../../sql_src/schema/public/users.sql');
 
