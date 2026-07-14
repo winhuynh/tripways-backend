@@ -64,3 +64,9 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/system/health/index.ts"
+
+[functions.user-profile]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/user/profile/index.ts"
