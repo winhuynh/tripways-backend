@@ -165,7 +165,7 @@ Edge maps structured Auth failures to stable application errors.
 supabase/sql_src/schema/public/users.sql
 supabase/sql_src/functions/user/handle_new_auth_user.sql
 supabase/sql_src/functions/user/rpc_get_user_profile.sql
-supabase/sql_src/functions/user/rpc_update_user_profile.sql
+supabase/sql_src/functions/user/update_user_profile.sql
 supabase/sql_src/triggers/user/trg_handle_new_auth_user.sql
 supabase/functions/_shared/auth.ts
 supabase/functions/v1/user/profile/
@@ -174,7 +174,10 @@ supabase/functions/v1/user/delete-account/
 ```
 
 Migration files are created through the Supabase CLI and kept consistent with maintainable
-`sql_src` sources. Each table and PostgreSQL function remains in its own source file.
+`sql_src` sources. Each table and PostgreSQL function remains in its own source file. Profile reads
+use an exposed invoker RPC. Profile mutation uses the unexposed
+`private.update_user_profile(p_user_id, p_input)` security-definer function; only Edge calls it with
+the user ID obtained from a verified JWT.
 
 ## Testing and Verification
 
