@@ -106,3 +106,33 @@ Deno.test('profile mutation is invoker-only and executable only by service role'
     ),
   );
 });
+
+Deno.test('auth command attempts store only bounded hashed subjects in private', async () => {
+  const sql = await readSource(
+    '../../../../sql_src/schema/private/auth_command_attempts.sql',
+  );
+
+  assert.ok(sql.includes('create table private.auth_command_attempts'));
+  assert.ok(sql.includes('subject_hash text not null'));
+  assert.ok(sql.includes('attempt_count integer not null'));
+  assert.ok(sql.includes('auth_command_attempts_count_check'));
+  assert.ok(sql.includes('revoke all on table private.auth_command_attempts from public, anon, authenticated'));
+  assert.equal(sql.includes('ip_address'), false);
+  assert.equal(sql.includes('user_id'), false);
+});
+
+Deno.test('rate limit RPC is invoker-only and callable only by service role', async () => {
+  const sql = await readSource(
+    '../../../../sql_src/functions/user/consume_auth_command_attempt.sql',
+  );
+
+  assert.ok(sql.includes('public.consume_auth_command_attempt'));
+  assert.ok(sql.includes('security invoker'));
+  assert.equal(sql.includes('security definer'), false);
+  assert.ok(sql.includes("interval '5 minutes'"));
+  assert.ok(sql.includes('v_limit constant integer := 5'));
+  assert.ok(sql.includes("interval '24 hours'"));
+  assert.ok(sql.includes('on conflict (subject_hash, action, window_started_at)'));
+  assert.ok(sql.includes('to service_role'));
+  assert.equal(sql.includes('to authenticated'), false);
+});
