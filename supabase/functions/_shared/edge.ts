@@ -1,0 +1,49 @@
+const RESPONSE_HEADERS = {
+  'content-type': 'application/json; charset=utf-8',
+  'cache-control': 'no-store',
+};
+
+const ERROR_STATUS: Readonly<Record<string, number>> = {
+  ERR_UNAUTHORIZED: 401,
+  ERR_METHOD_NOT_ALLOWED: 405,
+  ERR_REQUEST_JSON_INVALID: 400,
+  ERR_DISPLAY_NAME_INVALID: 400,
+  ERR_EMAIL_INVALID: 400,
+  ERR_PASSWORD_INVALID: 400,
+  ERR_CURRENT_PASSWORD_REQUIRED: 400,
+  ERR_RATE_LIMITED: 429,
+  ERR_USER_PROFILE_NOT_FOUND: 404,
+};
+
+export function jsonResponse(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), { status, headers: RESPONSE_HEADERS });
+}
+
+export function successResponse(data: unknown, status = 200): Response {
+  return jsonResponse({ data, error: null }, status);
+}
+
+export function errorResponse(error: unknown): Response {
+  const candidate = error instanceof Error ? error.message : '';
+  const code = candidate in ERROR_STATUS ? candidate : 'ERR_INTERNAL';
+  return jsonResponse(
+    { data: null, error: { code } },
+    ERROR_STATUS[code] ?? 500,
+  );
+}
+
+export function assertMethod(
+  request: Request,
+  allowedMethods: readonly string[],
+): Response | null {
+  if (allowedMethods.includes(request.method)) return null;
+  return errorResponse(new Error('ERR_METHOD_NOT_ALLOWED'));
+}
+
+export async function readJson(request: Request): Promise<unknown> {
+  try {
+    return await request.json();
+  } catch {
+    throw new Error('ERR_REQUEST_JSON_INVALID');
+  }
+}
