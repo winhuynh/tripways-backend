@@ -4,6 +4,15 @@ const config = await Deno.readTextFile(
   new URL('../../../../config.toml', import.meta.url),
 );
 
+async function readSource(relativePath: string): Promise<string> {
+  try {
+    return await Deno.readTextFile(new URL(relativePath, import.meta.url));
+  } catch (error) {
+    if (error instanceof Deno.errors.NotFound) return '';
+    throw error;
+  }
+}
+
 Deno.test('auth requires confirmed email and disables anonymous users', () => {
   assert.ok(config.includes('enable_signup = true'));
   assert.ok(config.includes('enable_anonymous_sign_ins = false'));
@@ -16,4 +25,43 @@ Deno.test('auth requires confirmed email and disables anonymous users', () => {
 Deno.test('access token lifetime bounds revoked-session exposure', () => {
   assert.ok(config.includes('jwt_expiry = 3600'));
   assert.equal(config.includes('enable_manual_linking = true'), false);
+});
+
+Deno.test('users table is minimal, constrained, and self-readable only', async () => {
+  const sql = await readSource('../../../../sql_src/schema/public/users.sql');
+
+  assert.ok(sql.includes('references auth.users (id) on delete cascade'));
+  assert.ok(sql.includes('users_display_name_length_check'));
+  assert.ok(sql.includes('users_account_status_check'));
+  assert.ok(sql.includes('alter table public.users enable row level security'));
+  assert.ok(sql.includes('revoke all on table public.users from anon, authenticated'));
+  assert.ok(sql.includes('create policy users_self_read'));
+  assert.ok(sql.includes('user_id = (select auth.uid())'));
+  assert.equal(sql.includes('for insert to authenticated'), false);
+  assert.equal(sql.includes('for update to authenticated'), false);
+  assert.equal(sql.includes('for delete to authenticated'), false);
+});
+
+Deno.test('auth bootstrap validates display name in a private definer function', async () => {
+  const sql = await readSource(
+    '../../../../sql_src/functions/user/handle_new_auth_user.sql',
+  );
+
+  assert.ok(sql.includes('private.handle_new_auth_user()'));
+  assert.ok(sql.includes('security definer'));
+  assert.ok(sql.includes("set search_path = ''"));
+  assert.ok(sql.includes("new.raw_user_meta_data ->> 'display_name'"));
+  assert.ok(sql.includes('ERR_DISPLAY_NAME_INVALID'));
+  assert.ok(sql.includes('char_length(v_display_name) between 2 and 80'));
+  assert.equal(sql.includes('public.handle_new_auth_user()'), false);
+});
+
+Deno.test('auth bootstrap trigger runs only after user creation', async () => {
+  const sql = await readSource(
+    '../../../../sql_src/triggers/user/trg_handle_new_auth_user.sql',
+  );
+
+  assert.ok(sql.includes('after insert on auth.users'));
+  assert.ok(sql.includes('execute function private.handle_new_auth_user()'));
+  assert.equal(sql.includes('after insert or update'), false);
 });
