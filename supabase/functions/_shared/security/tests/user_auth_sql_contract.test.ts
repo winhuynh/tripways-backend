@@ -116,7 +116,11 @@ Deno.test('auth command attempts store only bounded hashed subjects in private',
   assert.ok(sql.includes('subject_hash text not null'));
   assert.ok(sql.includes('attempt_count integer not null'));
   assert.ok(sql.includes('auth_command_attempts_count_check'));
-  assert.ok(sql.includes('revoke all on table private.auth_command_attempts from public, anon, authenticated'));
+  assert.ok(
+    sql.includes(
+      'revoke all on table private.auth_command_attempts from public, anon, authenticated',
+    ),
+  );
   assert.equal(sql.includes('ip_address'), false);
   assert.equal(sql.includes('user_id'), false);
 });
