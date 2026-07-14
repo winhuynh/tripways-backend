@@ -70,3 +70,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/user/profile/index.ts"
+
+[functions.user-account-security]
+enabled = true
+verify_jwt = true
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/user/account-security/index.ts"
