@@ -4,28 +4,31 @@
 -- Responsibilities: Enforce profile shape, account state, ownership, and lifecycle linkage.
 -- Notes: Email and credentials remain authoritative in auth.users.
 
-create table public.users (
-  user_id uuid primary key references auth.users (id) on delete cascade,
-  display_name text not null,
-  account_status text not null default 'active',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint users_display_name_length_check
-    check (char_length(display_name) between 2 and 80),
-  constraint users_display_name_trimmed_check
-    check (display_name = btrim(display_name)),
-  constraint users_account_status_check
-    check (account_status = 'active')
+CREATE TABLE public.users (
+  user_id         UUID         PRIMARY KEY REFERENCES auth.users (id) ON DELETE CASCADE,
+  display_name    TEXT         NOT NULL,
+  account_status  TEXT         NOT NULL DEFAULT 'active',
+  created_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at      TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT users_display_name_length_check
+    CHECK (char_length(display_name) BETWEEN 2 AND 80),
+
+  CONSTRAINT users_display_name_trimmed_check
+    CHECK (display_name = btrim(display_name)),
+
+  CONSTRAINT users_account_status_check
+    CHECK (account_status = 'active')
 );
 
-alter table public.users enable row level security;
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
-revoke all on table public.users from anon, authenticated;
-grant select on table public.users to authenticated, service_role;
-grant insert, update, delete on table public.users to service_role;
+REVOKE ALL ON TABLE public.users FROM anon, authenticated;
+GRANT SELECT ON TABLE public.users TO authenticated, service_role;
+GRANT INSERT, UPDATE, DELETE ON TABLE public.users TO service_role;
 
-create policy users_self_read
-on public.users
-for select
-to authenticated
-using (user_id = (select auth.uid()));
+CREATE POLICY users_self_read
+ON public.users
+FOR SELECT
+TO authenticated
+USING (user_id = (SELECT auth.uid()));

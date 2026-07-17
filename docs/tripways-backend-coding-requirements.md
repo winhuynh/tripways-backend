@@ -15,13 +15,27 @@
 
 ## SQL
 
+- Write all PostgreSQL and PL/pgSQL keywords in uppercase.
 - Use `snake_case` for database objects, `p_` for parameters, and `v_` for local variables.
+- Use two-space indentation and split multi-clause statements into readable lines.
+- Align table column names and data types. Add a blank line before constraints and between distinct
+  constraint blocks.
+- Declare indexes explicitly with their access method, such as `USING btree` or intentional
+  alternatives including `USING gin`.
+- Place index `ON`, access method, and partial-index `WHERE` clauses on separate lines following the
+  established `slofi-backend` layout.
+- Format seed rows vertically with one value per line and explicit column lists.
+- Use separator headers in SQL function files and group non-trivial `DECLARE` variables by role.
 - Validate existence and domain invariants before mutation.
 - Use constraints and transactions instead of duplicating correctness checks in application code.
 - Set explicit `search_path` for privileged functions and schema-qualify referenced objects.
 - Keep raw, operational, analytics, and public read responsibilities in separate schemas.
 - Keep exactly one table definition per `sql_src/schema/<schema>/<table>.sql` file.
 - Keep exactly one function definition per `sql_src/functions/<feature>/<function>.sql` file.
+- Keep fixture and reference records under `supabase/seed`; do not place environment-specific data
+  in schema, function, trigger, or migration files.
+- Treat DML inside business functions and rollback-based SQL test setup as behavior and verification,
+  not seed data.
 
 ## API and errors
 

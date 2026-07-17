@@ -24,6 +24,23 @@ task, state which relevant requirements were followed and identify any intention
 - Keep formatting and naming consistent across every touched code file.
 - SQL functions use clear `Function / Purpose / Responsibilities / Notes` headers and `STEP xx`
   comments for significant business flows.
+- Write PostgreSQL and PL/pgSQL keywords in uppercase. Keep database object names, parameters, and
+  variables in `snake_case`.
+- Format SQL with two-space indentation and one readable clause per line. Use explicit index
+  declarations, including the access method, for example:
+
+  ```sql
+  CREATE UNIQUE INDEX data_sources_code_key
+  ON admin.data_sources USING btree (code);
+  ```
+- Follow the readable table layout used by `slofi-backend`: align column names and data types,
+  separate the column list from constraints, and leave one blank line between constraint blocks.
+- Put `ON`, `WHERE`, `USING`, `FROM`, `TO`, and other major multi-line clauses on their own readable
+  lines instead of indenting an entire statement into one dense row.
+- Format multi-row seed data vertically. Each row uses its own parenthesized block, with one value
+  per line in the same order as the explicit column list.
+- SQL function files use separator headers and group non-trivial `DECLARE` variables by role, such
+  as `Auth`, `Input`, `Resolved entities`, and `Result`.
 - TypeScript uses section comments only where orchestration, fallback, idempotency, or error
   normalization would otherwise be hard to scan.
 
@@ -57,6 +74,10 @@ task, state which relevant requirements were followed and identify any intention
 - Development fixtures can never become production or SEO-indexable data.
 - OpenFlights is prohibited in production, API, sitemap, and local fixture data.
 - Missing frequency and seasonality remain unknown rather than becoming zero or year-round.
+- Store fixture and reference records only under `supabase/seed`; never embed them in schema,
+  function, trigger, or migration sources.
+- DML inside PostgreSQL functions remains with the function when it implements business behavior.
+  Rollback-based setup data remains in SQL verification snippets and is not seed data.
 
 ## 8. Testing and verification
 

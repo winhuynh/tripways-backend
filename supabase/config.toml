@@ -18,7 +18,7 @@ schema_paths = []
 
 [db.seed]
 enabled = true
-sql_paths = ["./seed/fixture.sql"]
+sql_paths = ["./seed/fixture.sql", "./seed/flight_routing_fixture.sql"]
 
 [realtime]
 enabled = false
@@ -82,3 +82,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/user/delete-account/index.ts"
+
+[functions.route-discovery-query]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/route-discovery/query/index.ts"

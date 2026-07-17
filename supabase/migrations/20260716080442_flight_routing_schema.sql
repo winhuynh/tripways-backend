@@ -1,0 +1,363 @@
+-- Source: supabase/sql_src/schema/admin/data_sources.sql
+-- Table: admin.data_sources
+-- Feature: Flight Routing
+-- Purpose: Record data provenance and permitted usage before domain data is published.
+-- Responsibilities: Identify sources, separate environments, and preserve license capabilities.
+
+CREATE TABLE admin.data_sources (
+  id                    UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  code                  TEXT         NOT NULL UNIQUE,
+  name                  TEXT         NOT NULL,
+  source_type           TEXT         NOT NULL,
+  environment_scope     TEXT         NOT NULL,
+  production_allowed    BOOLEAN      NOT NULL DEFAULT FALSE,
+  seo_allowed           BOOLEAN      NOT NULL DEFAULT FALSE,
+  derived_data_allowed  BOOLEAN      NOT NULL DEFAULT FALSE,
+  license_notes         TEXT         NULL,
+  created_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT data_sources_code_check
+    CHECK (code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
+
+  CONSTRAINT data_sources_name_trimmed_check
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
+
+  CONSTRAINT data_sources_type_check
+    CHECK (source_type IN ('base_data', 'schedule', 'development_fixture')),
+
+  CONSTRAINT data_sources_environment_check
+    CHECK (environment_scope IN ('development', 'production')),
+
+  CONSTRAINT data_sources_development_rights_check
+    CHECK (
+      environment_scope = 'production'
+      OR (production_allowed = FALSE AND seo_allowed = FALSE)
+    )
+);
+
+REVOKE ALL ON TABLE admin.data_sources FROM public, anon, authenticated;
+GRANT USAGE ON SCHEMA admin TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.data_sources TO service_role;
+
+-- Source: supabase/sql_src/schema/public/countries.sql
+-- Table: public.countries
+-- Feature: Flight Routing
+-- Purpose: Provide normalized country identity for cities, airports, and airlines.
+-- Responsibilities: Enforce ISO codes, stable slugs, and source lineage.
+
+CREATE TABLE public.countries (
+  id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  iso2        TEXT         NOT NULL UNIQUE,
+  iso3        TEXT         NOT NULL UNIQUE,
+  name        TEXT         NOT NULL,
+  slug        TEXT         NOT NULL UNIQUE,
+  region      TEXT         NULL,
+  subregion   TEXT         NULL,
+  source_id   UUID         NOT NULL REFERENCES admin.data_sources (id),
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT countries_iso2_check
+    CHECK (iso2 ~ '^[A-Z]{2}$'),
+
+  CONSTRAINT countries_iso3_check
+    CHECK (iso3 ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT countries_name_trimmed_check
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
+
+  CONSTRAINT countries_slug_check
+    CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$')
+);
+
+ALTER TABLE public.countries ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.countries FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.countries TO service_role;
+
+-- Source: supabase/sql_src/schema/public/cities.sql
+-- Table: public.cities
+-- Feature: Flight Routing
+-- Purpose: Group airports by a normalized city identity.
+-- Responsibilities: Link cities to countries and preserve optional geographic metadata.
+
+CREATE TABLE public.cities (
+  id          UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+  country_id  UUID              NOT NULL REFERENCES public.countries (id),
+  name        TEXT              NOT NULL,
+  slug        TEXT              NOT NULL,
+  latitude    DOUBLE PRECISION  NULL,
+  longitude   DOUBLE PRECISION  NULL,
+  timezone    TEXT              NULL,
+  source_id   UUID              NOT NULL REFERENCES admin.data_sources (id),
+  created_at  TIMESTAMPTZ       NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ       NOT NULL DEFAULT now(),
+
+  CONSTRAINT cities_country_slug_key
+    UNIQUE (country_id, slug),
+
+  CONSTRAINT cities_name_trimmed_check
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
+
+  CONSTRAINT cities_slug_check
+    CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT cities_latitude_check
+    CHECK (latitude BETWEEN -90 AND 90),
+
+  CONSTRAINT cities_longitude_check
+    CHECK (longitude BETWEEN -180 AND 180),
+
+  CONSTRAINT cities_coordinates_pair_check
+    CHECK ((latitude IS NULL) = (longitude IS NULL))
+);
+
+CREATE INDEX cities_country_id_idx
+ON public.cities USING btree (country_id);
+
+ALTER TABLE public.cities ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.cities FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.cities TO service_role;
+
+-- Source: supabase/sql_src/schema/public/airports.sql
+-- Table: public.airports
+-- Feature: Flight Routing
+-- Purpose: Represent the airport nodes used by direct and one-stop route search.
+-- Responsibilities: Enforce codes, location, operational state, and source lineage.
+
+CREATE TABLE public.airports (
+  id                UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+  iata              TEXT              NULL,
+  icao              TEXT              NULL,
+  name              TEXT              NOT NULL,
+  slug              TEXT              NOT NULL UNIQUE,
+  city_id           UUID              NULL REFERENCES public.cities (id),
+  country_id        UUID              NOT NULL REFERENCES public.countries (id),
+  latitude          DOUBLE PRECISION  NOT NULL,
+  longitude         DOUBLE PRECISION  NOT NULL,
+  timezone          TEXT              NULL,
+  airport_type      TEXT              NOT NULL,
+  status            TEXT              NOT NULL DEFAULT 'unknown',
+  source_id         UUID              NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id  TEXT              NOT NULL,
+  last_verified_at  TIMESTAMPTZ       NULL,
+  created_at        TIMESTAMPTZ       NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ       NOT NULL DEFAULT now(),
+
+  CONSTRAINT airports_source_record_key
+    UNIQUE (source_id, source_record_id),
+
+  CONSTRAINT airports_iata_check
+    CHECK (iata IS NULL OR iata ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT airports_icao_check
+    CHECK (icao IS NULL OR icao ~ '^[A-Z0-9]{4}$'),
+
+  CONSTRAINT airports_code_presence_check
+    CHECK (iata IS NOT NULL OR icao IS NOT NULL),
+
+  CONSTRAINT airports_name_trimmed_check
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 160),
+
+  CONSTRAINT airports_slug_check
+    CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT airports_latitude_check
+    CHECK (latitude BETWEEN -90 AND 90),
+
+  CONSTRAINT airports_longitude_check
+    CHECK (longitude BETWEEN -180 AND 180),
+
+  CONSTRAINT airports_type_check
+    CHECK (
+      airport_type IN (
+        'large_airport',
+        'medium_airport',
+        'small_airport',
+        'heliport',
+        'seaplane_base',
+        'balloonport',
+        'closed'
+      )
+    ),
+
+  CONSTRAINT airports_status_check
+    CHECK (status IN ('active', 'inactive', 'unknown'))
+);
+
+CREATE UNIQUE INDEX airports_iata_key
+ON public.airports USING btree (iata)
+WHERE iata IS NOT NULL;
+
+CREATE UNIQUE INDEX airports_icao_key
+ON public.airports USING btree (icao)
+WHERE icao IS NOT NULL;
+
+CREATE INDEX airports_city_id_idx
+ON public.airports USING btree (city_id);
+
+CREATE INDEX airports_country_id_idx
+ON public.airports USING btree (country_id);
+
+ALTER TABLE public.airports ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.airports FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airports TO service_role;
+
+-- Source: supabase/sql_src/schema/public/airlines.sql
+-- Table: public.airlines
+-- Feature: Flight Routing
+-- Purpose: Represent airline operators associated with flight routes.
+-- Responsibilities: Enforce operator codes, operational state, and source lineage.
+
+CREATE TABLE public.airlines (
+  id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  iata              TEXT         NULL,
+  icao              TEXT         NULL,
+  name              TEXT         NOT NULL,
+  slug              TEXT         NOT NULL UNIQUE,
+  country_id        UUID         NULL REFERENCES public.countries (id),
+  alliance          TEXT         NULL,
+  status            TEXT         NOT NULL DEFAULT 'unknown',
+  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id  TEXT         NOT NULL,
+  last_verified_at  TIMESTAMPTZ  NULL,
+  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT airlines_source_record_key
+    UNIQUE (source_id, source_record_id),
+
+  CONSTRAINT airlines_iata_check
+    CHECK (iata IS NULL OR iata ~ '^[A-Z0-9]{2}$'),
+
+  CONSTRAINT airlines_icao_check
+    CHECK (icao IS NULL OR icao ~ '^[A-Z0-9]{3}$'),
+
+  CONSTRAINT airlines_code_presence_check
+    CHECK (iata IS NOT NULL OR icao IS NOT NULL),
+
+  CONSTRAINT airlines_name_trimmed_check
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 160),
+
+  CONSTRAINT airlines_slug_check
+    CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT airlines_alliance_trimmed_check
+    CHECK (
+      alliance IS NULL
+      OR (
+        alliance = btrim(alliance)
+        AND char_length(alliance) BETWEEN 1 AND 80
+      )
+    ),
+
+  CONSTRAINT airlines_status_check
+    CHECK (status IN ('active', 'inactive', 'unknown'))
+);
+
+CREATE UNIQUE INDEX airlines_iata_key
+ON public.airlines USING btree (iata)
+WHERE iata IS NOT NULL;
+
+CREATE UNIQUE INDEX airlines_icao_key
+ON public.airlines USING btree (icao)
+WHERE icao IS NOT NULL;
+
+CREATE INDEX airlines_country_id_idx
+ON public.airlines USING btree (country_id);
+
+ALTER TABLE public.airlines ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.airlines FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airlines TO service_role;
+
+-- Source: supabase/sql_src/schema/public/flight_routes.sql
+-- Table: public.flight_routes
+-- Feature: Flight Routing
+-- Purpose: Store directional scheduled-flight relationships used by route search.
+-- Responsibilities: Preserve airline attribution, schedule hints, trust state, and source lineage.
+
+CREATE TABLE public.flight_routes (
+  id                      UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
+  origin_airport_id       UUID           NOT NULL REFERENCES public.airports (id),
+  destination_airport_id  UUID           NOT NULL REFERENCES public.airports (id),
+  operating_airline_id    UUID           NULL REFERENCES public.airlines (id),
+  marketing_airline_id    UUID           NULL REFERENCES public.airlines (id),
+  is_codeshare            BOOLEAN        NOT NULL DEFAULT FALSE,
+  status                  TEXT           NOT NULL DEFAULT 'unknown',
+  frequency_per_week      NUMERIC(6, 2)  NULL,
+  days_of_week            SMALLINT[]     NULL,
+  seasonality             TEXT           NOT NULL DEFAULT 'unknown',
+  seasonal_start          DATE           NULL,
+  seasonal_end            DATE           NULL,
+  confidence_score        NUMERIC(4, 3)  NOT NULL,
+  source_id               UUID           NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id        TEXT           NOT NULL,
+  last_verified_at        TIMESTAMPTZ    NOT NULL,
+  created_at              TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  updated_at              TIMESTAMPTZ    NOT NULL DEFAULT now(),
+
+  CONSTRAINT flight_routes_source_record_key
+    UNIQUE (source_id, source_record_id),
+
+  CONSTRAINT flight_routes_direction_check
+    CHECK (origin_airport_id <> destination_airport_id),
+
+  CONSTRAINT flight_routes_status_check
+    CHECK (
+      status IN (
+        'verified_active',
+        'likely_active',
+        'seasonal',
+        'unknown',
+        'historical',
+        'inactive',
+        'low_confidence'
+      )
+    ),
+
+  CONSTRAINT flight_routes_frequency_check
+    CHECK (frequency_per_week IS NULL OR frequency_per_week >= 0),
+
+  CONSTRAINT flight_routes_days_check
+    CHECK (
+      days_of_week IS NULL
+      OR (
+        cardinality(days_of_week) BETWEEN 1 AND 7
+        AND days_of_week <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[]
+      )
+    ),
+
+  CONSTRAINT flight_routes_seasonality_check
+    CHECK (seasonality IN ('year_round', 'seasonal', 'unknown')),
+
+  CONSTRAINT flight_routes_seasonal_dates_check
+    CHECK ((seasonal_start IS NULL) = (seasonal_end IS NULL)),
+
+  CONSTRAINT flight_routes_seasonal_order_check
+    CHECK (seasonal_start IS NULL OR seasonal_start <= seasonal_end),
+
+  CONSTRAINT flight_routes_confidence_check
+    CHECK (confidence_score BETWEEN 0 AND 1)
+);
+
+CREATE INDEX flight_routes_direction_idx
+ON public.flight_routes USING btree (origin_airport_id, destination_airport_id);
+
+CREATE INDEX flight_routes_origin_status_destination_idx
+ON public.flight_routes USING btree (origin_airport_id, status, destination_airport_id);
+
+CREATE INDEX flight_routes_destination_status_idx
+ON public.flight_routes USING btree (destination_airport_id, status);
+
+CREATE INDEX flight_routes_operating_airline_status_idx
+ON public.flight_routes USING btree (operating_airline_id, status);
+
+ALTER TABLE public.flight_routes ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.flight_routes FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.flight_routes TO service_role;
+

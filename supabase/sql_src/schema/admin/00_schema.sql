@@ -1,7 +1,7 @@
 -- Schema: admin
 -- Purpose: Operational state for ingestion, publishing, and maintenance workflows.
 
-create schema if not exists admin;
+CREATE SCHEMA IF NOT EXISTS admin;
 
-revoke all on schema admin from anon, authenticated;
+REVOKE ALL ON SCHEMA admin FROM anon, authenticated;
 

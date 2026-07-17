@@ -1,7 +1,7 @@
 -- Schema: private
 -- Purpose: Raw provider data and internal staging records that must never be exposed by Data API.
 
-create schema if not exists private;
+CREATE SCHEMA IF NOT EXISTS private;
 
-revoke all on schema private from anon, authenticated;
+REVOKE ALL ON SCHEMA private FROM anon, authenticated;
 

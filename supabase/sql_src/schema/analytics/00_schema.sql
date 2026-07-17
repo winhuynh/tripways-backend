@@ -1,7 +1,7 @@
 -- Schema: analytics
 -- Purpose: Internal product and operational events written through controlled backend boundaries.
 
-create schema if not exists analytics;
+CREATE SCHEMA IF NOT EXISTS analytics;
 
-revoke all on schema analytics from anon, authenticated;
+REVOKE ALL ON SCHEMA analytics FROM anon, authenticated;
 
