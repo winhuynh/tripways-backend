@@ -114,6 +114,31 @@ SELECT pg_temp.test_assert(
   'airlines returns seeded direct operators'
 );
 
+WITH quick_facts AS (
+  SELECT public.rpc_get_city_quick_facts(
+    '{"city_slug":"bangkok","locale":"en-GB"}'
+  ) AS response
+)
+SELECT pg_temp.test_assert(
+  (
+    SELECT
+      (response #>> '{data,airport_count}')::INTEGER = 2
+      AND (response #>> '{data,direct_destination_count}')::INTEGER = 5
+      AND (response #>> '{data,direct_country_count}')::INTEGER = 5
+      AND (response #>> '{data,airline_count}')::INTEGER = 2
+      AND response #>> '{data,shortest_route,destination_name}' = 'Chiang Mai'
+      AND response #>> '{data,shortest_route,route_path}' = '/flights/bangkok-to-chiang-mai'
+      AND (response #>> '{data,shortest_route,duration_minutes}')::INTEGER = 75
+      AND response #>> '{data,longest_route,destination_name}' = 'Paris'
+      AND response #>> '{data,longest_route,route_path}' = '/flights/bangkok-to-paris'
+      AND (response #>> '{data,longest_route,duration_minutes}')::INTEGER = 785
+      AND response #>> '{meta,data_version}' IS NOT NULL
+      AND response -> 'error' = 'null'::JSONB
+    FROM quick_facts
+  ),
+  'quick facts returns one complete versioned city read model'
+);
+
 SELECT pg_temp.test_assert(
   (public.rpc_get_city_insights('{"city_slug":"bangkok"}') #>> '{data,direct_country_count}')::INTEGER >= 4,
   'insights returns direct country count'
@@ -141,7 +166,8 @@ SELECT pg_temp.test_assert(
 
 SELECT pg_temp.test_assert(
   NOT has_function_privilege('anon', 'public.rpc_get_city_overview(jsonb)', 'EXECUTE')
-  AND NOT has_function_privilege('authenticated', 'public.rpc_get_city_faqs(jsonb)', 'EXECUTE'),
+  AND NOT has_function_privilege('authenticated', 'public.rpc_get_city_faqs(jsonb)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.rpc_get_city_quick_facts(jsonb)', 'EXECUTE'),
   'public clients cannot execute city read-model RPCs'
 );
 

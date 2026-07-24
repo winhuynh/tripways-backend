@@ -4,6 +4,7 @@ import type { CityPageAction } from './request.ts';
 const RPC_BY_ACTION: Readonly<Record<CityPageAction, string>> = {
   get_overview: 'rpc_get_city_overview',
   get_airports: 'rpc_get_city_airports',
+  get_quick_facts: 'rpc_get_city_quick_facts',
   get_destinations: 'rpc_search_city_direct_routes',
   get_airlines: 'rpc_get_city_airlines',
   get_insights: 'rpc_get_city_insights',

@@ -39,3 +39,16 @@ Deno.test('city page request rejects unsupported actions and cross-action fields
     /ERR_CITY_PAGE_INVALID_REQUEST/,
   );
 });
+
+Deno.test('city page request accepts the quick facts identity action', () => {
+  assert.deepEqual(
+    parseCityPageQueryRequest({
+      action: 'get_quick_facts',
+      input: { city_slug: ' Bangkok ', locale: 'en-GB' },
+    }),
+    {
+      action: 'get_quick_facts',
+      input: { city_slug: 'bangkok', locale: 'en-GB' },
+    },
+  );
+});

@@ -1,6 +1,7 @@
 export const CITY_PAGE_ACTIONS = [
   'get_overview',
   'get_airports',
+  'get_quick_facts',
   'get_destinations',
   'get_airlines',
   'get_insights',

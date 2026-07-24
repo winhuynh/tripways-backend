@@ -20,6 +20,7 @@ DECLARE
   v_locale TEXT;
   v_city_id UUID;
   v_data_version UUID;
+  v_quick_facts JSONB;
   v_result JSONB;
 BEGIN
   IF v_identity #>> '{error,code}' IS NOT NULL THEN
@@ -36,6 +37,10 @@ BEGIN
 
   v_city_id := (v_context #>> '{data,city_id}')::UUID;
   v_data_version := (v_context #>> '{data,data_version}')::UUID;
+  v_quick_facts := private.get_city_quick_facts(
+    v_city_id,
+    v_data_version
+  );
 
   WITH routes AS MATERIALIZED (
     SELECT city_route.*
@@ -71,22 +76,8 @@ BEGIN
         JOIN public.cities destination_city
           ON destination_city.id = destination_frequency.destination_city_id
       ),
-      'shortest_destination', (
-        SELECT destination_city.name
-        FROM routes route
-        JOIN public.cities destination_city
-          ON destination_city.id = route.destination_city_id
-        ORDER BY route.shortest_duration_minutes, destination_city.name
-        LIMIT 1
-      ),
-      'longest_destination', (
-        SELECT destination_city.name
-        FROM routes route
-        JOIN public.cities destination_city
-          ON destination_city.id = route.destination_city_id
-        ORDER BY route.longest_duration_minutes DESC, destination_city.name
-        LIMIT 1
-      ),
+      'shortest_destination', v_quick_facts #>> '{shortest_route,destination_name}',
+      'longest_destination', v_quick_facts #>> '{longest_route,destination_name}',
       'top_airline', (
         SELECT airline.name
         FROM airline_frequency
@@ -97,10 +88,7 @@ BEGIN
         SELECT round(avg(route.shortest_duration_minutes))::INTEGER
         FROM routes route
       ),
-      'direct_country_count', (
-        SELECT count(DISTINCT route.destination_country_id)
-        FROM routes route
-      )
+      'direct_country_count', (v_quick_facts ->> 'direct_country_count')::INTEGER
     ),
     'meta', jsonb_build_object('data_version', v_data_version),
     'error', NULL

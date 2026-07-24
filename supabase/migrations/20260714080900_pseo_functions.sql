@@ -570,6 +570,112 @@ REVOKE ALL ON FUNCTION private.get_city_airport_route_stats(UUID, UUID)
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION private.get_city_airport_route_stats(UUID, UUID) TO service_role;
 
+-- >>> supabase/sql_src/functions/pseo/get_city_quick_facts.sql
+
+-- ============================================================================
+-- Function: private.get_city_quick_facts
+-- Feature: Interactive pSEO
+-- Purpose: Derive one version-consistent city Quick Facts read model.
+-- Responsibilities: Count city coverage and resolve shortest and longest direct destinations.
+-- Notes: Route extrema use stored recurring schedules, not live dated availability.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION private.get_city_quick_facts(
+  p_city_id UUID,
+  p_data_version UUID
+)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+  WITH city_context AS (
+    SELECT
+      city.id,
+      city.slug
+    FROM public.cities city
+    WHERE city.id = p_city_id
+  ),
+  routes AS MATERIALIZED (
+    SELECT city_route.*
+    FROM public.city_direct_routes city_route
+    WHERE city_route.origin_city_id = p_city_id
+      AND city_route.data_version = p_data_version
+  ),
+  route_counts AS (
+    SELECT
+      count(DISTINCT route.destination_city_id)::INTEGER AS direct_destination_count,
+      count(DISTINCT route.destination_country_id)::INTEGER AS direct_country_count,
+      count(DISTINCT route.operating_airline_id)::INTEGER AS airline_count
+    FROM routes route
+  ),
+  shortest_route AS (
+    SELECT jsonb_build_object(
+      'destination_name', destination_city.name,
+      'destination_slug', destination_city.slug,
+      'route_path', format(
+        '/flights/%s-to-%s',
+        city_context.slug,
+        destination_city.slug
+      ),
+      'duration_minutes', route.shortest_duration_minutes
+    ) AS value
+    FROM routes route
+    CROSS JOIN city_context
+    JOIN public.cities destination_city
+      ON destination_city.id = route.destination_city_id
+    ORDER BY
+      route.shortest_duration_minutes,
+      destination_city.name
+    LIMIT 1
+  ),
+  longest_route AS (
+    SELECT jsonb_build_object(
+      'destination_name', destination_city.name,
+      'destination_slug', destination_city.slug,
+      'route_path', format(
+        '/flights/%s-to-%s',
+        city_context.slug,
+        destination_city.slug
+      ),
+      'duration_minutes', route.longest_duration_minutes
+    ) AS value
+    FROM routes route
+    CROSS JOIN city_context
+    JOIN public.cities destination_city
+      ON destination_city.id = route.destination_city_id
+    ORDER BY
+      route.longest_duration_minutes DESC,
+      destination_city.name
+    LIMIT 1
+  )
+  SELECT jsonb_build_object(
+    'airport_count', (
+      SELECT count(*)::INTEGER
+      FROM public.airports airport
+      WHERE airport.city_id = p_city_id
+        AND airport.status = 'active'
+    ),
+    'direct_destination_count', route_counts.direct_destination_count,
+    'direct_country_count', route_counts.direct_country_count,
+    'airline_count', route_counts.airline_count,
+    'shortest_route', (
+      SELECT shortest_route.value
+      FROM shortest_route
+    ),
+    'longest_route', (
+      SELECT longest_route.value
+      FROM longest_route
+    )
+  )
+  FROM route_counts;
+$$;
+
+REVOKE ALL ON FUNCTION private.get_city_quick_facts(UUID, UUID)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.get_city_quick_facts(UUID, UUID) TO service_role;
+
 -- >>> supabase/sql_src/functions/pseo/rpc_get_city_overview.sql
 
 -- ============================================================================
@@ -788,6 +894,81 @@ REVOKE ALL ON FUNCTION public.rpc_get_city_airports(JSONB)
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_get_city_airports(JSONB) TO service_role;
 
+-- >>> supabase/sql_src/functions/pseo/rpc_get_city_quick_facts.sql
+
+-- ============================================================================
+-- Function: public.rpc_get_city_quick_facts
+-- Feature: Interactive pSEO
+-- Purpose: Return one independently loadable city Quick Facts read model.
+-- Responsibilities: Resolve page identity and compose the shared RPC envelope.
+-- Notes: Facts are derived from the city page's current data version.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_get_city_quick_facts(p_input JSONB)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  ------------------------------------------------------------------
+  -- Input and resolved context
+  ------------------------------------------------------------------
+  v_identity JSONB := private.parse_city_page_identity(p_input);
+  v_context JSONB;
+  v_city_slug TEXT;
+  v_locale TEXT;
+  v_city_id UUID;
+  v_data_version UUID;
+BEGIN
+  -- STEP 01: Validate the shared city-page identity.
+  IF v_identity #>> '{error,code}' IS NOT NULL THEN
+    RETURN private.build_rpc_error(
+      'null'::JSONB,
+      v_identity #>> '{error,code}',
+      v_identity #>> '{error,message}'
+    );
+  END IF;
+
+  v_city_slug := v_identity #>> '{data,city_slug}';
+  v_locale := v_identity #>> '{data,locale}';
+  v_context := private.resolve_city_page_context(
+    v_city_slug,
+    v_locale
+  );
+
+  IF v_context #>> '{error,code}' IS NOT NULL THEN
+    RETURN private.build_rpc_error(
+      'null'::JSONB,
+      v_context #>> '{error,code}',
+      v_context #>> '{error,message}'
+    );
+  END IF;
+
+  v_city_id := (v_context #>> '{data,city_id}')::UUID;
+  v_data_version := (v_context #>> '{data,data_version}')::UUID;
+
+  -- STEP 02: Return one helper-owned, version-consistent read model.
+  RETURN jsonb_build_object(
+    'data', private.get_city_quick_facts(
+      v_city_id,
+      v_data_version
+    ),
+    'meta', jsonb_build_object(
+      'city_slug', v_city_slug,
+      'locale', v_locale,
+      'data_version', v_data_version
+    ),
+    'error', NULL
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.rpc_get_city_quick_facts(JSONB)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_get_city_quick_facts(JSONB) TO service_role;
+
 -- >>> supabase/sql_src/functions/pseo/rpc_get_city_airlines.sql
 
 -- ============================================================================
@@ -896,6 +1077,7 @@ DECLARE
   v_locale TEXT;
   v_city_id UUID;
   v_data_version UUID;
+  v_quick_facts JSONB;
   v_result JSONB;
 BEGIN
   IF v_identity #>> '{error,code}' IS NOT NULL THEN
@@ -912,6 +1094,10 @@ BEGIN
 
   v_city_id := (v_context #>> '{data,city_id}')::UUID;
   v_data_version := (v_context #>> '{data,data_version}')::UUID;
+  v_quick_facts := private.get_city_quick_facts(
+    v_city_id,
+    v_data_version
+  );
 
   WITH routes AS MATERIALIZED (
     SELECT city_route.*
@@ -947,22 +1133,8 @@ BEGIN
         JOIN public.cities destination_city
           ON destination_city.id = destination_frequency.destination_city_id
       ),
-      'shortest_destination', (
-        SELECT destination_city.name
-        FROM routes route
-        JOIN public.cities destination_city
-          ON destination_city.id = route.destination_city_id
-        ORDER BY route.shortest_duration_minutes, destination_city.name
-        LIMIT 1
-      ),
-      'longest_destination', (
-        SELECT destination_city.name
-        FROM routes route
-        JOIN public.cities destination_city
-          ON destination_city.id = route.destination_city_id
-        ORDER BY route.longest_duration_minutes DESC, destination_city.name
-        LIMIT 1
-      ),
+      'shortest_destination', v_quick_facts #>> '{shortest_route,destination_name}',
+      'longest_destination', v_quick_facts #>> '{longest_route,destination_name}',
       'top_airline', (
         SELECT airline.name
         FROM airline_frequency
@@ -973,10 +1145,7 @@ BEGIN
         SELECT round(avg(route.shortest_duration_minutes))::INTEGER
         FROM routes route
       ),
-      'direct_country_count', (
-        SELECT count(DISTINCT route.destination_country_id)
-        FROM routes route
-      )
+      'direct_country_count', (v_quick_facts ->> 'direct_country_count')::INTEGER
     ),
     'meta', jsonb_build_object('data_version', v_data_version),
     'error', NULL

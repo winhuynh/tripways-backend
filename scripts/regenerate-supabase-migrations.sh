@@ -132,8 +132,10 @@ emit_migration \
   "supabase/sql_src/functions/pseo/parse_city_page_identity.sql" \
   "supabase/sql_src/functions/pseo/resolve_city_page_context.sql" \
   "supabase/sql_src/functions/pseo/get_city_airport_route_stats.sql" \
+  "supabase/sql_src/functions/pseo/get_city_quick_facts.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_overview.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_airports.sql" \
+  "supabase/sql_src/functions/pseo/rpc_get_city_quick_facts.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_airlines.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_insights.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_internal_links.sql" \
