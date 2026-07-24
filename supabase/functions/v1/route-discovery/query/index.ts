@@ -1,15 +1,22 @@
-import { getServiceRoleClient } from '@shared/supabase.ts';
-import { handleRouteQuery, type RouteSearchEnvelope } from './handler.ts';
+import { handleRouteQuery } from './handler.ts';
 
 Deno.serve(async (request) => {
   const requestId = crypto.randomUUID();
   const response = await handleRouteQuery(request, {
     searchRoutes: async (input) => {
-      const result = await getServiceRoleClient().rpc('rpc_search_routes', {
-        p_input: input,
+      const supabaseUrl = readRequiredEnv('SUPABASE_URL').replace(/\/$/, '');
+      const serviceRoleKey = readRequiredEnv('SUPABASE_SERVICE_ROLE_KEY');
+      const rpcResponse = await fetch(`${supabaseUrl}/rest/v1/rpc/rpc_search_routes`, {
+        method: 'POST',
+        headers: {
+          apikey: serviceRoleKey,
+          authorization: `Bearer ${serviceRoleKey}`,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ p_input: input }),
       });
-      if (result.error) throw new Error('ERR_INTERNAL');
-      return result.data as RouteSearchEnvelope;
+      if (!rpcResponse.ok) throw new Error('ERR_ROUTE_DISCOVERY_UNAVAILABLE');
+      return await rpcResponse.json();
     },
   });
 
@@ -23,3 +30,9 @@ Deno.serve(async (request) => {
 
   return response;
 });
+
+function readRequiredEnv(name: string): string {
+  const value = Deno.env.get(name)?.trim();
+  if (!value) throw new Error('ERR_ROUTE_DISCOVERY_UNAVAILABLE');
+  return value;
+}

@@ -58,21 +58,30 @@ SELECT pg_temp.test_assert(
   NOT EXISTS (
     SELECT 1
     FROM public.route_options route_option
+    JOIN public.airports origin
+      ON origin.id = route_option.origin_airport_id
+    JOIN public.airports destination
+      ON destination.id = route_option.destination_airport_id
     JOIN public.airports connection
       ON connection.id = route_option.connection_airport_ids[1]
-    WHERE connection.iata = 'BKK'
+    WHERE origin.iata = 'SGN'
+      AND destination.iata = 'LHR'
+      AND connection.iata = 'BKK'
   ),
-  'rejects connections shorter than 45 minutes'
+  'rejects the SGN to BKK to LHR connection shorter than 45 minutes'
 );
 
 SELECT pg_temp.test_assert(
   NOT EXISTS (
     SELECT 1
     FROM public.route_options route_option
+    JOIN public.airports origin ON origin.id = route_option.origin_airport_id
     JOIN public.airports destination ON destination.id = route_option.destination_airport_id
-    WHERE destination.iata = 'CDG'
+    WHERE origin.iata = 'SGN'
+      AND destination.iata = 'CDG'
+      AND route_option.stop_count = 0
   ),
-  'rejects inactive route services'
+  'rejects the inactive direct SGN to CDG route service'
 );
 
 ROLLBACK;

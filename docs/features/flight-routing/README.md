@@ -21,12 +21,12 @@ of one product feature: `flight-routing`.
 
 ## SQL source ownership
 
-- `supabase/sql_src/schema/admin/data_sources.sql`
-- `supabase/sql_src/schema/public/countries.sql`
-- `supabase/sql_src/schema/public/cities.sql`
-- `supabase/sql_src/schema/public/airports.sql`
-- `supabase/sql_src/schema/public/airlines.sql`
-- `supabase/sql_src/schema/public/flight_routes.sql`
+- `supabase/sql_src/schema/flight_routing/data_sources.sql`
+- `supabase/sql_src/schema/flight_routing/countries.sql`
+- `supabase/sql_src/schema/flight_routing/cities.sql`
+- `supabase/sql_src/schema/flight_routing/airports.sql`
+- `supabase/sql_src/schema/flight_routing/airlines.sql`
+- `supabase/sql_src/schema/flight_routing/flight_routes.sql`
 
 Each file defines exactly one table, its table-owned indexes, constraints, RLS state, and grants.
 `flight_routes` answers whether an eligible directional relationship exists. `flight_services`

@@ -25,5 +25,4 @@ CREATE TABLE private.auth_command_attempts (
 );
 
 REVOKE ALL ON TABLE private.auth_command_attempts FROM public, anon, authenticated;
-GRANT USAGE ON SCHEMA private TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.auth_command_attempts TO service_role;

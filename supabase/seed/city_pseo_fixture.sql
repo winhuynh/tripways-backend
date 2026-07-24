@@ -1,0 +1,627 @@
+-- Development-only fixture for the Bangkok city pSEO page preview.
+-- Content is intentionally editable placeholder copy and can never be indexed.
+
+INSERT INTO public.cities (
+  id,
+  country_id,
+  name,
+  slug,
+  latitude,
+  longitude,
+  timezone,
+  source_id
+)
+VALUES
+  (
+    '30000000-0000-4000-8000-000000000006',
+    '20000000-0000-4000-8000-000000000003',
+    'Chiang Mai',
+    'chiang-mai',
+    18.7883,
+    98.9853,
+    'Asia/Bangkok',
+    '10000000-0000-4000-8000-000000000001'
+  );
+
+INSERT INTO public.airports (
+  id,
+  iata,
+  icao,
+  name,
+  slug,
+  city_id,
+  country_id,
+  latitude,
+  longitude,
+  timezone,
+  airport_type,
+  status,
+  source_id,
+  source_record_id,
+  last_verified_at
+)
+VALUES
+  (
+    '40000000-0000-4000-8000-000000000006',
+    'DMK',
+    'VTBD',
+    'Don Mueang International Airport',
+    'don-mueang-international-airport',
+    '30000000-0000-4000-8000-000000000003',
+    '20000000-0000-4000-8000-000000000003',
+    13.9126,
+    100.6068,
+    'Asia/Bangkok',
+    'large_airport',
+    'active',
+    '10000000-0000-4000-8000-000000000001',
+    'airport-dmk',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '40000000-0000-4000-8000-000000000007',
+    'CNX',
+    'VTCC',
+    'Chiang Mai International Airport',
+    'chiang-mai-international-airport',
+    '30000000-0000-4000-8000-000000000006',
+    '20000000-0000-4000-8000-000000000003',
+    18.7668,
+    98.9626,
+    'Asia/Bangkok',
+    'large_airport',
+    'active',
+    '10000000-0000-4000-8000-000000000001',
+    'airport-cnx',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.airlines (
+  id,
+  iata,
+  icao,
+  name,
+  slug,
+  country_id,
+  business_model,
+  status,
+  source_id,
+  source_record_id,
+  last_verified_at
+)
+VALUES
+  (
+    '50000000-0000-4000-8000-000000000004',
+    'FD',
+    'AIQ',
+    'Thai AirAsia',
+    'thai-airasia',
+    '20000000-0000-4000-8000-000000000003',
+    'low_cost',
+    'active',
+    '10000000-0000-4000-8000-000000000001',
+    'airline-fd',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.flight_routes (
+  id,
+  origin_airport_id,
+  destination_airport_id,
+  operating_airline_id,
+  marketing_airline_id,
+  status,
+  frequency_per_week,
+  days_of_week,
+  seasonality,
+  confidence_score,
+  source_id,
+  source_record_id,
+  last_verified_at
+)
+VALUES
+  (
+    '60000000-0000-4000-8000-000000000007',
+    '40000000-0000-4000-8000-000000000003',
+    '40000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000003',
+    '50000000-0000-4000-8000-000000000003',
+    'verified_active',
+    14,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.960,
+    '10000000-0000-4000-8000-000000000001',
+    'route-bkk-sin',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000008',
+    '40000000-0000-4000-8000-000000000003',
+    '40000000-0000-4000-8000-000000000005',
+    '50000000-0000-4000-8000-000000000003',
+    '50000000-0000-4000-8000-000000000003',
+    'verified_active',
+    7,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.940,
+    '10000000-0000-4000-8000-000000000001',
+    'route-bkk-cdg',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000009',
+    '40000000-0000-4000-8000-000000000006',
+    '40000000-0000-4000-8000-000000000001',
+    '50000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000004',
+    'verified_active',
+    14,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.930,
+    '10000000-0000-4000-8000-000000000001',
+    'route-dmk-sgn',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000010',
+    '40000000-0000-4000-8000-000000000006',
+    '40000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000004',
+    'likely_active',
+    7,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.910,
+    '10000000-0000-4000-8000-000000000001',
+    'route-dmk-sin',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000011',
+    '40000000-0000-4000-8000-000000000006',
+    '40000000-0000-4000-8000-000000000007',
+    '50000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000004',
+    'verified_active',
+    21,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.950,
+    '10000000-0000-4000-8000-000000000001',
+    'route-dmk-cnx',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.flight_services (
+  id,
+  flight_route_id,
+  operating_airline_id,
+  marketing_airline_id,
+  flight_number,
+  valid_from,
+  valid_to,
+  days_of_week,
+  departure_local_time,
+  arrival_local_time,
+  arrival_day_offset,
+  duration_minutes,
+  aircraft_type,
+  confidence_score,
+  source_id,
+  source_record_id,
+  last_verified_at
+)
+VALUES
+  (
+    '70000000-0000-4000-8000-000000000008',
+    '60000000-0000-4000-8000-000000000007',
+    '50000000-0000-4000-8000-000000000003',
+    '50000000-0000-4000-8000-000000000003',
+    'TG403',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '08:00',
+    '11:25',
+    0,
+    145,
+    'A320',
+    0.960,
+    '10000000-0000-4000-8000-000000000001',
+    'service-tg403',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000009',
+    '60000000-0000-4000-8000-000000000008',
+    '50000000-0000-4000-8000-000000000003',
+    '50000000-0000-4000-8000-000000000003',
+    'TG930',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '00:05',
+    '07:10',
+    0,
+    785,
+    'B787',
+    0.940,
+    '10000000-0000-4000-8000-000000000001',
+    'service-tg930',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000010',
+    '60000000-0000-4000-8000-000000000009',
+    '50000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000004',
+    'FD658',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '07:30',
+    '09:05',
+    0,
+    95,
+    'A320',
+    0.930,
+    '10000000-0000-4000-8000-000000000001',
+    'service-fd658',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000011',
+    '60000000-0000-4000-8000-000000000010',
+    '50000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000004',
+    'FD359',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '10:40',
+    '14:10',
+    0,
+    150,
+    'A320',
+    0.910,
+    '10000000-0000-4000-8000-000000000001',
+    'service-fd359',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000012',
+    '60000000-0000-4000-8000-000000000011',
+    '50000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000004',
+    'FD3431',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '06:30',
+    '07:45',
+    0,
+    75,
+    'A320',
+    0.950,
+    '10000000-0000-4000-8000-000000000001',
+    'service-fd3431',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.pseo_pages (
+  id,
+  page_type,
+  entity_key,
+  locale,
+  canonical_path,
+  display_title,
+  status,
+  is_indexable,
+  noindex_reason,
+  content_updated_at
+)
+VALUES
+  (
+    '81000000-0000-4000-8000-000000000001',
+    'city',
+    'bangkok',
+    'en-GB',
+    '/flights-from/bangkok',
+    'Direct flights from Bangkok',
+    'review',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000002',
+    'city_route',
+    'bangkok:london',
+    'en-GB',
+    '/flights/bangkok-to-london',
+    'Bangkok to London flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000003',
+    'city_route',
+    'bangkok:singapore',
+    'en-GB',
+    '/flights/bangkok-to-singapore',
+    'Bangkok to Singapore flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000004',
+    'city_route',
+    'bangkok:paris',
+    'en-GB',
+    '/flights/bangkok-to-paris',
+    'Bangkok to Paris flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000005',
+    'city_route',
+    'bangkok:ho-chi-minh-city',
+    'en-GB',
+    '/flights/bangkok-to-ho-chi-minh-city',
+    'Bangkok to Ho Chi Minh City flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000006',
+    'city',
+    'ho-chi-minh-city',
+    'en-GB',
+    '/flights-from/ho-chi-minh-city',
+    'Direct flights from Ho Chi Minh City',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000007',
+    'city',
+    'singapore',
+    'en-GB',
+    '/flights-from/singapore',
+    'Direct flights from Singapore',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.city_pages (
+  id,
+  pseo_page_id,
+  city_id,
+  locale,
+  canonical_slug,
+  h1,
+  subheadline,
+  seo_title,
+  meta_description,
+  og_title,
+  og_description,
+  og_image_path,
+  intro,
+  airport_summary,
+  status,
+  is_indexable,
+  noindex_reason,
+  primary_airport_id,
+  content_reviewed_at
+)
+VALUES
+  (
+    '82000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000003',
+    'en-GB',
+    'bangkok',
+    'Direct flights from Bangkok',
+    'Explore nonstop routes from Bangkok across Suvarnabhumi (BKK) and Don Mueang (DMK). Compare destinations, airlines, flight times and operating airports.',
+    'Direct Flights from Bangkok: Routes & Airlines | Tripways',
+    'Explore direct flights from Bangkok across BKK and DMK. Compare destinations, airlines, flight duration, operating airports and nonstop routes.',
+    'Direct flights from Bangkok',
+    'Explore nonstop destinations and airlines from Bangkok''s airports.',
+    '/og/flights-from/bangkok.png',
+    'Bangkok connects travellers with cities across Asia and Europe through two major airports. Use the route explorer to compare where you can fly nonstop and which airport and airline operate each route.',
+    'Bangkok is served by Suvarnabhumi Airport (BKK) and Don Mueang International Airport (DMK). Routes shown on this preview use stored recurring schedules and are not live availability.',
+    'review',
+    FALSE,
+    'development_fixture',
+    '40000000-0000-4000-8000-000000000003',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.city_page_airport_content (
+  id,
+  city_page_id,
+  airport_id,
+  hub_label,
+  description,
+  display_order,
+  status,
+  reviewed_at
+)
+VALUES
+  (
+    '82500000-0000-4000-8000-000000000001',
+    '82000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000003',
+    'MAIN HUB',
+    'Bangkok''s primary international gateway, serving Thai Airways and the city''s broadest long-haul direct-flight network.',
+    1,
+    'published',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '82500000-0000-4000-8000-000000000002',
+    '82000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000006',
+    'LOW-COST HUB',
+    'Bangkok''s low-cost gateway, with Thai AirAsia services across Thailand and nearby international destinations.',
+    2,
+    'published',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.city_page_faqs (
+  id,
+  city_page_id,
+  question,
+  answer,
+  answer_type,
+  display_order,
+  status,
+  reviewed_at
+)
+VALUES
+  (
+    '83000000-0000-4000-8000-000000000001',
+    '82000000-0000-4000-8000-000000000001',
+    'Which airports have direct flights from Bangkok?',
+    'Bangkok direct routes can depart from Suvarnabhumi Airport (BKK) or Don Mueang International Airport (DMK). Use the airport filter to view routes from either airport.',
+    'hybrid',
+    1,
+    'published',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000002',
+    '82000000-0000-4000-8000-000000000001',
+    'Can I filter direct flights by airline?',
+    'Yes. The airline filter uses the operating airline recorded for each direct route and updates destinations and facets from the same filtered dataset.',
+    'data_backed',
+    2,
+    'published',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000003',
+    '82000000-0000-4000-8000-000000000001',
+    'Are the Bangkok routes and prices live?',
+    'The city page shows stored recurring direct-route information for discovery. Live dated schedules, seat availability and prices require a separate live flight search.',
+    'editorial',
+    3,
+    'published',
+    '2026-07-24T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000004',
+    '82000000-0000-4000-8000-000000000001',
+    'Why is this preview not available in search engines?',
+    'This local page is generated from a development-only fixture. It remains noindex until production data has approved SEO rights, freshness and confidence.',
+    'editorial',
+    4,
+    'published',
+    '2026-07-24T00:00:00Z'
+  );
+
+INSERT INTO public.pseo_internal_links (
+  id,
+  source_page_id,
+  target_page_id,
+  link_cluster,
+  anchor_text,
+  secondary_text,
+  display_zone,
+  relevance_score,
+  display_order,
+  is_featured
+)
+VALUES
+  (
+    '84000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000002',
+    'popular_routes',
+    'Bangkok to London flights',
+    'Explore direct routes from Bangkok to London.',
+    'popular_routes',
+    100,
+    1,
+    TRUE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000002',
+    '81000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000003',
+    'popular_routes',
+    'Bangkok to Singapore flights',
+    'Compare direct routes from both Bangkok airports.',
+    'popular_routes',
+    95,
+    2,
+    TRUE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000003',
+    '81000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000004',
+    'popular_routes',
+    'Bangkok to Paris flights',
+    'View recurring direct-route information.',
+    'popular_routes',
+    90,
+    3,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000004',
+    '81000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000005',
+    'popular_routes',
+    'Bangkok to Ho Chi Minh City flights',
+    'Compare routes departing from Don Mueang.',
+    'popular_routes',
+    85,
+    4,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000005',
+    '81000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000006',
+    'change_source_city',
+    'Direct flights from Ho Chi Minh City',
+    'Change your departure city.',
+    'change_source_city',
+    70,
+    1,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000006',
+    '81000000-0000-4000-8000-000000000001',
+    '81000000-0000-4000-8000-000000000007',
+    'change_source_city',
+    'Direct flights from Singapore',
+    'Explore another nearby departure city.',
+    'change_source_city',
+    65,
+    2,
+    FALSE
+  );
+
+SELECT public.refresh_city_pseo_read_models();

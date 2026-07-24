@@ -17,7 +17,7 @@ function includesSql(sql: string, fragment: string): boolean {
 }
 
 Deno.test('flight services preserve schedule patterns and source lineage', async () => {
-  const sql = await readSource('schema/public/flight_services.sql');
+  const sql = await readSource('schema/route_discovery/flight_services.sql');
 
   assert.ok(includesSql(sql, 'create table public.flight_services'));
   assert.equal((sql.match(/create table /gi) ?? []).length, 1);
@@ -37,7 +37,7 @@ Deno.test('flight services preserve schedule patterns and source lineage', async
 });
 
 Deno.test('flight services enforce bounded schedules and confidence', async () => {
-  const sql = await readSource('schema/public/flight_services.sql');
+  const sql = await readSource('schema/route_discovery/flight_services.sql');
 
   assert.ok(includesSql(sql, 'valid_from <= valid_to'));
   assert.ok(includesSql(sql, 'cardinality(days_of_week) between 1 and 7'));
@@ -50,7 +50,7 @@ Deno.test('flight services enforce bounded schedules and confidence', async () =
 });
 
 Deno.test('flight services are closed to public clients', async () => {
-  const sql = await readSource('schema/public/flight_services.sql');
+  const sql = await readSource('schema/route_discovery/flight_services.sql');
 
   assert.ok(
     includesSql(sql, 'alter table public.flight_services enable row level security'),
@@ -67,7 +67,7 @@ Deno.test('flight services are closed to public clients', async () => {
 });
 
 Deno.test('route options keep one read model table with closed client access', async () => {
-  const sql = await readSource('schema/public/route_options.sql');
+  const sql = await readSource('schema/route_discovery/route_options.sql');
 
   assert.ok(includesSql(sql, 'create table public.route_options'));
   assert.equal((sql.match(/create table /gi) ?? []).length, 1);

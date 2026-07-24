@@ -41,27 +41,21 @@ DECLARE
 BEGIN
   -- STEP 01: Validate and normalize the bounded public input contract.
   IF p_input IS NULL OR jsonb_typeof(p_input) <> 'object' THEN
-    RETURN jsonb_build_object(
-      'data', '[]'::JSONB,
-      'meta', '{}'::JSONB,
-      'error', jsonb_build_object(
-        'code', 'ERR_INVALID_REQUEST',
-        'message', 'Request must be a JSON object.'
-      )
+    RETURN private.build_rpc_error(
+      '[]'::JSONB,
+      'ERR_INVALID_REQUEST',
+      'Request must be a JSON object.'
     );
   END IF;
 
-  v_from := upper(btrim(COALESCE(p_input->>'from', '')));
-  v_to := upper(btrim(COALESCE(p_input->>'to', '')));
+  v_from := private.normalize_airport_iata(p_input->>'from');
+  v_to := private.normalize_airport_iata(p_input->>'to');
 
-  IF v_from !~ '^[A-Z]{3}$' OR v_to !~ '^[A-Z]{3}$' OR v_from = v_to THEN
-    RETURN jsonb_build_object(
-      'data', '[]'::JSONB,
-      'meta', '{}'::JSONB,
-      'error', jsonb_build_object(
-        'code', 'ERR_INVALID_REQUEST',
-        'message', 'Origin and destination must be different three-letter IATA codes.'
-      )
+  IF v_from IS NULL OR v_to IS NULL OR v_from = v_to THEN
+    RETURN private.build_rpc_error(
+      '[]'::JSONB,
+      'ERR_INVALID_REQUEST',
+      'Origin and destination must be different three-letter IATA codes.'
     );
   END IF;
 
@@ -193,10 +187,11 @@ BEGIN
         )
       );
     END IF;
-    SELECT COALESCE(array_agg(DISTINCT upper(btrim(code))), '{}'::TEXT[])
-    INTO v_airline_codes
-    FROM jsonb_array_elements_text(p_input->'airlines') code;
-    IF EXISTS (SELECT 1 FROM UNNEST(v_airline_codes) code WHERE code !~ '^[A-Z0-9]{2}$') THEN
+    IF EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements_text(p_input->'airlines') code
+      WHERE private.normalize_airline_iata(code) IS NULL
+    ) THEN
       RETURN jsonb_build_object(
         'data', '[]'::JSONB,
         'meta', '{}'::JSONB,
@@ -206,6 +201,12 @@ BEGIN
         )
       );
     END IF;
+    SELECT COALESCE(
+      array_agg(DISTINCT private.normalize_airline_iata(code)),
+      '{}'::TEXT[]
+    )
+    INTO v_airline_codes
+    FROM jsonb_array_elements_text(p_input->'airlines') code;
   END IF;
 
   IF p_input ? 'exclude_airports' THEN
@@ -222,7 +223,7 @@ BEGIN
     IF EXISTS (
       SELECT 1
       FROM jsonb_array_elements_text(p_input->'exclude_airports') code
-      WHERE upper(btrim(code)) !~ '^[A-Z]{3}$'
+      WHERE private.normalize_airport_iata(code) IS NULL
     ) THEN
       RETURN jsonb_build_object(
         'data', '[]'::JSONB,
@@ -237,7 +238,7 @@ BEGIN
     INTO v_excluded_airport_ids
     FROM public.airports airport
     WHERE airport.iata IN (
-      SELECT upper(btrim(code))
+      SELECT private.normalize_airport_iata(code)
       FROM jsonb_array_elements_text(p_input->'exclude_airports') code
     );
   END IF;
@@ -384,5 +385,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_search_routes(JSONB) FROM public;
+REVOKE ALL ON FUNCTION public.rpc_search_routes(JSONB)
+FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_search_routes(JSONB) TO service_role;

@@ -17,12 +17,12 @@ function includesSql(sql: string, fragment: string): boolean {
 }
 
 const expectedTables = [
-  ['schema/admin/data_sources.sql', 'admin.data_sources'],
-  ['schema/public/countries.sql', 'public.countries'],
-  ['schema/public/cities.sql', 'public.cities'],
-  ['schema/public/airports.sql', 'public.airports'],
-  ['schema/public/airlines.sql', 'public.airlines'],
-  ['schema/public/flight_routes.sql', 'public.flight_routes'],
+  ['schema/flight_routing/data_sources.sql', 'admin.data_sources'],
+  ['schema/flight_routing/countries.sql', 'public.countries'],
+  ['schema/flight_routing/cities.sql', 'public.cities'],
+  ['schema/flight_routing/airports.sql', 'public.airports'],
+  ['schema/flight_routing/airlines.sql', 'public.airlines'],
+  ['schema/flight_routing/flight_routes.sql', 'public.flight_routes'],
 ] as const;
 
 Deno.test('flight routing keeps one table per schema source file', async () => {
@@ -50,7 +50,7 @@ Deno.test('public flight routing tables enable RLS and expose no client writes',
 });
 
 Deno.test('data sources record environment and license capabilities', async () => {
-  const sql = await readSource('schema/admin/data_sources.sql');
+  const sql = await readSource('schema/flight_routing/data_sources.sql');
 
   assert.ok(includesSql(sql, 'environment_scope text not null'));
   assert.ok(includesSql(sql, "check (environment_scope in ('development', 'production'))"));
@@ -60,7 +60,7 @@ Deno.test('data sources record environment and license capabilities', async () =
 });
 
 Deno.test('airports enforce stable codes, coordinates, and supported source values', async () => {
-  const sql = await readSource('schema/public/airports.sql');
+  const sql = await readSource('schema/flight_routing/airports.sql');
 
   assert.ok(includesSql(sql, "iata ~ '^[A-Z]{3}$'"));
   assert.ok(includesSql(sql, "icao ~ '^[A-Z0-9]{4}$'"));
@@ -71,8 +71,18 @@ Deno.test('airports enforce stable codes, coordinates, and supported source valu
   assert.ok(includesSql(sql, "'small_airport'"));
 });
 
+Deno.test('airlines classify constrained business models for derived airport stats', async () => {
+  const sql = await readSource('schema/flight_routing/airlines.sql');
+
+  assert.ok(includesSql(sql, "business_model text not null default 'unknown'"));
+  assert.ok(includesSql(sql, "'full_service'"));
+  assert.ok(includesSql(sql, "'low_cost'"));
+  assert.ok(includesSql(sql, "'hybrid'"));
+  assert.ok(includesSql(sql, "'unknown'"));
+});
+
 Deno.test('flight routes enforce direction, source lineage, confidence, and unknown-safe fields', async () => {
-  const sql = await readSource('schema/public/flight_routes.sql');
+  const sql = await readSource('schema/flight_routing/flight_routes.sql');
 
   assert.ok(includesSql(sql, 'origin_airport_id <> destination_airport_id'));
   assert.ok(includesSql(sql, 'unique (source_id, source_record_id)'));

@@ -13,7 +13,8 @@
     "verify": "pnpm format:check && pnpm edge:fmt:check && pnpm edge:check",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:reset": "supabase db reset --local --yes"
+    "supabase:reset": "supabase db reset --local --yes",
+    "supabase:migrations:regenerate": "bash scripts/regenerate-supabase-migrations.sh"
   },
   "devDependencies": {
     "prettier": "3.6.2"

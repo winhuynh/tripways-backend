@@ -33,6 +33,7 @@ task, state which relevant requirements were followed and identify any intention
   CREATE UNIQUE INDEX data_sources_code_key
   ON admin.data_sources USING btree (code);
   ```
+
 - Follow the readable table layout used by `slofi-backend`: align column names and data types,
   separate the column list from constraints, and leave one blank line between constraint blocks.
 - Put `ON`, `WHERE`, `USING`, `FROM`, `TO`, and other major multi-line clauses on their own readable
@@ -60,11 +61,18 @@ task, state which relevant requirements were followed and identify any intention
 - Never expose service-role or secret keys to clients.
 - Do not place `security definer` functions in exposed schemas.
 - Privileged functions set an explicit `search_path`.
-- Iterate through maintainable `supabase/sql_src` files, generate migrations through the Supabase
-  CLI, and verify on local Supabase before considering a schema change complete.
-- Store each table in its own `supabase/sql_src/schema/<schema>/<table>.sql` file.
+- Treat `supabase/sql_src` as the single source of truth and
+  `supabase/migrations` as deterministic generated output.
+- Never edit a generated migration directly. While the project has no deployed migration history,
+  regenerate the complete clean migration foundation with
+  `scripts/regenerate-supabase-migrations.sh`.
+- Store each table in its own `supabase/sql_src/schema/<feature>/<table>.sql` file.
 - Store each PostgreSQL function in its own
   `supabase/sql_src/functions/<feature>/<function>.sql` file.
+- Keep fixtures and reference data only in `supabase/seed`; the migration generator must never
+  include seed files.
+- After regeneration, reset local Supabase and run database, RLS, privilege, and contract checks
+  before considering the source change complete.
 - Group Edge Function code by feature and operation under
   `supabase/functions/v1/<feature>/<operation>/`.
 

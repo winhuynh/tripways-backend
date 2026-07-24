@@ -36,25 +36,29 @@ route-discovery-query Edge Function
 
 ```json
 {
-  "from": "SGN",
-  "to": "LHR",
-  "max_stops": 1,
-  "airlines": ["SQ"],
-  "exclude_airports": ["BKK"],
-  "max_duration_minutes": 1200,
-  "max_layover_minutes": 240,
-  "departure_window": "morning",
-  "limit": 20,
-  "offset": 0
+  "action": "search_routes",
+  "input": {
+    "from": "SGN",
+    "to": "LHR",
+    "max_stops": 1,
+    "airlines": ["SQ"],
+    "exclude_airports": ["BKK"],
+    "max_duration_minutes": 1200,
+    "max_layover_minutes": 240,
+    "departure_window": "morning",
+    "limit": 20,
+    "offset": 0
+  }
 }
 ```
 
-The result uses `{ data, meta, error }`. `meta` contains the total count, pagination values, and
-facets for stops and operating airlines. Ranking is deterministic: fewer stops, shorter total
-duration, higher confidence, then UUID.
+The public result uses `{ status, data, error }`. Successful `data` contains `routes`,
+`pagination`, and `facets`. Ranking remains database-owned and deterministic: fewer stops, shorter
+total duration, higher confidence, then UUID.
 
-Stable public errors are `ERR_ROUTE_SEARCH_REQUEST_INVALID`, `ERR_INVALID_REQUEST`,
-`ERR_AIRPORT_NOT_FOUND`, `ERR_METHOD_NOT_ALLOWED`, and `ERR_INTERNAL`.
+Stable Route Discovery errors are `ERR_ROUTE_DISCOVERY_INVALID_REQUEST`,
+`ERR_ROUTE_DISCOVERY_UNAVAILABLE`, and `ERR_ROUTE_DISCOVERY_CONTRACT`. Internal SQL and provider
+errors are never returned to callers.
 
 ## Local fixture
 

@@ -41,7 +41,7 @@ Deno.test('user auth edge functions enable the local edge runtime', () => {
 });
 
 Deno.test('users table is minimal, constrained, and self-readable only', async () => {
-  const sql = await readSource('../../../../sql_src/schema/public/users.sql');
+  const sql = await readSource('../../../../sql_src/schema/user/users.sql');
 
   assert.ok(includesSql(sql, 'references auth.users (id) on delete cascade'));
   assert.ok(includesSql(sql, 'users_display_name_length_check'));
@@ -124,7 +124,7 @@ Deno.test('profile mutation is invoker-only and executable only by service role'
 
 Deno.test('auth command attempts store only bounded hashed subjects in private', async () => {
   const sql = await readSource(
-    '../../../../sql_src/schema/private/auth_command_attempts.sql',
+    '../../../../sql_src/schema/user/auth_command_attempts.sql',
   );
 
   assert.ok(includesSql(sql, 'create table private.auth_command_attempts'));

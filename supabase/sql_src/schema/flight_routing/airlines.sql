@@ -11,6 +11,7 @@ CREATE TABLE public.airlines (
   slug              TEXT         NOT NULL UNIQUE,
   country_id        UUID         NULL REFERENCES public.countries (id),
   alliance          TEXT         NULL,
+  business_model    TEXT         NOT NULL DEFAULT 'unknown',
   status            TEXT         NOT NULL DEFAULT 'unknown',
   source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
   source_record_id  TEXT         NOT NULL,
@@ -42,6 +43,19 @@ CREATE TABLE public.airlines (
       OR (
         alliance = btrim(alliance)
         AND char_length(alliance) BETWEEN 1 AND 80
+      )
+    ),
+
+  CONSTRAINT airlines_business_model_check
+    CHECK (
+      business_model IN (
+        'full_service',
+        'low_cost',
+        'regional',
+        'charter',
+        'cargo',
+        'hybrid',
+        'unknown'
       )
     ),
 
