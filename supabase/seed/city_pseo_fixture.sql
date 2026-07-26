@@ -312,6 +312,180 @@ VALUES
     '2026-07-24T00:00:00Z'
   );
 
+INSERT INTO public.flight_routes (
+  id,
+  origin_airport_id,
+  destination_airport_id,
+  operating_airline_id,
+  marketing_airline_id,
+  status,
+  frequency_per_week,
+  days_of_week,
+  seasonality,
+  confidence_score,
+  source_id,
+  source_record_id,
+  last_verified_at
+)
+VALUES
+  (
+    '60000000-0000-4000-8000-000000000012',
+    '40000000-0000-4000-8000-000000000002',
+    '40000000-0000-4000-8000-000000000003',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'verified_active',
+    21,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.970,
+    '10000000-0000-4000-8000-000000000001',
+    'route-sin-bkk',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000013',
+    '40000000-0000-4000-8000-000000000002',
+    '40000000-0000-4000-8000-000000000001',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'verified_active',
+    14,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.960,
+    '10000000-0000-4000-8000-000000000001',
+    'route-sin-sgn',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000014',
+    '40000000-0000-4000-8000-000000000002',
+    '40000000-0000-4000-8000-000000000005',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'verified_active',
+    7,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.950,
+    '10000000-0000-4000-8000-000000000001',
+    'route-sin-cdg',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000015',
+    '40000000-0000-4000-8000-000000000002',
+    '40000000-0000-4000-8000-000000000007',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'verified_active',
+    7,
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    'year_round',
+    0.930,
+    '10000000-0000-4000-8000-000000000001',
+    'route-sin-cnx',
+    '2026-07-25T00:00:00Z'
+  );
+
+INSERT INTO public.flight_services (
+  id,
+  flight_route_id,
+  operating_airline_id,
+  marketing_airline_id,
+  flight_number,
+  valid_from,
+  valid_to,
+  days_of_week,
+  departure_local_time,
+  arrival_local_time,
+  arrival_day_offset,
+  duration_minutes,
+  aircraft_type,
+  confidence_score,
+  source_id,
+  source_record_id,
+  last_verified_at
+)
+VALUES
+  (
+    '70000000-0000-4000-8000-000000000013',
+    '60000000-0000-4000-8000-000000000012',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'SQ710',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '08:30',
+    '10:55',
+    0,
+    145,
+    'A350',
+    0.970,
+    '10000000-0000-4000-8000-000000000001',
+    'service-sq710',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000014',
+    '60000000-0000-4000-8000-000000000013',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'SQ178',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '09:45',
+    '11:50',
+    0,
+    125,
+    'B737',
+    0.960,
+    '10000000-0000-4000-8000-000000000001',
+    'service-sq178',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000015',
+    '60000000-0000-4000-8000-000000000014',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'SQ336',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '00:15',
+    '07:35',
+    0,
+    800,
+    'A350',
+    0.950,
+    '10000000-0000-4000-8000-000000000001',
+    'service-sq336',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '70000000-0000-4000-8000-000000000016',
+    '60000000-0000-4000-8000-000000000015',
+    '50000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'SQ8428',
+    '2026-01-01',
+    '2026-12-31',
+    ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[],
+    '12:10',
+    '15:10',
+    0,
+    180,
+    'B737',
+    0.930,
+    '10000000-0000-4000-8000-000000000001',
+    'service-sq8428',
+    '2026-07-25T00:00:00Z'
+  );
+
 INSERT INTO public.pseo_pages (
   id,
   page_type,
@@ -408,6 +582,54 @@ VALUES
     FALSE,
     'development_fixture',
     '2026-07-24T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000008',
+    'city_route',
+    'singapore:london',
+    'en-GB',
+    '/flights/singapore-to-london',
+    'Singapore to London flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000009',
+    'city_route',
+    'singapore:bangkok',
+    'en-GB',
+    '/flights/singapore-to-bangkok',
+    'Singapore to Bangkok flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000010',
+    'city_route',
+    'singapore:ho-chi-minh-city',
+    'en-GB',
+    '/flights/singapore-to-ho-chi-minh-city',
+    'Singapore to Ho Chi Minh City flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '81000000-0000-4000-8000-000000000011',
+    'city_route',
+    'singapore:paris',
+    'en-GB',
+    '/flights/singapore-to-paris',
+    'Singapore to Paris flights',
+    'draft',
+    FALSE,
+    'development_fixture',
+    '2026-07-25T00:00:00Z'
   );
 
 INSERT INTO public.city_pages (
@@ -452,6 +674,27 @@ VALUES
     'development_fixture',
     '40000000-0000-4000-8000-000000000003',
     '2026-07-24T00:00:00Z'
+  ),
+  (
+    '82000000-0000-4000-8000-000000000002',
+    '81000000-0000-4000-8000-000000000007',
+    '30000000-0000-4000-8000-000000000002',
+    'en-GB',
+    'singapore',
+    'Direct flights from Singapore',
+    'Explore nonstop routes from Singapore Changi Airport (SIN). Compare destinations, airlines, flight times and recurring direct services.',
+    'Direct Flights from Singapore: Routes & Airlines | Tripways',
+    'Explore direct flights from Singapore Changi Airport. Compare destinations, airlines, flight duration and recurring nonstop routes.',
+    'Direct flights from Singapore',
+    'Explore nonstop destinations and airlines from Singapore Changi Airport.',
+    '/og/flights-from/singapore.png',
+    'Singapore connects travellers with cities across Southeast Asia and Europe through Changi Airport. Use the route explorer to compare where you can fly nonstop and which airline operates each route.',
+    'Singapore''s development preview uses Changi Airport (SIN) as its departure hub. Routes are based on stored recurring fixture schedules rather than live availability.',
+    'review',
+    FALSE,
+    'development_fixture',
+    '40000000-0000-4000-8000-000000000002',
+    '2026-07-25T00:00:00Z'
   );
 
 INSERT INTO public.city_page_airport_content (
@@ -484,6 +727,16 @@ VALUES
     2,
     'published',
     '2026-07-24T00:00:00Z'
+  ),
+  (
+    '82500000-0000-4000-8000-000000000003',
+    '82000000-0000-4000-8000-000000000002',
+    '40000000-0000-4000-8000-000000000002',
+    'GLOBAL HUB',
+    'Singapore Changi Airport is the city-state''s international gateway, with Singapore Airlines services across regional and long-haul destinations.',
+    1,
+    'published',
+    '2026-07-25T00:00:00Z'
   );
 
 INSERT INTO public.city_page_faqs (
@@ -536,6 +789,46 @@ VALUES
     4,
     'published',
     '2026-07-24T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000005',
+    '82000000-0000-4000-8000-000000000002',
+    'Which airport has direct flights from Singapore?',
+    'The Singapore routes in this development preview depart from Singapore Changi Airport (SIN).',
+    'hybrid',
+    1,
+    'published',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000006',
+    '82000000-0000-4000-8000-000000000002',
+    'Which airline operates the Singapore fixture routes?',
+    'Singapore Airlines is the operating carrier attached to the recurring Singapore routes in this local fixture.',
+    'data_backed',
+    2,
+    'published',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000007',
+    '82000000-0000-4000-8000-000000000002',
+    'Are the Singapore routes and prices live?',
+    'No. The page shows stored recurring direct-route information for discovery. Live schedules, seat availability and prices require a separate live flight search.',
+    'editorial',
+    3,
+    'published',
+    '2026-07-25T00:00:00Z'
+  ),
+  (
+    '83000000-0000-4000-8000-000000000008',
+    '82000000-0000-4000-8000-000000000002',
+    'Why is the Singapore preview marked noindex?',
+    'This page uses development-only fixture data. It remains noindex until production data has approved SEO rights, freshness and confidence.',
+    'editorial',
+    4,
+    'published',
+    '2026-07-25T00:00:00Z'
   );
 
 INSERT INTO public.pseo_internal_links (
@@ -620,6 +913,78 @@ VALUES
     'Explore another nearby departure city.',
     'change_source_city',
     65,
+    2,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000008',
+    'popular_routes',
+    'Singapore to London flights',
+    'Explore the long-haul direct route from Singapore to London.',
+    'popular_routes',
+    100,
+    1,
+    TRUE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000008',
+    '81000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000009',
+    'popular_routes',
+    'Singapore to Bangkok flights',
+    'Compare the recurring direct route from Singapore to Bangkok.',
+    'popular_routes',
+    95,
+    2,
+    TRUE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000009',
+    '81000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000010',
+    'popular_routes',
+    'Singapore to Ho Chi Minh City flights',
+    'Explore the short regional route from Singapore.',
+    'popular_routes',
+    90,
+    3,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000010',
+    '81000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000011',
+    'popular_routes',
+    'Singapore to Paris flights',
+    'View recurring direct-route information for Singapore to Paris.',
+    'popular_routes',
+    85,
+    4,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000011',
+    '81000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000001',
+    'change_source_city',
+    'Direct flights from Bangkok',
+    'Change your departure city to Bangkok.',
+    'change_source_city',
+    75,
+    1,
+    FALSE
+  ),
+  (
+    '84000000-0000-4000-8000-000000000012',
+    '81000000-0000-4000-8000-000000000007',
+    '81000000-0000-4000-8000-000000000006',
+    'change_source_city',
+    'Direct flights from Ho Chi Minh City',
+    'Change your departure city to Ho Chi Minh City.',
+    'change_source_city',
+    70,
     2,
     FALSE
   );

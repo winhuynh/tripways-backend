@@ -2,6 +2,7 @@ export const CITY_PAGE_ACTIONS = [
   'get_overview',
   'get_airports',
   'get_quick_facts',
+  'get_route_map',
   'get_destinations',
   'get_airlines',
   'get_insights',
@@ -40,12 +41,18 @@ const DESTINATION_FIELDS = new Set([
   'offset',
 ]);
 
+const ROUTE_MAP_FIELDS = new Set(
+  [...DESTINATION_FIELDS].filter((field) => field !== 'offset'),
+);
+
 export function parseCityPageQueryRequest(value: unknown): CityPageQueryRequest {
   if (!isRecord(value) || !isAction(value.action) || !isRecord(value.input)) invalidRequest();
 
   const action = value.action;
   const allowedFields = action === 'get_destinations'
     ? DESTINATION_FIELDS
+    : action === 'get_route_map'
+    ? ROUTE_MAP_FIELDS
     : new Set(['city_slug', 'locale']);
 
   for (const key of Object.keys(value.input)) {
@@ -56,13 +63,15 @@ export function parseCityPageQueryRequest(value: unknown): CityPageQueryRequest 
   const locale = parseLocale(value.input.locale);
   const input: CityPageQueryInput = { city_slug: citySlug, locale };
 
-  if (action === 'get_destinations') {
+  if (action === 'get_destinations' || action === 'get_route_map') {
     assignCodeList(input, 'origin_airports', value.input.origin_airports, 3);
     assignCodeList(input, 'airlines', value.input.airlines, 2);
     assignCodeList(input, 'destination_countries', value.input.destination_countries, 2);
     assignInteger(input, 'max_duration_minutes', value.input.max_duration_minutes, 1, 1440);
     assignInteger(input, 'limit', value.input.limit, 1, 100);
-    assignInteger(input, 'offset', value.input.offset, 0, 10000);
+    if (action === 'get_destinations') {
+      assignInteger(input, 'offset', value.input.offset, 0, 10000);
+    }
 
     if (value.input.departure_window !== undefined) {
       const window = value.input.departure_window;

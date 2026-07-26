@@ -52,3 +52,37 @@ Deno.test('city page request accepts the quick facts identity action', () => {
     },
   );
 });
+
+Deno.test('city page request accepts route map filters without pagination offset', () => {
+  assert.deepEqual(
+    parseCityPageQueryRequest({
+      action: 'get_route_map',
+      input: {
+        city_slug: ' Bangkok ',
+        locale: 'en-GB',
+        origin_airports: [' bkk '],
+        airlines: ['tg'],
+        limit: 100,
+      },
+    }),
+    {
+      action: 'get_route_map',
+      input: {
+        city_slug: 'bangkok',
+        locale: 'en-GB',
+        origin_airports: ['BKK'],
+        airlines: ['TG'],
+        limit: 100,
+      },
+    },
+  );
+
+  assert.throws(
+    () =>
+      parseCityPageQueryRequest({
+        action: 'get_route_map',
+        input: { city_slug: 'bangkok', offset: 1 },
+      }),
+    /ERR_CITY_PAGE_INVALID_REQUEST/,
+  );
+});

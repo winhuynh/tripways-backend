@@ -139,6 +139,64 @@ SELECT pg_temp.test_assert(
   'quick facts returns one complete versioned city read model'
 );
 
+WITH route_map AS (
+  SELECT public.rpc_get_city_route_map(
+    jsonb_build_object(
+      'city_slug', 'bangkok',
+      'locale', 'en-GB',
+      'limit', 100
+    )
+  ) AS response
+)
+SELECT pg_temp.test_assert(
+  (
+    SELECT
+      response #>> '{data,origin,type}' = 'city'
+      AND response #>> '{data,origin,name}' = 'Bangkok'
+      AND response #>> '{data,origin,slug}' = 'bangkok'
+      AND (response #>> '{data,origin,latitude}')::DOUBLE PRECISION = 13.7563
+      AND (response #>> '{data,origin,longitude}')::DOUBLE PRECISION = 100.5018
+      AND jsonb_array_length(response #> '{data,destinations}') = 5
+      AND (response #>> '{meta,total}')::INTEGER = 5
+      AND (response #>> '{meta,omitted_destination_count}')::INTEGER = 0
+      AND (response #>> '{meta,limit}')::INTEGER = 100
+      AND response #>> '{meta,data_version}' IS NOT NULL
+      AND response -> 'error' = 'null'::JSONB
+    FROM route_map
+  ),
+  'route map returns the versioned Bangkok origin and five destination cities'
+);
+
+WITH route_map AS (
+  SELECT public.rpc_get_city_route_map(
+    jsonb_build_object(
+      'city_slug', 'bangkok',
+      'locale', 'en-GB',
+      'origin_airports', jsonb_build_array('BKK'),
+      'limit', 100
+    )
+  ) AS response
+),
+destinations AS (
+  SELECT destination
+  FROM route_map
+  CROSS JOIN LATERAL jsonb_array_elements(
+    response #> '{data,destinations}'
+  ) AS destination
+)
+SELECT pg_temp.test_assert(
+  (
+    SELECT
+      count(*) = 3
+      AND bool_and(destination #>> '{origin_airports,0}' = 'BKK')
+      AND bool_and((destination ->> 'latitude') IS NOT NULL)
+      AND bool_and((destination ->> 'longitude') IS NOT NULL)
+      AND bool_and((destination ->> 'route_path') LIKE '/flights/bangkok-to-%')
+    FROM destinations
+  ),
+  'route map filters by origin airport and returns complete destination geometry'
+);
+
 SELECT pg_temp.test_assert(
   (public.rpc_get_city_insights('{"city_slug":"bangkok"}') #>> '{data,direct_country_count}')::INTEGER >= 4,
   'insights returns direct country count'
@@ -155,6 +213,66 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
+  public.rpc_get_city_overview(
+    '{"city_slug":"singapore","locale":"en-GB"}'
+  ) #>> '{data,city,slug}' = 'singapore',
+  'Singapore overview resolves through the generic city read model'
+);
+
+SELECT pg_temp.test_assert(
+  jsonb_array_length(
+    public.rpc_get_city_airports('{"city_slug":"singapore"}') #> '{data}'
+  ) = 1,
+  'Singapore returns Changi as its city airport hub'
+);
+
+SELECT pg_temp.test_assert(
+  jsonb_array_length(
+    public.rpc_get_city_page(
+      '{"city_slug":"singapore","locale":"en-GB","destination_limit":24}'
+    ) #> '{data,featured_destinations}'
+  ) = 5,
+  'Singapore returns five direct destinations'
+);
+
+SELECT pg_temp.test_assert(
+  jsonb_array_length(
+    public.rpc_get_city_route_map(
+      '{"city_slug":"singapore","locale":"en-GB","limit":100}'
+    ) #> '{data,destinations}'
+  ) = 5,
+  'Singapore route map reuses the generic city route-map read model'
+);
+
+SELECT pg_temp.test_assert(
+  (
+    public.rpc_get_city_quick_facts(
+      '{"city_slug":"singapore","locale":"en-GB"}'
+    ) #>> '{data,direct_destination_count}'
+  )::INTEGER = 5,
+  'Singapore quick facts are refreshed from its direct-route graph'
+);
+
+SELECT pg_temp.test_assert(
+  jsonb_array_length(
+    public.rpc_get_city_faqs('{"city_slug":"singapore"}') #> '{data}'
+  ) = 4,
+  'Singapore returns four published questions'
+);
+
+SELECT pg_temp.test_assert(
+  (
+    SELECT sum(jsonb_array_length(link_group -> 'links')) >= 4
+    FROM jsonb_array_elements(
+      public.rpc_get_city_internal_links(
+        '{"city_slug":"singapore","locale":"en-GB"}'
+      ) #> '{data}'
+    ) AS link_group
+  ),
+  'Singapore returns route and source-city internal links'
+);
+
+SELECT pg_temp.test_assert(
   public.rpc_get_city_overview('{}') #>> '{error,code}' = 'ERR_INVALID_REQUEST',
   'overview rejects invalid identity'
 );
@@ -167,7 +285,8 @@ SELECT pg_temp.test_assert(
 SELECT pg_temp.test_assert(
   NOT has_function_privilege('anon', 'public.rpc_get_city_overview(jsonb)', 'EXECUTE')
   AND NOT has_function_privilege('authenticated', 'public.rpc_get_city_faqs(jsonb)', 'EXECUTE')
-  AND NOT has_function_privilege('anon', 'public.rpc_get_city_quick_facts(jsonb)', 'EXECUTE'),
+  AND NOT has_function_privilege('anon', 'public.rpc_get_city_quick_facts(jsonb)', 'EXECUTE')
+  AND NOT has_function_privilege('anon', 'public.rpc_get_city_route_map(jsonb)', 'EXECUTE'),
   'public clients cannot execute city read-model RPCs'
 );
 
