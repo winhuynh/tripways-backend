@@ -241,7 +241,7 @@ origin city → nhiều destination cities
 
 ## 5. Schema mới
 
-## 5.1 `public.city_direct_routes`
+## 5.1 `public.pseo_direct_routes`
 
 ### Purpose
 
@@ -367,7 +367,7 @@ Unique identity:
 (origin_city_id, destination_city_id, data_version)
 ```
 
-Khi user áp dụng filter, RPC query `city_direct_routes` và aggregate theo destination city. Không
+Khi user áp dụng filter, RPC query `pseo_direct_routes` và aggregate theo destination city. Không
 filter trên một summary array đã mất grain.
 
 ## 5.3 `public.city_pages`
@@ -378,39 +378,39 @@ Lưu content, metadata và publish state cho một city page theo locale.
 
 ### Columns
 
-| Column                     | Type               | Responsibility                             |
-| -------------------------- | ------------------ | ------------------------------------------ |
-| `id`                       | `UUID`             | Page identity                              |
-| `pseo_page_id`             | `UUID`             | Global pSEO registry reference             |
-| `city_id`                  | `UUID`             | City owner                                 |
-| `locale`                   | `TEXT`             | Ví dụ `en-GB`                              |
-| `canonical_slug`           | `TEXT`             | Ví dụ `bangkok`                            |
-| `h1`                       | `TEXT`             | Page headline                              |
-| `subheadline`              | `TEXT`             | Utility explanation                        |
-| `seo_title`                | `TEXT`             | HTML title                                 |
-| `meta_description`         | `TEXT`             | Search result description                  |
-| `og_title`                 | `TEXT`             | Social title                               |
-| `og_description`           | `TEXT`             | Social description                         |
-| `og_image_path`            | `TEXT NULL`        | Generated image path                       |
-| `intro`                    | `TEXT`             | Editorial introduction                     |
-| `airport_summary`          | `TEXT NULL`        | Editorial airport-system content           |
-| `status`                   | `TEXT`             | `draft`, `review`, `published`, `archived` |
-| `is_indexable`             | `BOOLEAN`          | Final database-owned indexability          |
-| `noindex_reason`           | `TEXT NULL`        | Stable reason when excluded                |
-| `primary_airport_id`       | `UUID NULL`        | Airport đại diện cho visual only           |
-| `airport_count`            | `INTEGER`          | Generated quick fact                       |
-| `direct_destination_count` | `INTEGER`          | Generated quick fact                       |
-| `direct_country_count`     | `INTEGER`          | Generated quick fact                       |
-| `airline_count`            | `INTEGER`          | Generated quick fact                       |
-| `shortest_route_minutes`   | `INTEGER NULL`     | Generated quick fact                       |
-| `longest_route_minutes`    | `INTEGER NULL`     | Generated quick fact                       |
-| `content_reviewed_at`      | `TIMESTAMPTZ NULL` | Editorial review time                      |
-| `source_freshness_at`      | `TIMESTAMPTZ`      | Data freshness                             |
-| `data_version`             | `UUID`             | Published dataset version                  |
-| `generated_at`             | `TIMESTAMPTZ`      | Read model generation time                 |
-| `published_at`             | `TIMESTAMPTZ NULL` | Page publication time                      |
-| `created_at`               | `TIMESTAMPTZ`      | Audit                                      |
-| `updated_at`               | `TIMESTAMPTZ`      | Audit                                      |
+| Column                             | Type               | Responsibility                             |
+| ---------------------------------- | ------------------ | ------------------------------------------ |
+| `id`                               | `UUID`             | Page identity                              |
+| `pseo_page_id`                     | `UUID`             | Global pSEO registry reference             |
+| `city_id`                          | `UUID`             | City owner                                 |
+| `locale`                           | `TEXT`             | Ví dụ `en-GB`                              |
+| `canonical_slug`                   | `TEXT`             | Ví dụ `bangkok`                            |
+| `h1`                               | `TEXT`             | Page headline                              |
+| `subheadline`                      | `TEXT`             | Utility explanation                        |
+| `seo_title`                        | `TEXT`             | HTML title                                 |
+| `meta_description`                 | `TEXT`             | Search result description                  |
+| `og_title`                         | `TEXT`             | Social title                               |
+| `og_description`                   | `TEXT`             | Social description                         |
+| `og_image_path`                    | `TEXT NULL`        | Generated image path                       |
+| `intro`                            | `TEXT`             | Editorial introduction                     |
+| `airport_summary`                  | `TEXT NULL`        | Editorial airport-system content           |
+| `status`                           | `TEXT`             | `draft`, `review`, `published`, `archived` |
+| `is_indexable`                     | `BOOLEAN`          | Final database-owned indexability          |
+| `noindex_reason`                   | `TEXT NULL`        | Stable reason when excluded                |
+| `primary_airport_id`               | `UUID NULL`        | Airport đại diện cho visual only           |
+| `airport_count`                    | `INTEGER`          | Generated quick fact                       |
+| `direct_counterpart_city_count`    | `INTEGER`          | Generated quick fact                       |
+| `direct_counterpart_country_count` | `INTEGER`          | Generated quick fact                       |
+| `airline_count`                    | `INTEGER`          | Generated quick fact                       |
+| `shortest_route_minutes`           | `INTEGER NULL`     | Generated quick fact                       |
+| `longest_route_minutes`            | `INTEGER NULL`     | Generated quick fact                       |
+| `content_reviewed_at`              | `TIMESTAMPTZ NULL` | Editorial review time                      |
+| `source_freshness_at`              | `TIMESTAMPTZ`      | Data freshness                             |
+| `data_version`                     | `UUID`             | Published dataset version                  |
+| `generated_at`                     | `TIMESTAMPTZ`      | Read model generation time                 |
+| `published_at`                     | `TIMESTAMPTZ NULL` | Page publication time                      |
+| `created_at`                       | `TIMESTAMPTZ`      | Audit                                      |
+| `updated_at`                       | `TIMESTAMPTZ`      | Audit                                      |
 
 Unique identity:
 
@@ -1023,7 +1023,7 @@ Data methodology and freshness
 
 Build:
 
-1. `public.city_direct_routes`
+1. `public.pseo_direct_routes`
 2. `public.city_destination_summaries`
 3. `public.city_pages`
 4. `public.city_page_faqs`

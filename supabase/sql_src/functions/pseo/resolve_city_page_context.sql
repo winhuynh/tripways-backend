@@ -8,7 +8,8 @@
 
 CREATE OR REPLACE FUNCTION private.resolve_city_page_context(
   p_city_slug TEXT,
-  p_locale TEXT
+  p_locale TEXT,
+  p_route_direction TEXT DEFAULT 'outbound'
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -47,7 +48,8 @@ BEGIN
     v_data_version
   FROM public.city_pages city_page
   WHERE city_page.city_id = v_city_id
-    AND city_page.locale = p_locale;
+    AND city_page.locale = p_locale
+    AND city_page.route_direction = p_route_direction;
 
   IF v_city_page_id IS NULL THEN
     RETURN jsonb_build_object(
@@ -64,13 +66,14 @@ BEGIN
       'city_id', v_city_id,
       'city_page_id', v_city_page_id,
       'pseo_page_id', v_pseo_page_id,
-      'data_version', v_data_version
+      'data_version', v_data_version,
+      'route_direction', p_route_direction
     ),
     'error', NULL
   );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.resolve_city_page_context(TEXT, TEXT)
+REVOKE ALL ON FUNCTION private.resolve_city_page_context(TEXT, TEXT, TEXT)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION private.resolve_city_page_context(TEXT, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION private.resolve_city_page_context(TEXT, TEXT, TEXT) TO service_role;

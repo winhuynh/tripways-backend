@@ -16,12 +16,91 @@ BEGIN
 END;
 $$;
 
+INSERT INTO public.pseo_pages (
+  id,
+  page_type,
+  entity_key,
+  locale,
+  canonical_path,
+  display_title,
+  status,
+  is_indexable,
+  noindex_reason
+)
+VALUES (
+  '81000000-0000-4000-8000-000000000099',
+  'city',
+  'bangkok:inbound',
+  'en-GB',
+  '/flights-to/bangkok',
+  'Direct flights to Bangkok',
+  'review',
+  FALSE,
+  'development_fixture'
+);
+
+INSERT INTO public.city_pages (
+  id,
+  pseo_page_id,
+  city_id,
+  locale,
+  route_direction,
+  canonical_slug,
+  h1,
+  subheadline,
+  seo_title,
+  meta_description,
+  og_title,
+  og_description,
+  intro,
+  status,
+  is_indexable,
+  noindex_reason,
+  content_reviewed_at
+)
+VALUES (
+  '82000000-0000-4000-8000-000000000099',
+  '81000000-0000-4000-8000-000000000099',
+  '30000000-0000-4000-8000-000000000003',
+  'en-GB',
+  'inbound',
+  'bangkok',
+  'Direct flights to Bangkok',
+  'Explore direct routes arriving in Bangkok.',
+  'Direct Flights to Bangkok | Tripways',
+  'Explore cities and airlines with direct flights to Bangkok.',
+  'Direct flights to Bangkok',
+  'Explore direct origins and airlines serving Bangkok.',
+  'Compare direct routes arriving at Bangkok airports.',
+  'review',
+  FALSE,
+  'development_fixture',
+  '2026-07-27T00:00:00Z'
+);
+
 UPDATE public.city_pages
 SET noindex_reason = 'stale_preview_state'
 WHERE canonical_slug = 'bangkok'
   AND locale = 'en-GB';
 
 SELECT public.refresh_city_pseo_read_models();
+
+SELECT pg_temp.test_assert(
+  (
+    SELECT city_page.direct_counterpart_city_count
+    FROM public.city_pages city_page
+    WHERE city_page.city_id = '30000000-0000-4000-8000-000000000003'
+      AND city_page.locale = 'en-GB'
+      AND city_page.route_direction = 'inbound'
+  ) >= 1,
+  'inbound city pages derive direct origin-city facts'
+);
+
+SELECT pg_temp.test_assert(
+  private.resolve_city_page_context('bangkok', 'en-GB', 'inbound')
+    #>> '{data,city_page_id}' = '82000000-0000-4000-8000-000000000099',
+  'city page context resolves the requested route direction'
+);
 
 SELECT pg_temp.test_assert(
   public.rpc_get_city_page(

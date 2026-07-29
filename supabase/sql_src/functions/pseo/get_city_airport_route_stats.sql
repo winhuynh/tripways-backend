@@ -12,7 +12,7 @@ CREATE OR REPLACE FUNCTION private.get_city_airport_route_stats(
 )
 RETURNS TABLE (
   airport_id UUID,
-  direct_destination_count INTEGER,
+  direct_counterpart_city_count INTEGER,
   domestic_destination_count INTEGER,
   international_destination_count INTEGER,
   domestic_destination_percentage INTEGER,
@@ -38,7 +38,7 @@ AS $$
       city_route.operating_airline_id,
       airline.business_model,
       COALESCE(city_route.frequency_per_week, 1) AS business_model_weight
-    FROM public.city_direct_routes city_route
+    FROM public.pseo_direct_routes city_route
     JOIN public.airlines airline
       ON airline.id = city_route.operating_airline_id
     WHERE city_route.origin_city_id = p_city_id
@@ -47,7 +47,7 @@ AS $$
   route_stats AS (
     SELECT
       airport_route.airport_id,
-      count(DISTINCT airport_route.destination_city_id)::INTEGER AS direct_destination_count,
+      count(DISTINCT airport_route.destination_city_id)::INTEGER AS direct_counterpart_city_count,
       count(DISTINCT airport_route.destination_city_id)
         FILTER (
           WHERE airport_route.destination_country_id = city_context.country_id
@@ -83,23 +83,23 @@ AS $$
   )
   SELECT
     airport.id,
-    COALESCE(route_stat.direct_destination_count, 0),
+    COALESCE(route_stat.direct_counterpart_city_count, 0),
     COALESCE(route_stat.domestic_destination_count, 0),
     COALESCE(route_stat.international_destination_count, 0),
     CASE
-      WHEN COALESCE(route_stat.direct_destination_count, 0) = 0 THEN 0
+      WHEN COALESCE(route_stat.direct_counterpart_city_count, 0) = 0 THEN 0
       ELSE round(
         route_stat.domestic_destination_count::NUMERIC
         * 100
-        / route_stat.direct_destination_count
+        / route_stat.direct_counterpart_city_count
       )::INTEGER
     END,
     CASE
-      WHEN COALESCE(route_stat.direct_destination_count, 0) = 0 THEN 0
+      WHEN COALESCE(route_stat.direct_counterpart_city_count, 0) = 0 THEN 0
       ELSE round(
         route_stat.international_destination_count::NUMERIC
         * 100
-        / route_stat.direct_destination_count
+        / route_stat.direct_counterpart_city_count
       )::INTEGER
     END,
     COALESCE(route_stat.airline_count, 0),

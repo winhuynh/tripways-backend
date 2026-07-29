@@ -18,6 +18,7 @@ DECLARE
   v_context JSONB;
   v_city_slug TEXT;
   v_locale TEXT;
+  v_route_direction TEXT;
   v_city_id UUID;
   v_city_page_id UUID;
   v_data_version UUID;
@@ -29,7 +30,12 @@ BEGIN
 
   v_city_slug := v_identity #>> '{data,city_slug}';
   v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(v_city_slug, v_locale);
+  v_route_direction := v_identity #>> '{data,route_direction}';
+  v_context := private.resolve_city_page_context(
+    v_city_slug,
+    v_locale,
+    v_route_direction
+  );
 
   IF v_context #>> '{error,code}' IS NOT NULL THEN
     RETURN private.build_rpc_error('[]'::JSONB, v_context #>> '{error,code}', v_context #>> '{error,message}');
@@ -54,7 +60,7 @@ BEGIN
         'hub_label', airport_content.hub_label,
         'description', airport_content.description,
         'display_order', airport_content.display_order,
-        'direct_destination_count', airport_stats.direct_destination_count,
+        'direct_counterpart_city_count', airport_stats.direct_counterpart_city_count,
         'domestic_destination_count', airport_stats.domestic_destination_count,
         'international_destination_count', airport_stats.international_destination_count,
         'domestic_destination_percentage', airport_stats.domestic_destination_percentage,

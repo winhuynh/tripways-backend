@@ -8,6 +8,7 @@ CREATE TABLE public.city_pages (
   pseo_page_id              UUID         NOT NULL UNIQUE REFERENCES public.pseo_pages (id),
   city_id                   UUID         NOT NULL REFERENCES public.cities (id),
   locale                    TEXT         NOT NULL,
+  route_direction           TEXT         NOT NULL DEFAULT 'outbound',
   canonical_slug            TEXT         NOT NULL,
   h1                        TEXT         NOT NULL,
   subheadline               TEXT         NOT NULL,
@@ -23,8 +24,8 @@ CREATE TABLE public.city_pages (
   noindex_reason            TEXT         NULL,
   primary_airport_id        UUID         NULL REFERENCES public.airports (id),
   airport_count             INTEGER      NOT NULL DEFAULT 0,
-  direct_destination_count  INTEGER      NOT NULL DEFAULT 0,
-  direct_country_count      INTEGER      NOT NULL DEFAULT 0,
+  direct_counterpart_city_count  INTEGER      NOT NULL DEFAULT 0,
+  direct_counterpart_country_count      INTEGER      NOT NULL DEFAULT 0,
   airline_count             INTEGER      NOT NULL DEFAULT 0,
   shortest_route_minutes    INTEGER      NULL,
   longest_route_minutes     INTEGER      NULL,
@@ -37,10 +38,13 @@ CREATE TABLE public.city_pages (
   updated_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
   CONSTRAINT city_pages_city_locale_key
-    UNIQUE (city_id, locale),
+    UNIQUE (city_id, locale, route_direction),
 
   CONSTRAINT city_pages_slug_locale_key
-    UNIQUE (canonical_slug, locale),
+    UNIQUE (canonical_slug, locale, route_direction),
+
+  CONSTRAINT city_pages_direction_check
+    CHECK (route_direction IN ('outbound', 'inbound')),
 
   CONSTRAINT city_pages_locale_check
     CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
@@ -72,8 +76,8 @@ CREATE TABLE public.city_pages (
   CONSTRAINT city_pages_counts_check
     CHECK (
       airport_count >= 0
-      AND direct_destination_count >= 0
-      AND direct_country_count >= 0
+      AND direct_counterpart_city_count >= 0
+      AND direct_counterpart_country_count >= 0
       AND airline_count >= 0
     ),
 

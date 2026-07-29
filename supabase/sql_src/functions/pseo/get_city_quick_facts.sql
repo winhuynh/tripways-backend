@@ -25,14 +25,14 @@ AS $$
   ),
   routes AS MATERIALIZED (
     SELECT city_route.*
-    FROM public.city_direct_routes city_route
+    FROM public.pseo_direct_routes city_route
     WHERE city_route.origin_city_id = p_city_id
       AND city_route.data_version = p_data_version
   ),
   route_counts AS (
     SELECT
-      count(DISTINCT route.destination_city_id)::INTEGER AS direct_destination_count,
-      count(DISTINCT route.destination_country_id)::INTEGER AS direct_country_count,
+      count(DISTINCT route.destination_city_id)::INTEGER AS direct_counterpart_city_count,
+      count(DISTINCT route.destination_country_id)::INTEGER AS direct_counterpart_country_count,
       count(DISTINCT route.operating_airline_id)::INTEGER AS airline_count
     FROM routes route
   ),
@@ -83,8 +83,8 @@ AS $$
       WHERE airport.city_id = p_city_id
         AND airport.status = 'active'
     ),
-    'direct_destination_count', route_counts.direct_destination_count,
-    'direct_country_count', route_counts.direct_country_count,
+    'direct_counterpart_city_count', route_counts.direct_counterpart_city_count,
+    'direct_counterpart_country_count', route_counts.direct_counterpart_country_count,
     'airline_count', route_counts.airline_count,
     'shortest_route', (
       SELECT shortest_route.value

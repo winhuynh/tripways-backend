@@ -45,10 +45,10 @@ BEGIN
         'name', summary.name,
         'slug', summary.slug,
         'origin_airports', summary.origin_airports,
-        'direct_destination_count', summary.direct_destination_count,
+        'direct_counterpart_city_count', summary.direct_counterpart_city_count,
         'page_path', format('/airlines/%s/flights-from/%s', summary.slug, v_city_slug)
       )
-      ORDER BY summary.direct_destination_count DESC, summary.name
+      ORDER BY summary.direct_counterpart_city_count DESC, summary.name
     ), '[]'::JSONB),
     'meta', jsonb_build_object('data_version', v_data_version),
     'error', NULL
@@ -61,8 +61,8 @@ BEGIN
       airline.name,
       airline.slug,
       jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports,
-      count(DISTINCT city_route.destination_city_id) AS direct_destination_count
-    FROM public.city_direct_routes city_route
+      count(DISTINCT city_route.destination_city_id) AS direct_counterpart_city_count
+    FROM public.pseo_direct_routes city_route
     JOIN public.airlines airline
       ON airline.id = city_route.operating_airline_id
     JOIN public.airports origin_airport

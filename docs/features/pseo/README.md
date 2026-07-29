@@ -15,6 +15,16 @@ Bangkok page.
 Interactive pSEO does not own normalized routes, recurring schedules, live availability, or fares.
 It consumes the published Flight Routing source tables and produces rebuildable read models.
 
+The same route projection also powers airport pages:
+
+```text
+/airports/suvarnabhumi-bkk
+```
+
+Airport pages prioritize direct routes and airlines, then add a small reviewed content layer for
+ground access, parking, lounges, notices, and FAQs. They do not replace official airport operations
+or provide live departures, terminal maps, gates, counters, shops, or security wait times.
+
 ## Data flow
 
 ```text
@@ -22,15 +32,18 @@ countries + cities + airports
 airlines + flight_routes + flight_services
                     │
                     ▼
-   refresh_city_pseo_read_models()
+       refresh_pseo_read_models()
                     │
-                    ├── city_direct_routes
+                    ├── pseo_direct_routes
                     ├── city_destination_summaries
-                    └── city_pages facts/version
+                    ├── city_pages facts/version
+                    └── airport_pages facts/version
                     │
                     ▼
       rpc_get_city_page(jsonb)
       rpc_search_city_direct_routes(jsonb)
+      rpc_get_airport_page(jsonb)
+      rpc_search_airport_direct_routes(jsonb)
                     │
                     ▼
               Next.js city page
@@ -38,13 +51,52 @@ airlines + flight_routes + flight_services
 
 ## Tables
 
-- `city_direct_routes` keeps scalar airport, airline, country, duration, and departure dimensions at
-  filterable route grain.
+- `pseo_direct_routes` keeps scalar city, airport, airline, country, duration, and departure
+  dimensions at filterable route grain for both city and airport pages.
 - `city_destination_summaries` provides stable default city-to-city destination cards.
 - `pseo_pages` registers canonical paths, publication state, and indexability.
 - `city_pages` stores reviewed metadata, content, quick facts, freshness, and data version.
 - `city_page_faqs` stores ordered reviewed FAQ content.
 - `pseo_internal_links` stores semantic internal-link edges and placement decisions.
+- `airport_pages` stores reviewed airport metadata, content, route facts, freshness, and version.
+- `airport_access_options`, `airport_lounges`, `airport_parking_information`,
+  `airport_page_notices`, and `airport_page_faqs` store focused reviewed airport guidance.
+
+## Get an airport page
+
+```sql
+SELECT public.rpc_get_airport_page(
+  '{
+    "airport_iata": "BKK",
+    "locale": "en-GB",
+    "route_limit": 8
+  }'::JSONB
+);
+```
+
+The payload includes airport/city/country identity, reviewed SEO content, route facts, featured
+outbound and inbound routes, airline summaries, published airport guidance, semantic links,
+canonical metadata, indexability, freshness, and the shared data version.
+
+## Filter airport direct routes
+
+```sql
+SELECT public.rpc_search_airport_direct_routes(
+  '{
+    "airport_iata": "BKK",
+    "direction": "outbound",
+    "airlines": ["TG"],
+    "countries": ["SG", "VN"],
+    "max_duration_minutes": 360,
+    "seasonality": "year_round",
+    "limit": 20,
+    "offset": 0
+  }'::JSONB
+);
+```
+
+`direction` is `outbound` or `inbound`. Results and airline/country facets derive from the same
+filtered relation. Filtered URLs canonicalize to the base airport page and are not sitemap entries.
 
 All tables enable RLS, revoke access from `anon` and `authenticated`, and are available only through
 the service-role server boundary.
@@ -160,7 +212,7 @@ psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
 - Production source ingestion and publish workflow.
 - Public Next.js route handlers and CDN cache headers.
 - City-to-city route page payloads.
-- Airport, airline-city, country-route, and guide page payloads.
+- Airline-city, country-route, and guide page payloads.
 - Sitemap endpoint.
 - Localized editorial workflow beyond the seeded `en-GB` preview.
 - Live dated schedules, availability, prices, offers, and booking.

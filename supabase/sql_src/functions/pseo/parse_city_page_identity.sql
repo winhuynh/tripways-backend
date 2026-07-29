@@ -16,6 +16,7 @@ AS $$
 DECLARE
   v_city_slug TEXT;
   v_locale TEXT;
+  v_route_direction TEXT;
 BEGIN
   IF p_input IS NULL OR jsonb_typeof(p_input) <> 'object' THEN
     RETURN jsonb_build_object(
@@ -29,9 +30,11 @@ BEGIN
 
   v_city_slug := lower(btrim(COALESCE(p_input->>'city_slug', '')));
   v_locale := btrim(COALESCE(p_input->>'locale', 'en-GB'));
+  v_route_direction := lower(btrim(COALESCE(p_input->>'route_direction', 'outbound')));
 
   IF v_city_slug !~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'
     OR v_locale !~ '^[a-z]{2}(?:-[A-Z]{2})?$'
+    OR v_route_direction NOT IN ('outbound', 'inbound')
   THEN
     RETURN jsonb_build_object(
       'data', NULL,
@@ -45,7 +48,8 @@ BEGIN
   RETURN jsonb_build_object(
     'data', jsonb_build_object(
       'city_slug', v_city_slug,
-      'locale', v_locale
+      'locale', v_locale,
+      'route_direction', v_route_direction
     ),
     'error', NULL
   );

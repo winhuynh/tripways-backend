@@ -19,12 +19,14 @@ DECLARE
   ------------------------------------------------------------------
   v_city_slug TEXT;
   v_locale TEXT;
+  v_route_direction TEXT;
   v_destination_limit INTEGER := 8;
 
   ------------------------------------------------------------------
   -- Resolved page
   ------------------------------------------------------------------
   v_city_id UUID;
+  v_city_page_id UUID;
   v_pseo_page_id UUID;
   v_data_version UUID;
   v_identity JSONB;
@@ -44,6 +46,7 @@ BEGIN
 
   v_city_slug := v_identity #>> '{data,city_slug}';
   v_locale := v_identity #>> '{data,locale}';
+  v_route_direction := v_identity #>> '{data,route_direction}';
 
   IF p_input ? 'destination_limit' THEN
     IF jsonb_typeof(p_input->'destination_limit') <> 'number' THEN
@@ -67,7 +70,8 @@ BEGIN
   -- STEP 02: Resolve the city and reviewed page identity.
   v_context := private.resolve_city_page_context(
     v_city_slug,
-    v_locale
+    v_locale,
+    v_route_direction
   );
 
   IF v_context #>> '{error,code}' IS NOT NULL THEN
@@ -79,6 +83,7 @@ BEGIN
   END IF;
 
   v_city_id := (v_context #>> '{data,city_id}')::UUID;
+  v_city_page_id := (v_context #>> '{data,city_page_id}')::UUID;
   v_pseo_page_id := (v_context #>> '{data,pseo_page_id}')::UUID;
   v_data_version := (v_context #>> '{data,data_version}')::UUID;
 
@@ -127,13 +132,13 @@ BEGIN
             'is_primary', airport.id = city_page.primary_airport_id,
             'direct_destinations', (
               SELECT count(DISTINCT city_route.destination_city_id)
-              FROM public.city_direct_routes city_route
+              FROM public.pseo_direct_routes city_route
               WHERE city_route.origin_airport_id = airport.id
                 AND city_route.data_version = v_data_version
             ),
             'airlines', (
               SELECT count(DISTINCT city_route.operating_airline_id)
-              FROM public.city_direct_routes city_route
+              FROM public.pseo_direct_routes city_route
               WHERE city_route.origin_airport_id = airport.id
                 AND city_route.data_version = v_data_version
             )
@@ -148,8 +153,8 @@ BEGIN
       ), '[]'::JSONB),
       'quick_facts', jsonb_build_object(
         'airports', city_page.airport_count,
-        'direct_destinations', city_page.direct_destination_count,
-        'direct_countries', city_page.direct_country_count,
+        'direct_destinations', city_page.direct_counterpart_city_count,
+        'direct_countries', city_page.direct_counterpart_country_count,
         'airlines', city_page.airline_count,
         'shortest_route_minutes', city_page.shortest_route_minutes,
         'longest_route_minutes', city_page.longest_route_minutes
@@ -175,7 +180,7 @@ BEGIN
               ),
               'origin_airports', COALESCE((
                 SELECT jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata)
-                FROM public.city_direct_routes city_route
+                FROM public.pseo_direct_routes city_route
                 JOIN public.airports origin_airport
                   ON origin_airport.id = city_route.origin_airport_id
                 WHERE city_route.origin_city_id = destination.origin_city_id
@@ -184,7 +189,7 @@ BEGIN
               ), '[]'::JSONB),
               'destination_airports', COALESCE((
                 SELECT jsonb_agg(DISTINCT destination_airport.iata ORDER BY destination_airport.iata)
-                FROM public.city_direct_routes city_route
+                FROM public.pseo_direct_routes city_route
                 JOIN public.airports destination_airport
                   ON destination_airport.id = city_route.destination_airport_id
                 WHERE city_route.origin_city_id = destination.origin_city_id
@@ -193,7 +198,7 @@ BEGIN
               ), '[]'::JSONB),
               'airlines', COALESCE((
                 SELECT jsonb_agg(DISTINCT airline.iata ORDER BY airline.iata)
-                FROM public.city_direct_routes city_route
+                FROM public.pseo_direct_routes city_route
                 JOIN public.airlines airline
                   ON airline.id = city_route.operating_airline_id
                 WHERE city_route.origin_city_id = destination.origin_city_id
@@ -245,7 +250,7 @@ BEGIN
             airline.slug,
             count(DISTINCT city_route.destination_city_id) AS direct_destinations,
             jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports
-          FROM public.city_direct_routes city_route
+          FROM public.pseo_direct_routes city_route
           JOIN public.airlines airline
             ON airline.id = city_route.operating_airline_id
           JOIN public.airports origin_airport
@@ -273,7 +278,7 @@ BEGIN
             destination_country.name,
             destination_country.slug,
             count(DISTINCT city_route.destination_city_id) AS direct_destinations
-          FROM public.city_direct_routes city_route
+          FROM public.pseo_direct_routes city_route
           JOIN public.countries destination_country
             ON destination_country.id = city_route.destination_country_id
           WHERE city_route.origin_city_id = city.id
@@ -343,8 +348,7 @@ BEGIN
   JOIN public.countries country
     ON country.id = city.country_id
   JOIN public.city_pages city_page
-    ON city_page.city_id = city.id
-    AND city_page.locale = v_locale
+    ON city_page.id = v_city_page_id
   JOIN public.pseo_pages pseo_page
     ON pseo_page.id = city_page.pseo_page_id
   WHERE city.id = v_city_id;

@@ -37,7 +37,7 @@ airport_contract AS (
     item ->> 'hub_label' AS hub_label,
     item ->> 'description' AS description,
     (item ->> 'display_order')::INTEGER AS display_order,
-    (item ->> 'direct_destination_count')::INTEGER AS direct_destination_count,
+    (item ->> 'direct_counterpart_city_count')::INTEGER AS direct_counterpart_city_count,
     (item ->> 'domestic_destination_count')::INTEGER AS domestic_destination_count,
     (item ->> 'international_destination_count')::INTEGER AS international_destination_count,
     (item ->> 'domestic_destination_percentage')::INTEGER AS domestic_destination_percentage,
@@ -52,7 +52,7 @@ SELECT pg_temp.test_assert(
       hub_label = 'MAIN HUB'
       AND description IS NOT NULL
       AND display_order = 1
-      AND direct_destination_count = 3
+      AND direct_counterpart_city_count = 3
       AND domestic_destination_count = 0
       AND international_destination_count = 3
       AND domestic_destination_percentage = 0
@@ -81,7 +81,7 @@ airport_contract AS (
     item ->> 'hub_label' AS hub_label,
     item ->> 'description' AS description,
     (item ->> 'display_order')::INTEGER AS display_order,
-    (item ->> 'direct_destination_count')::INTEGER AS direct_destination_count,
+    (item ->> 'direct_counterpart_city_count')::INTEGER AS direct_counterpart_city_count,
     (item ->> 'domestic_destination_count')::INTEGER AS domestic_destination_count,
     (item ->> 'international_destination_count')::INTEGER AS international_destination_count,
     (item ->> 'domestic_destination_percentage')::INTEGER AS domestic_destination_percentage,
@@ -96,7 +96,7 @@ SELECT pg_temp.test_assert(
       hub_label = 'LOW-COST HUB'
       AND description IS NOT NULL
       AND display_order = 2
-      AND direct_destination_count = 3
+      AND direct_counterpart_city_count = 3
       AND domestic_destination_count = 1
       AND international_destination_count = 2
       AND domestic_destination_percentage = 33
@@ -123,8 +123,8 @@ SELECT pg_temp.test_assert(
   (
     SELECT
       (response #>> '{data,airport_count}')::INTEGER = 2
-      AND (response #>> '{data,direct_destination_count}')::INTEGER = 5
-      AND (response #>> '{data,direct_country_count}')::INTEGER = 5
+      AND (response #>> '{data,direct_counterpart_city_count}')::INTEGER = 5
+      AND (response #>> '{data,direct_counterpart_country_count}')::INTEGER = 5
       AND (response #>> '{data,airline_count}')::INTEGER = 2
       AND response #>> '{data,shortest_route,destination_name}' = 'Chiang Mai'
       AND response #>> '{data,shortest_route,route_path}' = '/flights/bangkok-to-chiang-mai'
@@ -198,7 +198,7 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  (public.rpc_get_city_insights('{"city_slug":"bangkok"}') #>> '{data,direct_country_count}')::INTEGER >= 4,
+  (public.rpc_get_city_insights('{"city_slug":"bangkok"}') #>> '{data,direct_counterpart_country_count}')::INTEGER >= 4,
   'insights returns direct country count'
 );
 
@@ -248,7 +248,7 @@ SELECT pg_temp.test_assert(
   (
     public.rpc_get_city_quick_facts(
       '{"city_slug":"singapore","locale":"en-GB"}'
-    ) #>> '{data,direct_destination_count}'
+    ) #>> '{data,direct_counterpart_city_count}'
   )::INTEGER = 5,
   'Singapore quick facts are refreshed from its direct-route graph'
 );

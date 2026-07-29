@@ -256,7 +256,7 @@ BEGIN
       destination_country.name AS destination_country_name,
       destination_city.name AS destination_city_name,
       destination_city.slug AS destination_city_slug
-    FROM public.city_direct_routes city_route
+    FROM public.pseo_direct_routes city_route
     JOIN public.airports origin_airport
       ON origin_airport.id = city_route.origin_airport_id
     JOIN public.airports destination_airport

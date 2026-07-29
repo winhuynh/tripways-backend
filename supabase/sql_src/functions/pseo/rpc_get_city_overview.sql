@@ -18,7 +18,9 @@ DECLARE
   v_context JSONB;
   v_city_slug TEXT;
   v_locale TEXT;
+  v_route_direction TEXT;
   v_city_id UUID;
+  v_city_page_id UUID;
   v_result JSONB;
 BEGIN
   v_identity := private.parse_city_page_identity(p_input);
@@ -33,7 +35,12 @@ BEGIN
 
   v_city_slug := v_identity #>> '{data,city_slug}';
   v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(v_city_slug, v_locale);
+  v_route_direction := v_identity #>> '{data,route_direction}';
+  v_context := private.resolve_city_page_context(
+    v_city_slug,
+    v_locale,
+    v_route_direction
+  );
 
   IF v_context #>> '{error,code}' IS NOT NULL THEN
     RETURN private.build_rpc_error(
@@ -44,6 +51,7 @@ BEGIN
   END IF;
 
   v_city_id := (v_context #>> '{data,city_id}')::UUID;
+  v_city_page_id := (v_context #>> '{data,city_page_id}')::UUID;
 
   SELECT jsonb_build_object(
     'data', jsonb_build_object(
@@ -78,8 +86,8 @@ BEGIN
       ),
       'quick_facts', jsonb_build_object(
         'airport_count', city_page.airport_count,
-        'direct_destination_count', city_page.direct_destination_count,
-        'direct_country_count', city_page.direct_country_count,
+        'direct_counterpart_city_count', city_page.direct_counterpart_city_count,
+        'direct_counterpart_country_count', city_page.direct_counterpart_country_count,
         'airline_count', city_page.airline_count,
         'shortest_route_minutes', city_page.shortest_route_minutes,
         'longest_route_minutes', city_page.longest_route_minutes
@@ -97,8 +105,7 @@ BEGIN
   JOIN public.countries country
     ON country.id = city.country_id
   JOIN public.city_pages city_page
-    ON city_page.city_id = city.id
-    AND city_page.locale = v_locale
+    ON city_page.id = v_city_page_id
   JOIN public.pseo_pages pseo_page
     ON pseo_page.id = city_page.pseo_page_id
   WHERE city.id = v_city_id;

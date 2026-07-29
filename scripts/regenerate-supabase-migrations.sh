@@ -85,12 +85,18 @@ emit_migration \
 emit_migration \
   "20260714080400_pseo_schema.sql" \
   "pSEO schema" \
-  "supabase/sql_src/schema/pseo/city_direct_routes.sql" \
+  "supabase/sql_src/schema/pseo/pseo_direct_routes.sql" \
   "supabase/sql_src/schema/pseo/city_destination_summaries.sql" \
   "supabase/sql_src/schema/pseo/pseo_pages.sql" \
   "supabase/sql_src/schema/pseo/city_pages.sql" \
   "supabase/sql_src/schema/pseo/city_page_airport_content.sql" \
   "supabase/sql_src/schema/pseo/city_page_faqs.sql" \
+  "supabase/sql_src/schema/pseo/airport_pages.sql" \
+  "supabase/sql_src/schema/pseo/airport_access_options.sql" \
+  "supabase/sql_src/schema/pseo/airport_lounges.sql" \
+  "supabase/sql_src/schema/pseo/airport_parking_information.sql" \
+  "supabase/sql_src/schema/pseo/airport_page_notices.sql" \
+  "supabase/sql_src/schema/pseo/airport_page_faqs.sql" \
   "supabase/sql_src/schema/pseo/pseo_internal_links.sql"
 
 emit_migration \
@@ -128,9 +134,12 @@ emit_migration \
 emit_migration \
   "20260714080900_pseo_functions.sql" \
   "pSEO functions" \
+  "supabase/sql_src/functions/pseo/refresh_pseo_read_models.sql" \
   "supabase/sql_src/functions/pseo/refresh_city_pseo_read_models.sql" \
   "supabase/sql_src/functions/pseo/parse_city_page_identity.sql" \
   "supabase/sql_src/functions/pseo/resolve_city_page_context.sql" \
+  "supabase/sql_src/functions/pseo/parse_airport_page_identity.sql" \
+  "supabase/sql_src/functions/pseo/resolve_airport_page_context.sql" \
   "supabase/sql_src/functions/pseo/get_city_airport_route_stats.sql" \
   "supabase/sql_src/functions/pseo/get_city_quick_facts.sql" \
   "supabase/sql_src/functions/pseo/get_city_route_map.sql" \
@@ -143,7 +152,9 @@ emit_migration \
   "supabase/sql_src/functions/pseo/rpc_get_city_internal_links.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_faqs.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_city_page.sql" \
-  "supabase/sql_src/functions/pseo/rpc_search_city_direct_routes.sql"
+  "supabase/sql_src/functions/pseo/rpc_search_city_direct_routes.sql" \
+  "supabase/sql_src/functions/pseo/rpc_get_airport_page.sql" \
+  "supabase/sql_src/functions/pseo/rpc_search_airport_direct_routes.sql"
 
 find "$source_root" -type f -name "*.sql" \
   | sed "s|$repo_root/||" \

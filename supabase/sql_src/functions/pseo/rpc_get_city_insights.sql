@@ -44,7 +44,7 @@ BEGIN
 
   WITH routes AS MATERIALIZED (
     SELECT city_route.*
-    FROM public.city_direct_routes city_route
+    FROM public.pseo_direct_routes city_route
     WHERE city_route.origin_city_id = v_city_id
       AND city_route.data_version = v_data_version
   ),
@@ -88,7 +88,7 @@ BEGIN
         SELECT round(avg(route.shortest_duration_minutes))::INTEGER
         FROM routes route
       ),
-      'direct_country_count', (v_quick_facts ->> 'direct_country_count')::INTEGER
+      'direct_counterpart_country_count', (v_quick_facts ->> 'direct_counterpart_country_count')::INTEGER
     ),
     'meta', jsonb_build_object('data_version', v_data_version),
     'error', NULL

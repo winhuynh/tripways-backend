@@ -44,7 +44,7 @@ AS $$
       destination_city.slug AS destination_city_slug,
       destination_city.latitude AS destination_city_latitude,
       destination_city.longitude AS destination_city_longitude
-    FROM public.city_direct_routes city_route
+    FROM public.pseo_direct_routes city_route
     JOIN public.airports origin_airport
       ON origin_airport.id = city_route.origin_airport_id
     JOIN public.airports destination_airport

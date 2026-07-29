@@ -32,7 +32,13 @@ CREATE TABLE public.pseo_internal_links (
         'direct_countries',
         'change_source_city',
         'reverse_routes',
-        'guides'
+        'guides',
+        'outbound_routes',
+        'inbound_routes',
+        'nearby_airports',
+        'city_flights_from',
+        'city_flights_to',
+        'airport_airlines'
       )
     ),
 
