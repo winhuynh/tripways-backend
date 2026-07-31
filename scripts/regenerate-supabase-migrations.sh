@@ -83,6 +83,14 @@ emit_migration \
   "supabase/sql_src/schema/route_discovery/route_options.sql"
 
 emit_migration \
+  "20260714080350_ingestion_schema.sql" \
+  "base data ingestion schema" \
+  "supabase/sql_src/schema/ingestion/raw_import_batches.sql" \
+  "supabase/sql_src/schema/ingestion/raw_base_data_records.sql" \
+  "supabase/sql_src/schema/ingestion/ingestion_runs.sql" \
+  "supabase/sql_src/schema/ingestion/ingestion_issues.sql"
+
+emit_migration \
   "20260714080400_pseo_schema.sql" \
   "pSEO schema" \
   "supabase/sql_src/schema/pseo/pseo_direct_routes.sql" \
@@ -155,6 +163,12 @@ emit_migration \
   "supabase/sql_src/functions/pseo/rpc_search_city_direct_routes.sql" \
   "supabase/sql_src/functions/pseo/rpc_get_airport_page.sql" \
   "supabase/sql_src/functions/pseo/rpc_search_airport_direct_routes.sql"
+
+emit_migration \
+  "20260714081000_ingestion_functions.sql" \
+  "base data ingestion functions" \
+  "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql"
 
 find "$source_root" -type f -name "*.sql" \
   | sed "s|$repo_root/||" \

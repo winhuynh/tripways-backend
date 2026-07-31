@@ -33,6 +33,7 @@ filtering và ranking; Edge Function chỉ validate request, gọi RPC và chu�
 ### Task 1: Schedule pattern schema
 
 **Files:**
+
 - Create: `supabase/functions/_shared/security/tests/route_discovery_sql_contract.test.ts`
 - Create: `supabase/sql_src/schema/public/flight_services.sql`
 - Create: `supabase/migrations/<timestamp>_route_discovery.sql`
@@ -43,18 +44,29 @@ Test phải assert một table/file, FK tới `flight_routes`, flight number, va
 `1..7`, local times, arrival offset, duration, source lineage, RLS và không có client grants.
 
 ```ts
-Deno.test('flight services preserve schedule pattern and source lineage', async () => {
-  const sql = await readSource('schema/public/flight_services.sql');
-  assert.ok(sql.includes('create table public.flight_services'));
-  assert.ok(sql.includes('flight_route_id uuid not null references public.flight_routes (id)'));
-  assert.ok(sql.includes('flight_number text not null'));
-  assert.ok(sql.includes('valid_from date not null'));
-  assert.ok(sql.includes('valid_to date not null'));
-  assert.ok(sql.includes('departure_local_time time not null'));
-  assert.ok(sql.includes('arrival_local_time time not null'));
-  assert.ok(sql.includes('duration_minutes integer not null'));
-  assert.ok(sql.includes('alter table public.flight_services enable row level security'));
-});
+Deno.test(
+  "flight services preserve schedule pattern and source lineage",
+  async () => {
+    const sql = await readSource("schema/public/flight_services.sql");
+    assert.ok(sql.includes("create table public.flight_services"));
+    assert.ok(
+      sql.includes(
+        "flight_route_id uuid not null references public.flight_routes (id)",
+      ),
+    );
+    assert.ok(sql.includes("flight_number text not null"));
+    assert.ok(sql.includes("valid_from date not null"));
+    assert.ok(sql.includes("valid_to date not null"));
+    assert.ok(sql.includes("departure_local_time time not null"));
+    assert.ok(sql.includes("arrival_local_time time not null"));
+    assert.ok(sql.includes("duration_minutes integer not null"));
+    assert.ok(
+      sql.includes(
+        "alter table public.flight_services enable row level security",
+      ),
+    );
+  },
+);
 ```
 
 - [ ] **Step 2: Chạy RED test**
@@ -114,6 +126,7 @@ Expected: PASS, không có schema/security error.
 ### Task 2: Deterministic route-discovery fixture
 
 **Files:**
+
 - Create: `supabase/seed/flight_routing_fixture.sql`
 - Modify: `supabase/config.toml`
 - Create: `supabase/snippets/test_route_discovery_fixture.sql`
@@ -161,6 +174,7 @@ Expected: database reset sạch; counts và scenario identifiers đúng.
 ### Task 3: Route-options read model
 
 **Files:**
+
 - Create: `supabase/sql_src/schema/public/route_options.sql`
 - Create: `supabase/sql_src/functions/route_discovery/calculate_layover_minutes.sql`
 - Create: `supabase/sql_src/functions/route_discovery/refresh_route_options.sql`
@@ -223,6 +237,7 @@ Expected: đúng direct/one-stop counts, duration = flight minutes + layover, kh
 ### Task 4: Search/filter/facets RPC
 
 **Files:**
+
 - Create: `supabase/sql_src/functions/route_discovery/rpc_search_routes.sql`
 - Modify: `supabase/functions/_shared/security/tests/route_discovery_sql_contract.test.ts`
 - Create: `supabase/snippets/test_rpc_search_routes.sql`
@@ -289,6 +304,7 @@ Expected: mọi filter/facet assertion pass; SQL lint/advisors không có error.
 ### Task 5: Edge route-discovery query boundary
 
 **Files:**
+
 - Create: `supabase/functions/v1/route-discovery/query/request.ts`
 - Create: `supabase/functions/v1/route-discovery/query/service.ts`
 - Create: `supabase/functions/v1/route-discovery/query/handler.ts`
@@ -343,6 +359,7 @@ Expected: PASS không warning.
 ### Task 6: Documentation và full verification
 
 **Files:**
+
 - Modify: `docs/features/flight-routing/README.md`
 - Create: `docs/features/route-discovery/README.md`
 - Create: `supabase/snippets/e2e_route_discovery.sql`

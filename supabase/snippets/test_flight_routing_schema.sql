@@ -19,7 +19,7 @@ VALUES
     'development'
   );
 
-INSERT INTO public.countries (id, iso2, iso3, name, slug, source_id)
+INSERT INTO public.countries (id, iso2, iso3, name, slug, source_id, source_record_id)
 VALUES
   (
     '00000000-0000-0000-0000-000000000002',
@@ -27,17 +27,19 @@ VALUES
     'XZZ',
     'Synthetic Test Country',
     'synthetic-test-country',
-    '00000000-0000-0000-0000-000000000001'
+    '00000000-0000-0000-0000-000000000001',
+    'country-xz'
   );
 
-INSERT INTO public.cities (id, country_id, name, slug, source_id)
+INSERT INTO public.cities (id, country_id, name, slug, source_id, source_record_id)
 VALUES
   (
     '00000000-0000-0000-0000-000000000003',
     '00000000-0000-0000-0000-000000000002',
     'Synthetic Test City',
     'synthetic-test-city',
-    '00000000-0000-0000-0000-000000000001'
+    '00000000-0000-0000-0000-000000000001',
+    'city-xz'
   );
 
 INSERT INTO public.airports (

@@ -64,8 +64,12 @@ CREATE TABLE public.countries (
   region      TEXT         NULL,
   subregion   TEXT         NULL,
   source_id   UUID         NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id TEXT    NOT NULL,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT countries_source_record_key
+    UNIQUE (source_id, source_record_id),
 
   CONSTRAINT countries_iso2_check
     CHECK (iso2 ~ '^[A-Z]{2}$'),
@@ -101,8 +105,12 @@ CREATE TABLE public.cities (
   longitude   DOUBLE PRECISION  NULL,
   timezone    TEXT              NULL,
   source_id   UUID              NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id TEXT         NOT NULL,
   created_at  TIMESTAMPTZ       NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ       NOT NULL DEFAULT now(),
+
+  CONSTRAINT cities_source_record_key
+    UNIQUE (source_id, source_record_id),
 
   CONSTRAINT cities_country_slug_key
     UNIQUE (country_id, slug),
@@ -146,8 +154,8 @@ CREATE TABLE public.airports (
   slug              TEXT              NOT NULL UNIQUE,
   city_id           UUID              NULL REFERENCES public.cities (id),
   country_id        UUID              NOT NULL REFERENCES public.countries (id),
-  latitude          DOUBLE PRECISION  NOT NULL,
-  longitude         DOUBLE PRECISION  NOT NULL,
+  latitude          DOUBLE PRECISION  NULL,
+  longitude         DOUBLE PRECISION  NULL,
   timezone          TEXT              NULL,
   airport_type      TEXT              NOT NULL,
   status            TEXT              NOT NULL DEFAULT 'unknown',
@@ -166,9 +174,6 @@ CREATE TABLE public.airports (
   CONSTRAINT airports_icao_check
     CHECK (icao IS NULL OR icao ~ '^[A-Z0-9]{4}$'),
 
-  CONSTRAINT airports_code_presence_check
-    CHECK (iata IS NOT NULL OR icao IS NOT NULL),
-
   CONSTRAINT airports_name_trimmed_check
     CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 160),
 
@@ -180,6 +185,9 @@ CREATE TABLE public.airports (
 
   CONSTRAINT airports_longitude_check
     CHECK (longitude BETWEEN -180 AND 180),
+
+  CONSTRAINT airports_coordinates_pair_check
+    CHECK ((latitude IS NULL) = (longitude IS NULL)),
 
   CONSTRAINT airports_type_check
     CHECK (

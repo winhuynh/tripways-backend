@@ -13,6 +13,7 @@
 ### Task 1: Define the Singapore read-model contract
 
 **Files:**
+
 - Modify: `supabase/snippets/e2e_city_page_read_models.sql`
 
 - [ ] Add assertions for Singapore overview, airport, destinations, route map, quick facts, FAQ, and internal links.
@@ -21,6 +22,7 @@
 ### Task 2: Add the complete development fixture
 
 **Files:**
+
 - Modify: `supabase/seed/city_pseo_fixture.sql`
 
 - [ ] Add Singapore city-page content using the existing Singapore pSEO page and city IDs.
@@ -30,6 +32,7 @@
 ### Task 3: Rebuild and verify
 
 **Files:**
+
 - No new production files.
 
 - [ ] Reset local Supabase from clean migrations and seed.

@@ -99,3 +99,15 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/city-page/query/index.ts"
+
+[functions.ingestion-base-data]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/ingestion/base-data/index.ts"
+
+[functions.airport-page-query]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/airport-page/query/index.ts"

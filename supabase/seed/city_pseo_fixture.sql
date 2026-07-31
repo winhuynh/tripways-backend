@@ -9,7 +9,8 @@ INSERT INTO public.cities (
   latitude,
   longitude,
   timezone,
-  source_id
+  source_id,
+  source_record_id
 )
 VALUES
   (
@@ -20,7 +21,8 @@ VALUES
     18.7883,
     98.9853,
     'Asia/Bangkok',
-    '10000000-0000-4000-8000-000000000001'
+    '10000000-0000-4000-8000-000000000001',
+    'city-cnx'
   );
 
 INSERT INTO public.airports (

@@ -12,8 +12,12 @@ CREATE TABLE public.cities (
   longitude   DOUBLE PRECISION  NULL,
   timezone    TEXT              NULL,
   source_id   UUID              NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id TEXT         NOT NULL,
   created_at  TIMESTAMPTZ       NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ       NOT NULL DEFAULT now(),
+
+  CONSTRAINT cities_source_record_key
+    UNIQUE (source_id, source_record_id),
 
   CONSTRAINT cities_country_slug_key
     UNIQUE (country_id, slug),

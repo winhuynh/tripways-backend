@@ -12,8 +12,12 @@ CREATE TABLE public.countries (
   region      TEXT         NULL,
   subregion   TEXT         NULL,
   source_id   UUID         NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id TEXT    NOT NULL,
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT countries_source_record_key
+    UNIQUE (source_id, source_record_id),
 
   CONSTRAINT countries_iso2_check
     CHECK (iso2 ~ '^[A-Z]{2}$'),
@@ -32,4 +36,3 @@ ALTER TABLE public.countries ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.countries FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.countries TO service_role;
-
