@@ -37,7 +37,7 @@ api_url = "http://127.0.0.1"
 enabled = false
 
 [storage]
-enabled = false
+enabled = true
 
 [analytics]
 enabled = false

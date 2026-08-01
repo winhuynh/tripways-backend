@@ -44,6 +44,7 @@ BEGIN
         'icao', summary.icao,
         'name', summary.name,
         'slug', summary.slug,
+        'logo_path', summary.logo_path,
         'origin_airports', summary.origin_airports,
         'direct_counterpart_city_count', summary.direct_counterpart_city_count,
         'page_path', format('/airlines/%s/flights-from/%s', summary.slug, v_city_slug)
@@ -60,6 +61,7 @@ BEGIN
       airline.icao,
       airline.name,
       airline.slug,
+      airline.logo_path,
       jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports,
       count(DISTINCT city_route.destination_city_id) AS direct_counterpart_city_count
     FROM public.pseo_direct_routes city_route

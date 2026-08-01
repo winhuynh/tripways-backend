@@ -52,6 +52,7 @@ BEGIN
         'icao', airport.icao,
         'name', airport.name,
         'slug', airport.slug,
+        'image_path', airport.image_path,
         'airport_type', airport.airport_type,
         'latitude', airport.latitude,
         'longitude', airport.longitude,

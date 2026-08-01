@@ -152,6 +152,7 @@ CREATE TABLE public.airports (
   icao              TEXT              NULL,
   name              TEXT              NOT NULL,
   slug              TEXT              NOT NULL UNIQUE,
+  image_path        TEXT              NULL,
   city_id           UUID              NULL REFERENCES public.cities (id),
   country_id        UUID              NOT NULL REFERENCES public.countries (id),
   latitude          DOUBLE PRECISION  NULL,
@@ -179,6 +180,19 @@ CREATE TABLE public.airports (
 
   CONSTRAINT airports_slug_check
     CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT airports_image_path_check
+    CHECK (
+      image_path IS NULL
+      OR (
+        image_path = btrim(image_path)
+        AND char_length(image_path) BETWEEN 1 AND 512
+        AND image_path LIKE 'airports/%'
+        AND image_path !~* '^[a-z][a-z0-9+.-]*://'
+        AND image_path !~ '(^|/)\.\.?(/|$)'
+        AND image_path !~ '[?#\\]'
+      )
+    ),
 
   CONSTRAINT airports_latitude_check
     CHECK (latitude BETWEEN -90 AND 90),
@@ -238,6 +252,7 @@ CREATE TABLE public.airlines (
   icao              TEXT         NULL,
   name              TEXT         NOT NULL,
   slug              TEXT         NOT NULL UNIQUE,
+  logo_path         TEXT         NULL,
   country_id        UUID         NULL REFERENCES public.countries (id),
   alliance          TEXT         NULL,
   business_model    TEXT         NOT NULL DEFAULT 'unknown',
@@ -265,6 +280,19 @@ CREATE TABLE public.airlines (
 
   CONSTRAINT airlines_slug_check
     CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT airlines_logo_path_check
+    CHECK (
+      logo_path IS NULL
+      OR (
+        logo_path = btrim(logo_path)
+        AND char_length(logo_path) BETWEEN 1 AND 512
+        AND logo_path LIKE 'airlines/%'
+        AND logo_path !~* '^[a-z][a-z0-9+.-]*://'
+        AND logo_path !~ '(^|/)\.\.?(/|$)'
+        AND logo_path !~ '[?#\\]'
+      )
+    ),
 
   CONSTRAINT airlines_alliance_trimmed_check
     CHECK (

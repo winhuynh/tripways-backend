@@ -67,6 +67,11 @@ emit_migration \
   "supabase/sql_src/schema/user/users.sql"
 
 emit_migration \
+  "20260714080150_storage.sql" \
+  "public media storage" \
+  "supabase/sql_src/schema/storage/media_bucket.sql"
+
+emit_migration \
   "20260714080200_flight_routing_schema.sql" \
   "flight routing schema" \
   "supabase/sql_src/schema/flight_routing/data_sources.sql" \

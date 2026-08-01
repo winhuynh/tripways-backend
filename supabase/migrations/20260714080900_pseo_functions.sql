@@ -1463,6 +1463,7 @@ BEGIN
         'icao', airport.icao,
         'name', airport.name,
         'slug', airport.slug,
+        'image_path', airport.image_path,
         'airport_type', airport.airport_type,
         'latitude', airport.latitude,
         'longitude', airport.longitude,
@@ -1882,6 +1883,7 @@ BEGIN
         'icao', summary.icao,
         'name', summary.name,
         'slug', summary.slug,
+        'logo_path', summary.logo_path,
         'origin_airports', summary.origin_airports,
         'direct_counterpart_city_count', summary.direct_counterpart_city_count,
         'page_path', format('/airlines/%s/flights-from/%s', summary.slug, v_city_slug)
@@ -1898,6 +1900,7 @@ BEGIN
       airline.icao,
       airline.name,
       airline.slug,
+      airline.logo_path,
       jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports,
       count(DISTINCT city_route.destination_city_id) AS direct_counterpart_city_count
     FROM public.pseo_direct_routes city_route
@@ -3084,6 +3087,7 @@ BEGIN
         'icao', airport.icao,
         'name', airport.name,
         'slug', airport.slug,
+        'image_path', airport.image_path,
         'type', airport.airport_type,
         'timezone', airport.timezone,
         'latitude', airport.latitude,
@@ -3210,6 +3214,7 @@ BEGIN
             airline.iata,
             airline.name,
             airline.slug,
+            airline.logo_path,
             count(DISTINCT route.flight_route_id)::INTEGER AS route_count
           FROM public.pseo_direct_routes route
           JOIN public.airlines airline
@@ -3219,7 +3224,7 @@ BEGIN
               route.origin_airport_id = v_airport_id
               OR route.destination_airport_id = v_airport_id
             )
-          GROUP BY airline.iata, airline.name, airline.slug
+          GROUP BY airline.iata, airline.name, airline.slug, airline.logo_path
         ) airline_item
       ), '[]'::JSONB),
       'access_options', COALESCE((

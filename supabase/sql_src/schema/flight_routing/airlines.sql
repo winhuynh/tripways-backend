@@ -9,6 +9,7 @@ CREATE TABLE public.airlines (
   icao              TEXT         NULL,
   name              TEXT         NOT NULL,
   slug              TEXT         NOT NULL UNIQUE,
+  logo_path         TEXT         NULL,
   country_id        UUID         NULL REFERENCES public.countries (id),
   alliance          TEXT         NULL,
   business_model    TEXT         NOT NULL DEFAULT 'unknown',
@@ -36,6 +37,19 @@ CREATE TABLE public.airlines (
 
   CONSTRAINT airlines_slug_check
     CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT airlines_logo_path_check
+    CHECK (
+      logo_path IS NULL
+      OR (
+        logo_path = btrim(logo_path)
+        AND char_length(logo_path) BETWEEN 1 AND 512
+        AND logo_path LIKE 'airlines/%'
+        AND logo_path !~* '^[a-z][a-z0-9+.-]*://'
+        AND logo_path !~ '(^|/)\.\.?(/|$)'
+        AND logo_path !~ '[?#\\]'
+      )
+    ),
 
   CONSTRAINT airlines_alliance_trimmed_check
     CHECK (

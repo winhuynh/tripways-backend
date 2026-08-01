@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 
 const sourceRoot = new URL('../../../../sql_src/', import.meta.url);
+const supabaseConfig = new URL('../../../../config.toml', import.meta.url);
 
 async function readSource(relativePath: string): Promise<string> {
   try {
@@ -69,6 +70,9 @@ Deno.test('airports enforce stable codes, coordinates, and supported source valu
   assert.ok(includesSql(sql, "'large_airport'"));
   assert.ok(includesSql(sql, "'medium_airport'"));
   assert.ok(includesSql(sql, "'small_airport'"));
+  assert.ok(includesSql(sql, 'image_path text null'));
+  assert.ok(includesSql(sql, "image_path like 'airports/%'"));
+  assert.ok(includesSql(sql, "image_path !~* '^[a-z][a-z0-9+.-]*://'"));
 });
 
 Deno.test('airlines classify constrained business models for derived airport stats', async () => {
@@ -79,6 +83,39 @@ Deno.test('airlines classify constrained business models for derived airport sta
   assert.ok(includesSql(sql, "'low_cost'"));
   assert.ok(includesSql(sql, "'hybrid'"));
   assert.ok(includesSql(sql, "'unknown'"));
+  assert.ok(includesSql(sql, 'logo_path text null'));
+  assert.ok(includesSql(sql, "logo_path like 'airlines/%'"));
+  assert.ok(includesSql(sql, "logo_path !~* '^[a-z][a-z0-9+.-]*://'"));
+});
+
+Deno.test('public media bucket restricts stored objects to supported image files', async () => {
+  const sql = await readSource('schema/storage/media_bucket.sql');
+
+  assert.ok(includesSql(sql, 'insert into storage.buckets'));
+  assert.ok(includesSql(sql, "'media'"));
+  assert.ok(includesSql(sql, 'true'));
+  assert.ok(includesSql(sql, "'image/jpeg'"));
+  assert.ok(includesSql(sql, "'image/png'"));
+  assert.ok(includesSql(sql, "'image/webp'"));
+  assert.ok(includesSql(sql, "'image/avif'"));
+  assert.ok(includesSql(sql, "'image/svg+xml'"));
+});
+
+Deno.test('local Supabase enables Storage before applying the media bucket migration', async () => {
+  const config = await Deno.readTextFile(supabaseConfig);
+
+  assert.match(config, /\[storage\]\s+enabled\s*=\s*true/);
+});
+
+Deno.test('pSEO RPCs expose airport image and airline logo object paths', async () => {
+  const cityAirports = await readSource('functions/pseo/rpc_get_city_airports.sql');
+  const cityAirlines = await readSource('functions/pseo/rpc_get_city_airlines.sql');
+  const airportPage = await readSource('functions/pseo/rpc_get_airport_page.sql');
+
+  assert.ok(includesSql(cityAirports, "'image_path', airport.image_path"));
+  assert.ok(includesSql(cityAirlines, "'logo_path', summary.logo_path"));
+  assert.ok(includesSql(airportPage, "'image_path', airport.image_path"));
+  assert.ok(includesSql(airportPage, 'airline.logo_path'));
 });
 
 Deno.test('flight routes enforce direction, source lineage, confidence, and unknown-safe fields', async () => {
