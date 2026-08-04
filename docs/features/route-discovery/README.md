@@ -2,91 +2,57 @@
 
 ## Responsibility
 
-Route Discovery finds structurally possible direct and one-stop journeys from the stored schedule
-graph. It does not search dated inventory, seat availability, or fares. Those belong to the future
-Live Flight Search feature and its external provider adapter.
+Route Discovery builds structurally possible journeys of zero to three stops from recurring
+schedules. It does not claim dated inventory, seats, live fares, fare rules, or booking
+availability.
 
-## Data flow
+## Shared read path
 
 ```text
 flight_routes + flight_services
               │
               ▼
-  refresh_route_options()
+      refresh_route_options()
               │
               ▼
-        route_options
+         route_options
+              │ publication build
+              ▼
+ refresh_route_search_options(version)
               │
               ▼
-   rpc_search_routes(jsonb)
+     route_search_options
               │
               ▼
-route-discovery-query Edge Function
+ rpc_search_route_options_v2(jsonb)
+              │
+              ▼
+       route-search-query
 ```
 
-- `flight_routes` stores directional network topology, trust status, and source lineage.
-- `flight_services` stores recurring schedule patterns, validity ranges, local times, and duration.
-- `route_options` stores a rebuildable direct/one-stop read model optimized for filtering.
-- PostgreSQL owns schedule compatibility, filtering, facets, pagination, and stable ranking.
-- Edge code validates transport shape, calls the RPC, normalizes errors, and emits safe logs.
+Homepage, City, Airport, and Route pages use this one search projection and contract. Supported
+scopes are `global`, `origin_city`, `origin_airport`, and `city_pair`. Shared filters include stops,
+airlines, connection airports, total duration, maximum per-leg layover, cabin, price/currency, and
+keyset pagination.
 
-## Supported request
+The Edge transport validates and normalizes the request once. PostgreSQL revalidates the contract,
+owns filtering/facets/ranking, and returns the shared `{ data, meta, error }` envelope. Ranking is
+deterministic: fewer stops, shorter duration, higher confidence, then UUID.
 
-`POST /functions/v1/route-discovery-query`
+## Provider boundary
 
-```json
-{
-  "action": "search_routes",
-  "input": {
-    "from": "SGN",
-    "to": "LHR",
-    "max_stops": 1,
-    "airlines": ["SQ"],
-    "exclude_airports": ["BKK"],
-    "max_duration_minutes": 1200,
-    "max_layover_minutes": 240,
-    "departure_window": "morning",
-    "limit": 20,
-    "offset": 0
-  }
-}
-```
-
-The public result uses `{ status, data, error }`. Successful `data` contains `routes`,
-`pagination`, and `facets`. Ranking remains database-owned and deterministic: fewer stops, shorter
-total duration, higher confidence, then UUID.
-
-Stable Route Discovery errors are `ERR_ROUTE_DISCOVERY_INVALID_REQUEST`,
-`ERR_ROUTE_DISCOVERY_UNAVAILABLE`, and `ERR_ROUTE_DISCOVERY_CONTRACT`. Internal SQL and provider
-errors are never returned to callers.
-
-## Local fixture
-
-The deterministic fixture contains SGN, SIN, BKK, LHR, and CDG. It proves:
-
-- two direct SGN to LHR schedule options;
-- one valid SGN to SIN to LHR option with a 135-minute connection;
-- rejection of a 20-minute BKK connection;
-- rejection of a service attached to an inactive route.
-
-Its source is development-only with production, SEO, and derived-data rights disabled. It must
-never be reused as publishable content.
+Base-data and price providers map into canonical ingestion contracts. Changing provider adapters
+does not change page or route-search contracts. Missing, expired, or unlicensed prices remain
+explicit null states and never become zero or live availability.
 
 ## Verification
 
 ```bash
 supabase db reset --local --yes
 psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
-  -v ON_ERROR_STOP=1 -f supabase/snippets/e2e_route_discovery.sql
-deno test --config supabase/functions/deno.json --allow-env --allow-read \
-  supabase/functions/v1/route-discovery/query/tests
+  -v ON_ERROR_STOP=1 -f supabase/snippets/e2e_shared_route_search.sql
+deno test --config supabase/functions/deno.json --allow-read supabase/functions
 ```
 
-## Deferred scope
-
-- Licensed base-data and schedule ingestion
-- Multi-stop search beyond one connection
-- Minimum connection time by airport, terminal, and itinerary type
-- Real dated offers, fare rules, booking links, and affiliate redirects
-- Public rate limiting and production cache policy
-- pSEO route-page read models and publication gates
+Development fixtures prove valid direct, one-, two-, and three-stop paths. Their source rights keep
+them permanently non-production and non-indexable.

@@ -23,6 +23,7 @@ sql_paths = [
   "./seed/flight_routing_fixture.sql",
   "./seed/city_pseo_fixture.sql",
   "./seed/airport_pseo_fixture.sql",
+  "./seed/provider_ready_page_fixture.sql",
 ]
 
 [realtime]
@@ -88,17 +89,17 @@ verify_jwt = true
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/user/delete-account/index.ts"
 
-[functions.route-discovery-query]
+[functions.route-search-query]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/v1/route-discovery/query/index.ts"
+entrypoint = "./functions/v1/route-search/query/index.ts"
 
-[functions.city-page-query]
+[functions.page-query]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/v1/city-page/query/index.ts"
+entrypoint = "./functions/v1/page/query/index.ts"
 
 [functions.ingestion-base-data]
 enabled = true
@@ -106,8 +107,14 @@ verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/ingestion/base-data/index.ts"
 
-[functions.airport-page-query]
+[functions.ingestion-price-estimates]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
-entrypoint = "./functions/v1/airport-page/query/index.ts"
+entrypoint = "./functions/v1/ingestion/price-estimates/index.ts"
+
+[functions.sitemap-query]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/sitemap/query/index.ts"

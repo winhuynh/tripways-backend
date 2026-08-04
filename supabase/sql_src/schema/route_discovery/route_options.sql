@@ -1,6 +1,6 @@
 -- Table: public.route_options
 -- Feature: Route Discovery
--- Purpose: Store precomputed direct and one-stop schedule options for bounded search.
+-- Purpose: Store precomputed direct through three-stop schedule options for bounded search.
 -- Responsibilities: Preserve filterable route shape, duration, schedule validity, and data version.
 
 CREATE TABLE public.route_options (
@@ -9,9 +9,16 @@ CREATE TABLE public.route_options (
   destination_airport_id  UUID           NOT NULL REFERENCES public.airports (id),
   stop_count              SMALLINT       NOT NULL,
   service_ids             UUID[]         NOT NULL,
+  flight_route_ids        UUID[]         NOT NULL,
+  origin_airport_ids      UUID[]         NOT NULL,
+  destination_airport_ids UUID[]         NOT NULL,
   connection_airport_ids  UUID[]         NOT NULL DEFAULT '{}'::UUID[],
   operating_airline_ids   UUID[]         NOT NULL,
   marketing_airline_ids   UUID[]         NOT NULL,
+  departure_local_times   TIME[]         NOT NULL,
+  arrival_local_times     TIME[]         NOT NULL,
+  leg_duration_minutes    INTEGER[]      NOT NULL,
+  layover_minutes_by_connection INTEGER[] NOT NULL DEFAULT '{}'::INTEGER[],
   total_flight_minutes    INTEGER        NOT NULL,
   layover_minutes         INTEGER        NOT NULL DEFAULT 0,
   total_duration_minutes  INTEGER        NOT NULL,
@@ -32,14 +39,21 @@ CREATE TABLE public.route_options (
     CHECK (origin_airport_id <> destination_airport_id),
 
   CONSTRAINT route_options_stop_count_check
-    CHECK (stop_count IN (0, 1)),
+    CHECK (stop_count BETWEEN 0 AND 3),
 
   CONSTRAINT route_options_shape_check
     CHECK (
       cardinality(service_ids) = stop_count + 1
+      AND cardinality(flight_route_ids) = stop_count + 1
+      AND cardinality(origin_airport_ids) = stop_count + 1
+      AND cardinality(destination_airport_ids) = stop_count + 1
       AND cardinality(connection_airport_ids) = stop_count
       AND cardinality(operating_airline_ids) = stop_count + 1
       AND cardinality(marketing_airline_ids) = stop_count + 1
+      AND cardinality(departure_local_times) = stop_count + 1
+      AND cardinality(arrival_local_times) = stop_count + 1
+      AND cardinality(leg_duration_minutes) = stop_count + 1
+      AND cardinality(layover_minutes_by_connection) = stop_count
     ),
 
   CONSTRAINT route_options_duration_check
@@ -50,7 +64,7 @@ CREATE TABLE public.route_options (
     ),
 
   CONSTRAINT route_options_arrival_offset_check
-    CHECK (arrival_day_offset BETWEEN 0 AND 3),
+    CHECK (arrival_day_offset BETWEEN 0 AND 7),
 
   CONSTRAINT route_options_validity_check
     CHECK (valid_from <= valid_to),

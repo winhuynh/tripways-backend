@@ -73,18 +73,32 @@ Deno.test('route options keep one read model table with closed client access', a
   assert.equal((sql.match(/create table /gi) ?? []).length, 1);
   assert.ok(includesSql(sql, 'stop_count smallint not null'));
   assert.ok(includesSql(sql, 'service_ids uuid[] not null'));
+  assert.ok(includesSql(sql, 'flight_route_ids uuid[] not null'));
+  assert.ok(includesSql(sql, 'origin_airport_ids uuid[] not null'));
+  assert.ok(includesSql(sql, 'destination_airport_ids uuid[] not null'));
   assert.ok(includesSql(sql, 'connection_airport_ids uuid[] not null'));
+  assert.ok(includesSql(sql, 'layover_minutes_by_connection integer[] not null'));
+  assert.ok(includesSql(sql, 'stop_count between 0 and 3'));
   assert.ok(includesSql(sql, 'total_duration_minutes integer not null'));
   assert.ok(includesSql(sql, 'data_version uuid not null'));
   assert.ok(includesSql(sql, 'alter table public.route_options enable row level security'));
   assert.ok(includesSql(sql, 'revoke all on table public.route_options from anon, authenticated'));
 });
 
+Deno.test('route refresh uses bounded recursive expansion for up to three stops', async () => {
+  const sql = await readSource('functions/route_discovery/refresh_route_options.sql');
+
+  assert.ok(includesSql(sql, 'with recursive route_paths'));
+  assert.ok(includesSql(sql, 'cardinality(path.service_ids) < 4'));
+  assert.ok(includesSql(sql, 'not (next_route.destination_airport_id = any(path.airport_path))'));
+  assert.ok(includesSql(sql, 'connection.layover_minutes between 45 and 1440'));
+});
+
 for (
   const functionName of [
     'calculate_layover_minutes',
     'refresh_route_options',
-    'rpc_search_routes',
+    'rpc_search_route_options_v2',
   ]
 ) {
   Deno.test(`${functionName} has an isolated source file and explicit search path`, async () => {
@@ -100,18 +114,21 @@ for (
 
 Deno.test('route search RPC owns validation, filters, facets, and stable errors', async () => {
   const sql = await readSource(
-    'functions/route_discovery/rpc_search_routes.sql',
+    'functions/route_discovery/rpc_search_route_options_v2.sql',
   );
 
   assert.ok(includesSql(sql, "'ERR_INVALID_REQUEST'"));
-  assert.ok(includesSql(sql, "'ERR_AIRPORT_NOT_FOUND'"));
+  assert.ok(includesSql(sql, "'ERR_ROUTE_DISCOVERY_UNAVAILABLE'"));
   assert.ok(includesSql(sql, "'max_stops'"));
   assert.ok(includesSql(sql, "'max_duration_minutes'"));
   assert.ok(includesSql(sql, "'max_layover_minutes'"));
-  assert.ok(includesSql(sql, "'departure_window'"));
+  assert.ok(includesSql(sql, "'connection_airports'"));
   assert.ok(includesSql(sql, "'facets'"));
-  assert.ok(includesSql(sql, 'order by stop_count, total_duration_minutes'));
+  assert.ok(includesSql(sql, 'order by filtered.stop_count'));
   assert.ok(
-    includesSql(sql, 'grant execute on function public.rpc_search_routes(jsonb) to service_role'),
+    includesSql(
+      sql,
+      'grant execute on function public.rpc_search_route_options_v2(jsonb) to service_role',
+    ),
   );
 });

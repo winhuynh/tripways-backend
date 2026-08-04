@@ -52,7 +52,26 @@ Deno.test('raw records preserve payload privately and constrain validation state
   const sql = await readSource('schema/ingestion/raw_base_data_records.sql');
 
   assert.ok(includesSql(sql, 'payload jsonb not null'));
-  assert.ok(includesSql(sql, "record_type in ('country', 'city', 'airport')"));
+  for (
+    const recordType of [
+      'country',
+      'city',
+      'place_alias',
+      'metro_area',
+      'airport',
+      'airport_terminal',
+      'airline',
+      'flight_route',
+      'flight_service',
+      'route_price_estimate',
+      'city_fact',
+      'airport_facility',
+      'airport_fact',
+      'page_editorial_content',
+    ]
+  ) {
+    assert.ok(sql.includes(`'${recordType}'`), `raw records must accept ${recordType}`);
+  }
   assert.ok(includesSql(sql, "validation_state in ('pending', 'valid', 'invalid')"));
   assert.ok(
     includesSql(
@@ -60,6 +79,29 @@ Deno.test('raw records preserve payload privately and constrain validation state
       'revoke all on table private.raw_base_data_records from public, anon, authenticated',
     ),
   );
+});
+
+Deno.test('data sources encode provider switching and complete publication rights', async () => {
+  const sql = await readSource('schema/flight_routing/data_sources.sql');
+
+  for (
+    const field of [
+      'provider_code',
+      'storage_allowed',
+      'retention_days',
+      'production_display_allowed',
+      'cache_allowed',
+      'max_cache_ttl_seconds',
+      'attribution_text',
+      'attribution_url',
+      'rights_effective_at',
+      'rights_expires_at',
+    ]
+  ) {
+    assert.ok(sql.includes(field), `data_sources must define ${field}`);
+  }
+  assert.ok(includesSql(sql, 'unique (provider_code, code)'));
+  assert.ok(includesSql(sql, 'rights_effective_at < rights_expires_at'));
 });
 
 Deno.test('ingestion runs are explicitly atomic and expose stable result counts', async () => {

@@ -68,32 +68,15 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_search_routes('{}'::JSONB)
+  public.rpc_search_route_options_v2('{}'::JSONB)
     #>> '{error,code}' = 'ERR_INVALID_REQUEST',
-  'route discovery preserves its invalid identity contract'
+  'shared route search preserves its invalid identity contract'
 );
 
 SELECT pg_temp.test_assert(
   public.rpc_get_city_page('{}'::JSONB)
     #>> '{error,code}' = 'ERR_INVALID_REQUEST',
   'city page preserves its invalid identity contract'
-);
-
-SELECT pg_temp.test_assert(
-  public.rpc_search_city_direct_routes('{}'::JSONB)
-    #>> '{error,code}' = 'ERR_INVALID_REQUEST',
-  'city route search preserves its invalid identity contract'
-);
-
-SELECT pg_temp.test_assert(
-  public.rpc_search_city_direct_routes(
-    '{
-      "city_slug": " Bangkok ",
-      "locale": "en-GB",
-      "origin_airports": [" dmk "]
-    }'::JSONB
-  ) #>> '{error}' IS NULL,
-  'city route search accepts normalized shared identity and IATA input'
 );
 
 ROLLBACK;

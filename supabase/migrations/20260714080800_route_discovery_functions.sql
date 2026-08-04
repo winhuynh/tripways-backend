@@ -55,9 +55,9 @@ GRANT EXECUTE ON FUNCTION public.calculate_layover_minutes(TIME, SMALLINT, TIME)
 -- ============================================================================
 -- Function: public.refresh_route_options
 -- Feature: Route Discovery
--- Purpose: Rebuild direct and one-stop Route Discovery options atomically.
--- Responsibilities: Enforce route status, schedule overlap, connection bounds, and versioning.
--- Notes: This privileged maintenance operation is executable only by service_role.
+-- Purpose: Rebuild direct through three-stop route options atomically.
+-- Responsibilities: Bound graph expansion, reject cycles, enforce schedule compatibility, and version results.
+-- Notes: Stored discovery is not live availability and never creates fare or baggage claims.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.refresh_route_options()
@@ -71,24 +71,31 @@ DECLARE
   -- Refresh state
   ------------------------------------------------------------------
   v_data_version UUID := gen_random_uuid();
-  v_direct_count INTEGER := 0;
-  v_one_stop_count INTEGER := 0;
+  v_total_count  INTEGER := 0;
+  v_counts       JSONB := '{}'::JSONB;
 BEGIN
-  -- STEP 01: Serialize refreshes and replace the prior read model in this transaction.
+  -- STEP 01: Serialize refreshes and replace the prior version atomically.
   PERFORM pg_catalog.pg_advisory_xact_lock(
     pg_catalog.hashtextextended('public.refresh_route_options', 0)
   );
   DELETE FROM public.route_options;
 
-  -- STEP 02: Materialize schedule options backed by an eligible direct route.
+  -- STEP 02: Expand eligible schedule paths to at most four legs (three stops).
   INSERT INTO public.route_options (
     origin_airport_id,
     destination_airport_id,
     stop_count,
     service_ids,
+    flight_route_ids,
+    origin_airport_ids,
+    destination_airport_ids,
     connection_airport_ids,
     operating_airline_ids,
     marketing_airline_ids,
+    departure_local_times,
+    arrival_local_times,
+    leg_duration_minutes,
+    layover_minutes_by_connection,
     total_flight_minutes,
     layover_minutes,
     total_duration_minutes,
@@ -101,125 +108,170 @@ BEGIN
     confidence_score,
     data_version
   )
-  SELECT
-    route.origin_airport_id,
-    route.destination_airport_id,
-    0,
-    ARRAY[service.id],
-    '{}'::UUID[],
-    ARRAY[service.operating_airline_id],
-    ARRAY[COALESCE(service.marketing_airline_id, service.operating_airline_id)],
-    service.duration_minutes,
-    0,
-    service.duration_minutes,
-    service.departure_local_time,
-    service.arrival_local_time,
-    service.arrival_day_offset,
-    service.valid_from,
-    service.valid_to,
-    service.days_of_week,
-    LEAST(route.confidence_score, service.confidence_score),
-    v_data_version
-  FROM public.flight_services service
-  JOIN public.flight_routes route ON route.id = service.flight_route_id
-  WHERE route.status IN ('verified_active', 'likely_active', 'seasonal');
+  WITH RECURSIVE route_paths AS (
+    SELECT
+      route.origin_airport_id,
+      route.destination_airport_id,
+      ARRAY[route.origin_airport_id, route.destination_airport_id]::UUID[] AS airport_path,
+      ARRAY[service.id]::UUID[] AS service_ids,
+      ARRAY[route.id]::UUID[] AS flight_route_ids,
+      ARRAY[route.origin_airport_id]::UUID[] AS origin_airport_ids,
+      ARRAY[route.destination_airport_id]::UUID[] AS destination_airport_ids,
+      '{}'::UUID[] AS connection_airport_ids,
+      ARRAY[service.operating_airline_id]::UUID[] AS operating_airline_ids,
+      ARRAY[COALESCE(service.marketing_airline_id, service.operating_airline_id)]::UUID[] AS marketing_airline_ids,
+      ARRAY[service.departure_local_time]::TIME[] AS departure_local_times,
+      ARRAY[service.arrival_local_time]::TIME[] AS arrival_local_times,
+      ARRAY[service.duration_minutes]::INTEGER[] AS leg_duration_minutes,
+      '{}'::INTEGER[] AS layover_minutes_by_connection,
+      service.duration_minutes AS total_flight_minutes,
+      0 AS layover_minutes,
+      service.duration_minutes AS total_duration_minutes,
+      service.departure_local_time,
+      service.arrival_local_time,
+      service.arrival_day_offset::INTEGER AS arrival_day_offset,
+      service.valid_from,
+      service.valid_to,
+      service.days_of_week,
+      LEAST(route.confidence_score, service.confidence_score)::NUMERIC(4,3) AS confidence_score
+    FROM public.flight_services service
+    JOIN public.flight_routes route
+      ON route.id = service.flight_route_id
+    JOIN admin.data_sources source
+      ON source.id = route.source_id
+    WHERE route.status IN ('verified_active', 'likely_active', 'seasonal')
+      AND (
+        source.derived_data_allowed = TRUE
+        OR source.source_type = 'development_fixture'
+      )
 
-  GET DIAGNOSTICS v_direct_count = ROW_COUNT;
+    UNION ALL
 
-  -- STEP 03: Materialize one-stop pairs with overlapping validity and safe connection time.
-  INSERT INTO public.route_options (
-    origin_airport_id,
-    destination_airport_id,
-    stop_count,
-    service_ids,
-    connection_airport_ids,
-    operating_airline_ids,
-    marketing_airline_ids,
-    total_flight_minutes,
-    layover_minutes,
-    total_duration_minutes,
-    departure_local_time,
-    arrival_local_time,
-    arrival_day_offset,
-    valid_from,
-    valid_to,
-    days_of_week,
-    confidence_score,
-    data_version
+    SELECT
+      path.origin_airport_id,
+      next_route.destination_airport_id,
+      path.airport_path || next_route.destination_airport_id,
+      path.service_ids || next_service.id,
+      path.flight_route_ids || next_route.id,
+      path.origin_airport_ids || next_route.origin_airport_id,
+      path.destination_airport_ids || next_route.destination_airport_id,
+      path.connection_airport_ids || next_route.origin_airport_id,
+      path.operating_airline_ids || next_service.operating_airline_id,
+      path.marketing_airline_ids || COALESCE(next_service.marketing_airline_id, next_service.operating_airline_id),
+      path.departure_local_times || next_service.departure_local_time,
+      path.arrival_local_times || next_service.arrival_local_time,
+      path.leg_duration_minutes || next_service.duration_minutes,
+      path.layover_minutes_by_connection || connection.layover_minutes,
+      path.total_flight_minutes + next_service.duration_minutes,
+      path.layover_minutes + connection.layover_minutes,
+      path.total_duration_minutes + connection.layover_minutes + next_service.duration_minutes,
+      path.departure_local_time,
+      next_service.arrival_local_time,
+      path.arrival_day_offset
+        + CASE WHEN next_service.departure_local_time <= path.arrival_local_time THEN 1 ELSE 0 END
+        + next_service.arrival_day_offset,
+      GREATEST(path.valid_from, next_service.valid_from),
+      LEAST(path.valid_to, next_service.valid_to),
+      schedule_days.days_of_week,
+      LEAST(path.confidence_score, next_route.confidence_score, next_service.confidence_score)::NUMERIC(4,3)
+    FROM route_paths path
+    JOIN public.flight_routes next_route
+      ON next_route.origin_airport_id = path.destination_airport_id
+    JOIN public.flight_services next_service
+      ON next_service.flight_route_id = next_route.id
+    JOIN admin.data_sources next_source
+      ON next_source.id = next_route.source_id
+    CROSS JOIN LATERAL (
+      SELECT public.calculate_layover_minutes(
+        path.arrival_local_time,
+        path.arrival_day_offset::SMALLINT,
+        next_service.departure_local_time
+      ) AS layover_minutes
+    ) connection
+    CROSS JOIN LATERAL (
+      SELECT ARRAY(
+        SELECT day_value
+        FROM UNNEST(path.days_of_week) day_value
+        INTERSECT
+        SELECT day_value
+        FROM UNNEST(next_service.days_of_week) day_value
+        ORDER BY day_value
+      )::SMALLINT[] AS days_of_week
+    ) schedule_days
+    WHERE cardinality(path.service_ids) < 4
+      AND next_route.status IN ('verified_active', 'likely_active', 'seasonal')
+      AND (
+        next_source.derived_data_allowed = TRUE
+        OR next_source.source_type = 'development_fixture'
+      )
+      AND NOT (next_route.destination_airport_id = ANY(path.airport_path))
+      AND next_route.destination_airport_id <> path.origin_airport_id
+      AND GREATEST(path.valid_from, next_service.valid_from)
+        <= LEAST(path.valid_to, next_service.valid_to)
+      AND cardinality(schedule_days.days_of_week) > 0
+      AND connection.layover_minutes BETWEEN 45 AND 1440
+      AND path.total_duration_minutes + connection.layover_minutes + next_service.duration_minutes <= 10080
+      AND path.arrival_day_offset
+        + CASE WHEN next_service.departure_local_time <= path.arrival_local_time THEN 1 ELSE 0 END
+        + next_service.arrival_day_offset <= 7
+  ),
+  ranked_paths AS (
+    SELECT
+      path.*,
+      ROW_NUMBER() OVER (
+        PARTITION BY path.origin_airport_id, path.destination_airport_id, cardinality(path.service_ids)
+        ORDER BY path.total_duration_minutes, path.confidence_score DESC, path.service_ids::TEXT
+      ) AS candidate_rank
+    FROM route_paths path
   )
   SELECT
-    first_route.origin_airport_id,
-    second_route.destination_airport_id,
-    1,
-    ARRAY[first_service.id, second_service.id],
-    ARRAY[first_route.destination_airport_id],
-    ARRAY[first_service.operating_airline_id, second_service.operating_airline_id],
-    ARRAY[
-      COALESCE(first_service.marketing_airline_id, first_service.operating_airline_id),
-      COALESCE(second_service.marketing_airline_id, second_service.operating_airline_id)
-    ],
-    first_service.duration_minutes + second_service.duration_minutes,
-    connection.layover_minutes,
-    first_service.duration_minutes
-      + connection.layover_minutes
-      + second_service.duration_minutes,
-    first_service.departure_local_time,
-    second_service.arrival_local_time,
-    first_service.arrival_day_offset
-      + CASE
-        WHEN second_service.departure_local_time <= first_service.arrival_local_time THEN 1
-        ELSE 0
-      END
-      + second_service.arrival_day_offset,
-    GREATEST(first_service.valid_from, second_service.valid_from),
-    LEAST(first_service.valid_to, second_service.valid_to),
-    schedule_days.days_of_week,
-    LEAST(
-      first_route.confidence_score,
-      second_route.confidence_score,
-      first_service.confidence_score,
-      second_service.confidence_score
-    ),
+    path.origin_airport_id,
+    path.destination_airport_id,
+    (cardinality(path.service_ids) - 1)::SMALLINT,
+    path.service_ids,
+    path.flight_route_ids,
+    path.origin_airport_ids,
+    path.destination_airport_ids,
+    path.connection_airport_ids,
+    path.operating_airline_ids,
+    path.marketing_airline_ids,
+    path.departure_local_times,
+    path.arrival_local_times,
+    path.leg_duration_minutes,
+    path.layover_minutes_by_connection,
+    path.total_flight_minutes,
+    path.layover_minutes,
+    path.total_duration_minutes,
+    path.departure_local_time,
+    path.arrival_local_time,
+    path.arrival_day_offset::SMALLINT,
+    path.valid_from,
+    path.valid_to,
+    path.days_of_week,
+    path.confidence_score,
     v_data_version
-  FROM public.flight_services first_service
-  JOIN public.flight_routes first_route ON first_route.id = first_service.flight_route_id
-  JOIN public.flight_routes second_route
-    ON second_route.origin_airport_id = first_route.destination_airport_id
-    AND second_route.destination_airport_id <> first_route.origin_airport_id
-  JOIN public.flight_services second_service
-    ON second_service.flight_route_id = second_route.id
-  CROSS JOIN LATERAL (
-    SELECT public.calculate_layover_minutes(
-      first_service.arrival_local_time,
-      first_service.arrival_day_offset,
-      second_service.departure_local_time
-    ) AS layover_minutes
-  ) connection
-  CROSS JOIN LATERAL (
-    SELECT ARRAY(
-      SELECT day_value
-      FROM UNNEST(first_service.days_of_week) day_value
-      INTERSECT
-      SELECT day_value
-      FROM UNNEST(second_service.days_of_week) day_value
-      ORDER BY day_value
-    )::SMALLINT[] AS days_of_week
-  ) schedule_days
-  WHERE first_route.status IN ('verified_active', 'likely_active', 'seasonal')
-    AND second_route.status IN ('verified_active', 'likely_active', 'seasonal')
-    AND GREATEST(first_service.valid_from, second_service.valid_from)
-      <= LEAST(first_service.valid_to, second_service.valid_to)
-    AND cardinality(schedule_days.days_of_week) > 0
-    AND connection.layover_minutes BETWEEN 45 AND 1440;
+  FROM ranked_paths path
+  WHERE path.candidate_rank <= 200;
 
-  GET DIAGNOSTICS v_one_stop_count = ROW_COUNT;
+  GET DIAGNOSTICS v_total_count = ROW_COUNT;
 
-  -- STEP 04: Return refresh metadata for operational logging and verification.
+  -- STEP 03: Return versioned counts by stop depth for operational verification.
+  SELECT COALESCE(
+    jsonb_object_agg(stop_count::TEXT, option_count ORDER BY stop_count),
+    '{}'::JSONB
+  )
+  INTO v_counts
+  FROM (
+    SELECT stop_count, COUNT(*) AS option_count
+    FROM public.route_options
+    GROUP BY stop_count
+  ) counts;
+
   RETURN jsonb_build_object(
     'data_version', v_data_version,
-    'direct_count', v_direct_count,
-    'one_stop_count', v_one_stop_count,
-    'total_count', v_direct_count + v_one_stop_count
+    'counts_by_stop', v_counts,
+    'total_count', v_total_count,
+    'max_stops', 3
   );
 END;
 $$;
@@ -227,395 +279,374 @@ $$;
 REVOKE ALL ON FUNCTION public.refresh_route_options() FROM public;
 GRANT EXECUTE ON FUNCTION public.refresh_route_options() TO service_role;
 
--- >>> supabase/sql_src/functions/route_discovery/rpc_search_routes.sql
+-- >>> supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql
 
 -- ============================================================================
--- Function: public.rpc_search_routes
--- Feature: Route Discovery
--- Purpose: Search the precomputed route graph through a stable JSON contract.
--- Responsibilities: Validate filters, resolve codes, rank options, paginate, and return facets.
--- Notes: The service-role-only transport keeps direct table access closed to public clients.
+-- Function: private.refresh_route_search_options
+-- Purpose: Rebuild the shared searchable route projection for one candidate version.
+-- Responsibilities: Resolve identities, ordered codes, canonical paths, and display-safe prices.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_search_routes(p_input JSONB)
-RETURNS JSONB
+CREATE OR REPLACE FUNCTION private.refresh_route_search_options(p_publication_version_id UUID)
+RETURNS INTEGER
 LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
+VOLATILE
 SET search_path = ''
 AS $$
 DECLARE
-  ------------------------------------------------------------------
-  -- Route identity
-  ------------------------------------------------------------------
-  v_from TEXT;
-  v_to TEXT;
-  v_origin_id UUID;
-  v_destination_id UUID;
+  v_count INTEGER;
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM public.publication_versions version
+    WHERE version.id = p_publication_version_id
+      AND version.status = 'building'
+  ) THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_PUBLICATION_VERSION_INVALID';
+  END IF;
 
-  ------------------------------------------------------------------
-  -- Filters and pagination
-  ------------------------------------------------------------------
-  v_max_stops INTEGER := 1;
-  v_max_duration_minutes INTEGER;
-  v_max_layover_minutes INTEGER;
-  v_departure_window TEXT;
-  v_limit INTEGER := 20;
-  v_offset INTEGER := 0;
-  v_airline_codes TEXT[] := '{}'::TEXT[];
-  v_excluded_airport_ids UUID[] := '{}'::UUID[];
+  DELETE FROM public.route_search_options
+  WHERE publication_version_id = p_publication_version_id;
 
-  ------------------------------------------------------------------
-  -- Result
-  ------------------------------------------------------------------
+  INSERT INTO public.route_search_options (
+    id,
+    publication_version_id,
+    origin_city_id,
+    origin_city_slug,
+    destination_city_id,
+    destination_city_slug,
+    origin_airport_id,
+    origin_airport_iata,
+    destination_airport_id,
+    destination_airport_iata,
+    stop_count,
+    connection_airport_ids,
+    connection_airport_iatas,
+    operating_airline_ids,
+    operating_airline_iatas,
+    departure_local_time,
+    arrival_local_time,
+    arrival_day_offset,
+    days_of_week,
+    valid_from,
+    valid_to,
+    total_flight_minutes,
+    layover_minutes,
+    maximum_layover_minutes,
+    total_duration_minutes,
+    confidence_score,
+    route_path,
+    price_state,
+    price_min,
+    price_max,
+    currency_code,
+    price_valid_until
+  )
+  SELECT
+    option.id,
+    p_publication_version_id,
+    origin_city.id,
+    origin_city.slug,
+    destination_city.id,
+    destination_city.slug,
+    origin_airport.id,
+    origin_airport.iata,
+    destination_airport.id,
+    destination_airport.iata,
+    option.stop_count,
+    option.connection_airport_ids,
+    ARRAY(
+      SELECT airport.iata
+      FROM unnest(option.connection_airport_ids) WITH ORDINALITY item(id, position)
+      JOIN public.airports airport
+        ON airport.id = item.id
+      ORDER BY item.position
+    ),
+    option.operating_airline_ids,
+    ARRAY(
+      SELECT airline.iata
+      FROM unnest(option.operating_airline_ids) WITH ORDINALITY item(id, position)
+      JOIN public.airlines airline
+        ON airline.id = item.id
+      ORDER BY item.position
+    ),
+    option.departure_local_time,
+    option.arrival_local_time,
+    option.arrival_day_offset,
+    option.days_of_week,
+    option.valid_from,
+    option.valid_to,
+    option.total_flight_minutes,
+    option.layover_minutes,
+    COALESCE((SELECT max(minutes) FROM unnest(option.layover_minutes_by_connection) minutes), 0),
+    option.total_duration_minutes,
+    option.confidence_score,
+    format('/flights/%s-to-%s', origin_city.slug, destination_city.slug),
+    COALESCE(price.state, 'missing'),
+    price.price_min,
+    price.price_max,
+    price.currency_code,
+    price.valid_until
+  FROM public.route_options option
+  JOIN public.airports origin_airport
+    ON origin_airport.id = option.origin_airport_id
+  JOIN public.cities origin_city
+    ON origin_city.id = origin_airport.city_id
+  JOIN public.airports destination_airport
+    ON destination_airport.id = option.destination_airport_id
+  JOIN public.cities destination_city
+    ON destination_city.id = destination_airport.city_id
+  LEFT JOIN LATERAL (
+    SELECT
+      'available'::TEXT AS state,
+      estimate.price_min,
+      estimate.price_max,
+      estimate.currency_code,
+      estimate.valid_until
+    FROM public.route_price_estimates estimate
+    JOIN admin.data_sources source
+      ON source.id = estimate.source_id
+    WHERE estimate.origin_city_id = origin_city.id
+      AND estimate.destination_city_id = destination_city.id
+      AND estimate.status = 'published'
+      AND estimate.valid_until > now()
+      AND source.production_display_allowed = TRUE
+      AND source.derived_data_allowed = TRUE
+      AND (
+        source.rights_effective_at IS NULL
+        OR now() BETWEEN source.rights_effective_at AND source.rights_expires_at
+      )
+    ORDER BY
+      estimate.confidence_score DESC,
+      estimate.last_verified_at DESC,
+      estimate.id
+    LIMIT 1
+  ) price ON TRUE;
+
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+  RETURN v_count;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION private.refresh_route_search_options(UUID)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.refresh_route_search_options(UUID) TO service_role;
+
+-- >>> supabase/sql_src/functions/route_discovery/rpc_search_route_options_v2.sql
+
+-- ============================================================================
+-- Function: public.rpc_search_route_options_v2
+-- Purpose: Search one shared route projection for every page consumer.
+-- Responsibilities: Validate scope/filters, apply deterministic keyset pagination, and return facets.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_search_route_options_v2(p_input JSONB)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SET search_path = ''
+AS $$
+DECLARE
+  v_version_id UUID;
+  v_scope_type TEXT;
+  v_scope_key TEXT;
+  v_scope_from TEXT;
+  v_scope_to TEXT;
+  v_filters JSONB;
+  v_max_stops INTEGER;
+  v_airlines TEXT[];
+  v_connections TEXT[];
+  v_max_duration INTEGER;
+  v_max_layover INTEGER;
+  v_cabin TEXT;
+  v_price_max NUMERIC;
+  v_currency TEXT;
+  v_page_size INTEGER;
+  v_cursor_stops INTEGER;
+  v_cursor_duration INTEGER;
+  v_cursor_confidence NUMERIC;
+  v_cursor_id UUID;
   v_result JSONB;
 BEGIN
-  -- STEP 01: Validate and normalize the bounded public input contract.
-  IF p_input IS NULL OR jsonb_typeof(p_input) <> 'object' THEN
-    RETURN private.build_rpc_error(
-      '[]'::JSONB,
-      'ERR_INVALID_REQUEST',
-      'Request must be a JSON object.'
-    );
-  END IF;
-
-  v_from := private.normalize_airport_iata(p_input->>'from');
-  v_to := private.normalize_airport_iata(p_input->>'to');
-
-  IF v_from IS NULL OR v_to IS NULL OR v_from = v_to THEN
-    RETURN private.build_rpc_error(
-      '[]'::JSONB,
-      'ERR_INVALID_REQUEST',
-      'Origin and destination must be different three-letter IATA codes.'
-    );
-  END IF;
-
-  IF p_input ? 'max_stops' THEN
-    IF jsonb_typeof(p_input->'max_stops') <> 'number' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'max_stops must be an integer.'
-        )
-      );
-    END IF;
-    v_max_stops := (p_input->>'max_stops')::INTEGER;
-  END IF;
-
-  IF p_input ? 'limit' THEN
-    IF jsonb_typeof(p_input->'limit') <> 'number' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'limit must be an integer.'
-        )
-      );
-    END IF;
-    v_limit := (p_input->>'limit')::INTEGER;
-  END IF;
-
-  IF p_input ? 'offset' THEN
-    IF jsonb_typeof(p_input->'offset') <> 'number' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'offset must be an integer.'
-        )
-      );
-    END IF;
-    v_offset := (p_input->>'offset')::INTEGER;
-  END IF;
-
-  IF v_max_stops NOT BETWEEN 0 AND 1
-    OR v_limit NOT BETWEEN 1 AND 100
-    OR v_offset NOT BETWEEN 0 AND 10000
+  IF jsonb_typeof(p_input) IS DISTINCT FROM 'object'
+    OR p_input - ARRAY['scope', 'filters', 'page_size', 'after'] <> '{}'::JSONB
+    OR jsonb_typeof(p_input->'scope') <> 'object'
+    OR jsonb_typeof(COALESCE(p_input->'filters', '{}'::JSONB)) <> 'object'
+    OR COALESCE(p_input->'filters', '{}'::JSONB)
+      - ARRAY[
+        'max_stops',
+        'airlines',
+        'connection_airports',
+        'max_duration_minutes',
+        'max_layover_minutes',
+        'cabin',
+        'price_max',
+        'currency'
+      ] <> '{}'::JSONB
   THEN
-    RETURN jsonb_build_object(
-      'data', '[]'::JSONB,
-      'meta', '{}'::JSONB,
-      'error', jsonb_build_object(
-        'code', 'ERR_INVALID_REQUEST',
-        'message', 'Pagination or stop limits are outside accepted bounds.'
-      )
-    );
+    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route search request.');
   END IF;
 
-  IF p_input ? 'max_duration_minutes' THEN
-    IF jsonb_typeof(p_input->'max_duration_minutes') <> 'number' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'max_duration_minutes must be an integer.'
-        )
-      );
-    END IF;
-    v_max_duration_minutes := (p_input->>'max_duration_minutes')::INTEGER;
-    IF v_max_duration_minutes NOT BETWEEN 1 AND 4320 THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'max_duration_minutes is outside accepted bounds.'
-        )
-      );
-    END IF;
-  END IF;
+  v_scope_type := p_input #>> '{scope,type}';
+  v_scope_key := p_input #>> '{scope,key}';
+  v_scope_from := p_input #>> '{scope,from}';
+  v_scope_to := p_input #>> '{scope,to}';
+  v_filters := COALESCE(p_input->'filters', '{}'::JSONB);
+  v_max_stops := COALESCE((v_filters->>'max_stops')::INTEGER, 3);
+  v_max_duration := NULLIF(v_filters->>'max_duration_minutes', '')::INTEGER;
+  v_max_layover := NULLIF(v_filters->>'max_layover_minutes', '')::INTEGER;
+  v_cabin := COALESCE(NULLIF(v_filters->>'cabin', ''), 'any');
+  v_price_max := NULLIF(v_filters->>'price_max', '')::NUMERIC;
+  v_currency := upper(NULLIF(btrim(COALESCE(v_filters->>'currency', '')), ''));
+  v_page_size := COALESCE((p_input->>'page_size')::INTEGER, 20);
 
-  IF p_input ? 'max_layover_minutes' THEN
-    IF jsonb_typeof(p_input->'max_layover_minutes') <> 'number' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'max_layover_minutes must be an integer.'
-        )
-      );
-    END IF;
-    v_max_layover_minutes := (p_input->>'max_layover_minutes')::INTEGER;
-    IF v_max_layover_minutes NOT BETWEEN 45 AND 1440 THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'max_layover_minutes is outside accepted bounds.'
-        )
-      );
-    END IF;
-  END IF;
-
-  v_departure_window := nullif(lower(btrim(COALESCE(p_input->>'departure_window', ''))), '');
-  IF v_departure_window IS NOT NULL
-    AND v_departure_window NOT IN ('morning', 'afternoon', 'evening', 'night') THEN
-    RETURN jsonb_build_object(
-      'data', '[]'::JSONB,
-      'meta', '{}'::JSONB,
-      'error', jsonb_build_object(
-        'code', 'ERR_INVALID_REQUEST',
-        'message', 'departure_window is not supported.'
-      )
-    );
-  END IF;
-
-  IF p_input ? 'airlines' THEN
-    IF jsonb_typeof(p_input->'airlines') <> 'array' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'airlines must be an array.'
-        )
-      );
-    END IF;
-    IF EXISTS (
-      SELECT 1
-      FROM jsonb_array_elements_text(p_input->'airlines') code
-      WHERE private.normalize_airline_iata(code) IS NULL
-    ) THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'airlines contains an invalid IATA code.'
-        )
-      );
-    END IF;
-    SELECT COALESCE(
-      array_agg(DISTINCT private.normalize_airline_iata(code)),
-      '{}'::TEXT[]
+  IF v_scope_type IS NULL
+    OR v_scope_type NOT IN ('global', 'origin_city', 'origin_airport', 'city_pair')
+    OR (
+      v_scope_type = 'global'
+      AND (p_input->'scope') - ARRAY['type'] <> '{}'::JSONB
     )
-    INTO v_airline_codes
-    FROM jsonb_array_elements_text(p_input->'airlines') code;
-  END IF;
-
-  IF p_input ? 'exclude_airports' THEN
-    IF jsonb_typeof(p_input->'exclude_airports') <> 'array' THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'exclude_airports must be an array.'
-        )
-      );
-    END IF;
-    IF EXISTS (
-      SELECT 1
-      FROM jsonb_array_elements_text(p_input->'exclude_airports') code
-      WHERE private.normalize_airport_iata(code) IS NULL
-    ) THEN
-      RETURN jsonb_build_object(
-        'data', '[]'::JSONB,
-        'meta', '{}'::JSONB,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'exclude_airports contains an invalid IATA code.'
-        )
-      );
-    END IF;
-    SELECT COALESCE(array_agg(airport.id), '{}'::UUID[])
-    INTO v_excluded_airport_ids
-    FROM public.airports airport
-    WHERE airport.iata IN (
-      SELECT private.normalize_airport_iata(code)
-      FROM jsonb_array_elements_text(p_input->'exclude_airports') code
-    );
-  END IF;
-
-  -- STEP 02: Resolve endpoint codes without exposing internal identifiers.
-  SELECT airport.id INTO v_origin_id FROM public.airports airport WHERE airport.iata = v_from;
-  SELECT airport.id INTO v_destination_id FROM public.airports airport WHERE airport.iata = v_to;
-
-  IF v_origin_id IS NULL OR v_destination_id IS NULL THEN
-    RETURN jsonb_build_object(
-      'data', '[]'::JSONB,
-      'meta', '{}'::JSONB,
-      'error', jsonb_build_object(
-        'code', 'ERR_AIRPORT_NOT_FOUND',
-        'message', 'Origin or destination airport was not found.'
+    OR (
+      v_scope_type IN ('origin_city', 'origin_airport')
+      AND (
+        (p_input->'scope') - ARRAY['type', 'key'] <> '{}'::JSONB
+        OR NULLIF(btrim(COALESCE(v_scope_key, '')), '') IS NULL
       )
-    );
+    )
+    OR (
+      v_scope_type = 'city_pair'
+      AND (
+        (p_input->'scope') - ARRAY['type', 'from', 'to'] <> '{}'::JSONB
+        OR NULLIF(btrim(COALESCE(v_scope_from, '')), '') IS NULL
+        OR NULLIF(btrim(COALESCE(v_scope_to, '')), '') IS NULL
+        OR v_scope_from = v_scope_to
+      )
+    )
+    OR (v_scope_type = 'origin_airport' AND upper(v_scope_key) !~ '^[A-Z0-9]{3}$')
+    OR v_max_stops NOT BETWEEN 0 AND 3
+    OR v_page_size NOT BETWEEN 1 AND 100
+    OR (v_max_duration IS NOT NULL AND v_max_duration NOT BETWEEN 1 AND 10080)
+    OR (v_max_layover IS NOT NULL AND v_max_layover NOT BETWEEN 1 AND 1440)
+    OR (v_price_max IS NOT NULL AND v_price_max < 0)
+    OR ((v_price_max IS NULL) <> (v_currency IS NULL))
+    OR (v_currency IS NOT NULL AND v_currency !~ '^[A-Z]{3}$')
+    OR v_cabin NOT IN ('any', 'economy', 'premium_economy', 'business', 'first')
+    OR (v_filters ? 'airlines' AND jsonb_typeof(v_filters->'airlines') <> 'array')
+    OR (
+      v_filters ? 'connection_airports'
+      AND jsonb_typeof(v_filters->'connection_airports') <> 'array'
+    )
+  THEN
+    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route search request.');
   END IF;
 
-  -- STEP 03: Apply all route filters once, then derive results and facets from the same set.
+  IF v_filters ? 'airlines' THEN
+    SELECT COALESCE(array_agg(DISTINCT upper(value)), '{}'::TEXT[])
+    INTO v_airlines
+    FROM jsonb_array_elements_text(v_filters->'airlines');
+  ELSE
+    v_airlines := '{}'::TEXT[];
+  END IF;
+
+  IF v_filters ? 'connection_airports' THEN
+    SELECT COALESCE(array_agg(DISTINCT upper(value)), '{}'::TEXT[])
+    INTO v_connections
+    FROM jsonb_array_elements_text(v_filters->'connection_airports');
+  ELSE
+    v_connections := '{}'::TEXT[];
+  END IF;
+
+  IF EXISTS (SELECT 1 FROM unnest(v_airlines) code WHERE code !~ '^[A-Z0-9]{2}$')
+    OR EXISTS (SELECT 1 FROM unnest(v_connections) code WHERE code !~ '^[A-Z0-9]{3}$')
+  THEN
+    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route code filter.');
+  END IF;
+
+  SELECT version.id
+  INTO v_version_id
+  FROM public.publication_versions version
+  WHERE version.is_current = TRUE;
+
+  IF v_version_id IS NULL THEN
+    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_ROUTE_DISCOVERY_UNAVAILABLE', 'No route publication is available.');
+  END IF;
+
+  IF p_input->>'after' IS NOT NULL THEN
+    BEGIN
+      v_cursor_stops := split_part(p_input->>'after', ':', 1)::INTEGER;
+      v_cursor_duration := split_part(p_input->>'after', ':', 2)::INTEGER;
+      v_cursor_confidence := split_part(p_input->>'after', ':', 3)::NUMERIC;
+      v_cursor_id := split_part(p_input->>'after', ':', 4)::UUID;
+    EXCEPTION WHEN OTHERS THEN
+      RETURN private.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route cursor.');
+    END;
+  END IF;
+
   WITH filtered AS MATERIALIZED (
-    SELECT route_option.*
-    FROM public.route_options route_option
-    WHERE route_option.origin_airport_id = v_origin_id
-      AND route_option.destination_airport_id = v_destination_id
-      AND route_option.stop_count <= v_max_stops
-      AND (
-        v_max_duration_minutes IS NULL
-        OR route_option.total_duration_minutes <= v_max_duration_minutes
-      )
-      AND (v_max_layover_minutes IS NULL OR route_option.layover_minutes <= v_max_layover_minutes)
-      AND NOT (route_option.connection_airport_ids && v_excluded_airport_ids)
-      AND (
-        cardinality(v_airline_codes) = 0
-        OR EXISTS (
-          SELECT 1
-          FROM public.airlines airline
-          WHERE airline.id = ANY(route_option.operating_airline_ids)
-            AND airline.iata = ANY(v_airline_codes)
-        )
-      )
-      AND (
-        v_departure_window IS NULL
-        OR (
-          v_departure_window = 'morning'
-          AND route_option.departure_local_time >= TIME '05:00'
-          AND route_option.departure_local_time < TIME '12:00'
-        )
-        OR (
-          v_departure_window = 'afternoon'
-          AND route_option.departure_local_time >= TIME '12:00'
-          AND route_option.departure_local_time < TIME '17:00'
-        )
-        OR (
-          v_departure_window = 'evening'
-          AND route_option.departure_local_time >= TIME '17:00'
-          AND route_option.departure_local_time < TIME '21:00'
-        )
-        OR (
-          v_departure_window = 'night'
-          AND (
-            route_option.departure_local_time >= TIME '21:00'
-            OR route_option.departure_local_time < TIME '05:00'
-          )
-        )
-      )
+    SELECT option.*
+    FROM public.route_search_options option
+    WHERE option.publication_version_id = v_version_id
+      AND option.stop_count <= v_max_stops
+      AND (v_scope_type <> 'origin_city' OR option.origin_city_slug = v_scope_key)
+      AND (v_scope_type <> 'origin_airport' OR option.origin_airport_iata = upper(v_scope_key))
+      AND (v_scope_type <> 'city_pair' OR (option.origin_city_slug = v_scope_from AND option.destination_city_slug = v_scope_to))
+      AND (v_max_duration IS NULL OR option.total_duration_minutes <= v_max_duration)
+      AND (v_max_layover IS NULL OR option.maximum_layover_minutes <= v_max_layover)
+      AND (cardinality(v_airlines) = 0 OR option.operating_airline_iatas && v_airlines)
+      AND (cardinality(v_connections) = 0 OR option.connection_airport_iatas && v_connections)
+      AND (v_price_max IS NULL OR (option.price_state = 'available' AND option.price_min <= v_price_max AND option.currency_code = v_currency))
   ),
   page AS (
-    SELECT *
+    SELECT filtered.*
     FROM filtered
-    ORDER BY stop_count, total_duration_minutes, confidence_score DESC, id
-    LIMIT v_limit
-    OFFSET v_offset
+    WHERE v_cursor_id IS NULL
+      OR (filtered.stop_count, filtered.total_duration_minutes, -filtered.confidence_score, filtered.id)
+        > (v_cursor_stops, v_cursor_duration, -v_cursor_confidence, v_cursor_id)
+    ORDER BY filtered.stop_count, filtered.total_duration_minutes, filtered.confidence_score DESC, filtered.id
+    LIMIT v_page_size
   )
   SELECT jsonb_build_object(
-    'data', COALESCE((
-      SELECT jsonb_agg(
-        jsonb_build_object(
-          'id', page.id,
-          'from', v_from,
-          'to', v_to,
-          'stops', page.stop_count,
-          'connection_airports', COALESCE((
-            SELECT jsonb_agg(airport.iata ORDER BY position.ordinality)
-            FROM UNNEST(page.connection_airport_ids)
-            WITH ORDINALITY position(airport_id, ordinality)
-            JOIN public.airports airport ON airport.id = position.airport_id
-          ), '[]'::JSONB),
-          'operating_airlines', COALESCE((
-            SELECT jsonb_agg(airline.iata ORDER BY position.ordinality)
-            FROM UNNEST(page.operating_airline_ids) WITH ordinality position(airline_id, ordinality)
-            JOIN public.airlines airline ON airline.id = position.airline_id
-          ), '[]'::JSONB),
-          'total_flight_minutes', page.total_flight_minutes,
-          'layover_minutes', page.layover_minutes,
-          'total_duration_minutes', page.total_duration_minutes,
-          'departure_local_time', to_char(page.departure_local_time, 'HH24:MI'),
-          'arrival_local_time', to_char(page.arrival_local_time, 'HH24:MI'),
-          'arrival_day_offset', page.arrival_day_offset,
-          'valid_from', page.valid_from,
-          'valid_to', page.valid_to,
-          'days_of_week', page.days_of_week,
-          'confidence_score', page.confidence_score,
-          'data_version', page.data_version
-        )
-        ORDER BY page.stop_count, page.total_duration_minutes, page.confidence_score DESC, page.id
-      )
-      FROM page
-    ), '[]'::JSONB),
+    'data', COALESCE((SELECT jsonb_agg(jsonb_build_object(
+      'id', page.id,
+      'from', page.origin_airport_iata,
+      'to', page.destination_airport_iata,
+      'stops', page.stop_count,
+      'connection_airports', to_jsonb(page.connection_airport_iatas),
+      'operating_airlines', to_jsonb(page.operating_airline_iatas),
+      'total_flight_minutes', page.total_flight_minutes,
+      'layover_minutes', page.layover_minutes,
+      'total_duration_minutes', page.total_duration_minutes,
+      'schedule', jsonb_build_object('departure_local_time', page.departure_local_time, 'arrival_local_time', page.arrival_local_time, 'arrival_day_offset', page.arrival_day_offset, 'days_of_week', page.days_of_week, 'valid_from', page.valid_from, 'valid_to', page.valid_to),
+      'route_path', page.route_path,
+      'price', CASE WHEN page.price_state = 'available' THEN jsonb_build_object('state','available','price_min',page.price_min,'price_max',page.price_max,'currency_code',page.currency_code,'valid_until',page.price_valid_until) ELSE jsonb_build_object('state','unavailable','reason',page.price_state,'estimate',NULL) END,
+      'self_transfer', 'unknown', 'through_baggage', 'unknown', 'fare_rules', 'unknown', 'live_availability', 'unknown'
+    ) ORDER BY page.stop_count, page.total_duration_minutes, page.confidence_score DESC, page.id) FROM page), '[]'::JSONB),
     'meta', jsonb_build_object(
+      'data_version', v_version_id,
       'total', (SELECT count(*) FROM filtered),
-      'limit', v_limit,
-      'offset', v_offset,
+      'page_size', v_page_size,
+      'next_cursor', (SELECT format('%s:%s:%s:%s', page.stop_count, page.total_duration_minutes, page.confidence_score, page.id) FROM page ORDER BY page.stop_count DESC, page.total_duration_minutes DESC, page.confidence_score, page.id DESC LIMIT 1),
       'facets', jsonb_build_object(
-        'stops', COALESCE((
-          SELECT jsonb_agg(
-            jsonb_build_object('value', stop_count, 'count', option_count)
-            ORDER BY stop_count
-          )
-          FROM (
-            SELECT filtered.stop_count, count(*) AS option_count
-            FROM filtered
-            GROUP BY filtered.stop_count
-          ) stop_facet
-        ), '[]'::JSONB),
-        'airlines', COALESCE((
-          SELECT jsonb_agg(jsonb_build_object('value', iata, 'count', option_count) ORDER BY iata)
-          FROM (
-            SELECT airline.iata, count(DISTINCT filtered.id) AS option_count
-            FROM filtered
-            CROSS JOIN LATERAL UNNEST(filtered.operating_airline_ids) airline_id
-            JOIN public.airlines airline ON airline.id = airline_id
-            GROUP BY airline.iata
-          ) airline_facet
-        ), '[]'::JSONB)
+        'stops', (SELECT COALESCE(jsonb_agg(to_jsonb(facet) ORDER BY facet.value), '[]'::JSONB) FROM (SELECT stop_count value, count(*)::INTEGER count FROM filtered GROUP BY stop_count) facet),
+        'airlines', (SELECT COALESCE(jsonb_agg(to_jsonb(facet) ORDER BY facet.value), '[]'::JSONB) FROM (SELECT code value, count(*)::INTEGER count FROM filtered CROSS JOIN LATERAL unnest(operating_airline_iatas) code GROUP BY code) facet),
+        'connections', (SELECT COALESCE(jsonb_agg(to_jsonb(facet) ORDER BY facet.value), '[]'::JSONB) FROM (SELECT code value, count(*)::INTEGER count FROM filtered CROSS JOIN LATERAL unnest(connection_airport_iatas) code GROUP BY code) facet)
       )
     ),
     'error', NULL
   )
   INTO v_result;
 
-  -- STEP 04: Return one deterministic envelope for transport-level normalization.
   RETURN v_result;
+EXCEPTION
+  WHEN invalid_text_representation OR numeric_value_out_of_range THEN
+    RETURN private.build_rpc_error(
+      '[]'::JSONB,
+      'ERR_INVALID_REQUEST',
+      'Invalid route search request.'
+    );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_search_routes(JSONB)
+REVOKE ALL ON FUNCTION public.rpc_search_route_options_v2(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_search_routes(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_search_route_options_v2(JSONB) TO service_role;

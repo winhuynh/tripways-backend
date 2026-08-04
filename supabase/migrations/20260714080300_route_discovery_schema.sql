@@ -89,7 +89,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.flight_services TO service_
 
 -- Table: public.route_options
 -- Feature: Route Discovery
--- Purpose: Store precomputed direct and one-stop schedule options for bounded search.
+-- Purpose: Store precomputed direct through three-stop schedule options for bounded search.
 -- Responsibilities: Preserve filterable route shape, duration, schedule validity, and data version.
 
 CREATE TABLE public.route_options (
@@ -98,9 +98,16 @@ CREATE TABLE public.route_options (
   destination_airport_id  UUID           NOT NULL REFERENCES public.airports (id),
   stop_count              SMALLINT       NOT NULL,
   service_ids             UUID[]         NOT NULL,
+  flight_route_ids        UUID[]         NOT NULL,
+  origin_airport_ids      UUID[]         NOT NULL,
+  destination_airport_ids UUID[]         NOT NULL,
   connection_airport_ids  UUID[]         NOT NULL DEFAULT '{}'::UUID[],
   operating_airline_ids   UUID[]         NOT NULL,
   marketing_airline_ids   UUID[]         NOT NULL,
+  departure_local_times   TIME[]         NOT NULL,
+  arrival_local_times     TIME[]         NOT NULL,
+  leg_duration_minutes    INTEGER[]      NOT NULL,
+  layover_minutes_by_connection INTEGER[] NOT NULL DEFAULT '{}'::INTEGER[],
   total_flight_minutes    INTEGER        NOT NULL,
   layover_minutes         INTEGER        NOT NULL DEFAULT 0,
   total_duration_minutes  INTEGER        NOT NULL,
@@ -121,14 +128,21 @@ CREATE TABLE public.route_options (
     CHECK (origin_airport_id <> destination_airport_id),
 
   CONSTRAINT route_options_stop_count_check
-    CHECK (stop_count IN (0, 1)),
+    CHECK (stop_count BETWEEN 0 AND 3),
 
   CONSTRAINT route_options_shape_check
     CHECK (
       cardinality(service_ids) = stop_count + 1
+      AND cardinality(flight_route_ids) = stop_count + 1
+      AND cardinality(origin_airport_ids) = stop_count + 1
+      AND cardinality(destination_airport_ids) = stop_count + 1
       AND cardinality(connection_airport_ids) = stop_count
       AND cardinality(operating_airline_ids) = stop_count + 1
       AND cardinality(marketing_airline_ids) = stop_count + 1
+      AND cardinality(departure_local_times) = stop_count + 1
+      AND cardinality(arrival_local_times) = stop_count + 1
+      AND cardinality(leg_duration_minutes) = stop_count + 1
+      AND cardinality(layover_minutes_by_connection) = stop_count
     ),
 
   CONSTRAINT route_options_duration_check
@@ -139,7 +153,7 @@ CREATE TABLE public.route_options (
     ),
 
   CONSTRAINT route_options_arrival_offset_check
-    CHECK (arrival_day_offset BETWEEN 0 AND 3),
+    CHECK (arrival_day_offset BETWEEN 0 AND 7),
 
   CONSTRAINT route_options_validity_check
     CHECK (valid_from <= valid_to),
@@ -172,3 +186,152 @@ ALTER TABLE public.route_options ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.route_options FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.route_options TO service_role;
+
+-- >>> supabase/sql_src/schema/pseo/shared/publication_versions.sql
+
+-- Table: public.publication_versions
+-- Feature: Shared Read Models
+-- Purpose: Track atomic candidate and current read-model publications.
+
+CREATE TABLE public.publication_versions (
+  id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  status         TEXT         NOT NULL DEFAULT 'building',
+  is_current     BOOLEAN      NOT NULL DEFAULT FALSE,
+  source_type    TEXT         NOT NULL,
+  started_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  published_at   TIMESTAMPTZ  NULL,
+  failure_code   TEXT         NULL,
+  created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT publication_versions_status_check
+    CHECK (status IN ('building', 'published', 'failed', 'retired')),
+
+  CONSTRAINT publication_versions_source_check
+    CHECK (source_type IN ('production', 'development_fixture')),
+
+  CONSTRAINT publication_versions_current_check
+    CHECK (is_current = FALSE OR (status = 'published' AND published_at IS NOT NULL)),
+
+  CONSTRAINT publication_versions_failure_check
+    CHECK ((status = 'failed') = (failure_code IS NOT NULL))
+);
+
+CREATE UNIQUE INDEX publication_versions_one_current_idx
+ON public.publication_versions USING btree (is_current)
+WHERE is_current = TRUE;
+
+ALTER TABLE public.publication_versions ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.publication_versions FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.publication_versions TO service_role;
+
+-- >>> supabase/sql_src/schema/route_discovery/route_search_options.sql
+
+-- Table: public.route_search_options
+-- Feature: Shared Route Search
+-- Purpose: Materialize one searchable provider-neutral projection for every page consumer.
+
+CREATE TABLE public.route_search_options (
+  id                       UUID           NOT NULL,
+  publication_version_id   UUID           NOT NULL REFERENCES public.publication_versions (id) ON DELETE CASCADE,
+  origin_city_id           UUID           NOT NULL REFERENCES public.cities (id),
+  origin_city_slug         TEXT           NOT NULL,
+  destination_city_id      UUID           NOT NULL REFERENCES public.cities (id),
+  destination_city_slug    TEXT           NOT NULL,
+  origin_airport_id        UUID           NOT NULL REFERENCES public.airports (id),
+  origin_airport_iata      TEXT           NOT NULL,
+  destination_airport_id   UUID           NOT NULL REFERENCES public.airports (id),
+  destination_airport_iata TEXT           NOT NULL,
+  stop_count               SMALLINT       NOT NULL,
+  connection_airport_ids   UUID[]         NOT NULL,
+  connection_airport_iatas TEXT[]         NOT NULL,
+  operating_airline_ids    UUID[]         NOT NULL,
+  operating_airline_iatas  TEXT[]         NOT NULL,
+  departure_local_time     TIME           NOT NULL,
+  arrival_local_time       TIME           NOT NULL,
+  arrival_day_offset       SMALLINT       NOT NULL,
+  days_of_week             SMALLINT[]     NOT NULL,
+  valid_from               DATE           NOT NULL,
+  valid_to                 DATE           NOT NULL,
+  total_flight_minutes     INTEGER        NOT NULL,
+  layover_minutes          INTEGER        NOT NULL,
+  maximum_layover_minutes  INTEGER        NOT NULL,
+  total_duration_minutes   INTEGER        NOT NULL,
+  confidence_score         NUMERIC(4,3)   NOT NULL,
+  route_path               TEXT           NOT NULL,
+  price_state              TEXT           NOT NULL,
+  price_min                NUMERIC(14,2)  NULL,
+  price_max                NUMERIC(14,2)  NULL,
+  currency_code            TEXT           NULL,
+  price_valid_until        TIMESTAMPTZ    NULL,
+  created_at               TIMESTAMPTZ    NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (publication_version_id, id),
+
+  CONSTRAINT route_search_options_stops_check
+    CHECK (stop_count BETWEEN 0 AND 3),
+
+  CONSTRAINT route_search_options_shape_check
+    CHECK (
+      cardinality(connection_airport_ids) = stop_count
+      AND cardinality(connection_airport_iatas) = stop_count
+      AND cardinality(operating_airline_ids) = stop_count + 1
+      AND cardinality(operating_airline_iatas) = stop_count + 1
+    ),
+
+  CONSTRAINT route_search_options_price_check
+    CHECK (
+      (price_state = 'available' AND price_min IS NOT NULL AND price_max >= price_min AND currency_code ~ '^[A-Z]{3}$' AND price_valid_until IS NOT NULL)
+      OR
+      (price_state IN ('missing', 'expired', 'unlicensed') AND price_min IS NULL AND price_max IS NULL AND currency_code IS NULL AND price_valid_until IS NULL)
+    )
+);
+
+CREATE INDEX route_search_options_origin_city_rank_idx
+ON public.route_search_options USING btree (
+  publication_version_id,
+  origin_city_slug,
+  stop_count,
+  total_duration_minutes,
+  confidence_score DESC,
+  id
+);
+
+CREATE INDEX route_search_options_origin_airport_rank_idx
+ON public.route_search_options USING btree (
+  publication_version_id,
+  origin_airport_iata,
+  stop_count,
+  total_duration_minutes,
+  confidence_score DESC,
+  id
+);
+
+CREATE INDEX route_search_options_city_pair_rank_idx
+ON public.route_search_options USING btree (
+  publication_version_id,
+  origin_city_slug,
+  destination_city_slug,
+  stop_count,
+  total_duration_minutes,
+  confidence_score DESC,
+  id
+);
+
+CREATE INDEX route_search_options_global_rank_idx
+ON public.route_search_options USING btree (
+  publication_version_id,
+  stop_count,
+  total_duration_minutes,
+  confidence_score DESC,
+  id
+);
+
+CREATE INDEX route_search_options_airlines_idx
+ON public.route_search_options USING gin (operating_airline_iatas);
+
+CREATE INDEX route_search_options_connections_idx
+ON public.route_search_options USING gin (connection_airport_iatas);
+
+ALTER TABLE public.route_search_options ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.route_search_options FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.route_search_options TO service_role;

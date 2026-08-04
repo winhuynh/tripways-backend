@@ -16,7 +16,24 @@ CREATE TABLE private.raw_base_data_records (
     UNIQUE (batch_id, record_type, source_key),
 
   CONSTRAINT raw_base_data_records_type_check
-    CHECK (record_type IN ('country', 'city', 'airport')),
+    CHECK (
+      record_type IN (
+        'country',
+        'city',
+        'place_alias',
+        'metro_area',
+        'airport',
+        'airport_terminal',
+        'airline',
+        'flight_route',
+        'flight_service',
+        'route_price_estimate',
+        'city_fact',
+        'airport_facility',
+        'airport_fact',
+        'page_editorial_content'
+      )
+    ),
 
   CONSTRAINT raw_base_data_records_source_key_check
     CHECK (

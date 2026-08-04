@@ -1,5 +1,22 @@
 # Interactive pSEO
 
+## Source organization
+
+Schema and function sources use the same page-owned layout:
+
+```text
+supabase/sql_src/{schema,functions}/pseo/
+├── shared/
+├── homepage/
+├── city/
+├── airport/
+└── route/
+```
+
+`shared` contains only cross-page publication, dispatch, sitemap, internal-link, and price
+contracts. Each page folder contains its own content, read model, and builder sources. Generated
+migrations remain ordered explicitly by `scripts/regenerate-supabase-migrations.sh`.
+
 ## Responsibility
 
 Interactive pSEO turns approved route data into bounded, frontend-ready landing-page payloads.
@@ -40,10 +57,9 @@ airlines + flight_routes + flight_services
                     └── airport_pages facts/version
                     │
                     ▼
-      rpc_get_city_page(jsonb)
-      rpc_search_city_direct_routes(jsonb)
-      rpc_get_airport_page(jsonb)
-      rpc_search_airport_direct_routes(jsonb)
+      four page-specific read-model tables
+      rpc_get_page_v2(jsonb)
+      rpc_search_route_options_v2(jsonb)
                     │
                     ▼
               Next.js city page
@@ -78,25 +94,24 @@ The payload includes airport/city/country identity, reviewed SEO content, route 
 outbound and inbound routes, airline summaries, published airport guidance, semantic links,
 canonical metadata, indexability, freshness, and the shared data version.
 
-## Filter airport direct routes
+## Filter airport routes
 
 ```sql
-SELECT public.rpc_search_airport_direct_routes(
+SELECT public.rpc_search_route_options_v2(
   '{
-    "airport_iata": "BKK",
-    "direction": "outbound",
-    "airlines": ["TG"],
-    "countries": ["SG", "VN"],
-    "max_duration_minutes": 360,
-    "seasonality": "year_round",
-    "limit": 20,
-    "offset": 0
+    "scope": {"type": "origin_airport", "key": "BKK"},
+    "filters": {
+      "max_stops": 3,
+      "airlines": ["TG"],
+      "max_duration_minutes": 360
+    },
+    "page_size": 20
   }'::JSONB
 );
 ```
 
-`direction` is `outbound` or `inbound`. Results and airline/country facets derive from the same
-filtered relation. Filtered URLs canonicalize to the base airport page and are not sitemap entries.
+Results and facets derive from the same shared filtered relation. Filtered URLs canonicalize to the
+base airport page and are not sitemap entries.
 
 All tables enable RLS, revoke access from `anon` and `authenticated`, and are available only through
 the service-role server boundary.
@@ -104,11 +119,11 @@ the service-role server boundary.
 ## Get a city page
 
 ```sql
-SELECT public.rpc_get_city_page(
+SELECT public.rpc_get_page_v2(
   '{
-    "city_slug": "bangkok",
-    "locale": "en-GB",
-    "destination_limit": 8
+    "page_type": "city",
+    "entity_key": "bangkok",
+    "locale": "en-GB"
   }'::JSONB
 );
 ```
@@ -128,43 +143,34 @@ The payload uses `{ data, meta, error }` and includes:
 ## Filter direct destinations
 
 ```sql
-SELECT public.rpc_search_city_direct_routes(
+SELECT public.rpc_search_route_options_v2(
   '{
-    "city_slug": "bangkok",
-    "origin_airports": ["DMK"],
-    "airlines": ["FD"],
-    "destination_countries": ["VN", "SG"],
-    "max_duration_minutes": 240,
-    "departure_window": "morning",
-    "limit": 20,
-    "offset": 0
+    "scope": {"type": "origin_city", "key": "bangkok"},
+    "filters": {
+      "max_stops": 3,
+      "airlines": ["FD"],
+      "max_duration_minutes": 240
+    },
+    "page_size": 20
   }'::JSONB
 );
 ```
 
-Supported filters:
-
-- `origin_airports`
-- `airlines`
-- `destination_countries`
-- `max_duration_minutes`
-- `departure_window`
-- `limit`
-- `offset`
-
-Results and airport, airline, and country facets derive from the same filtered relation.
+The same stops, airline, connection-airport, duration, layover, cabin, price, currency, and cursor
+semantics apply to every page scope.
 
 ## Next.js consumption
 
 The Next.js server calls the RPCs with a server-only service-role key:
 
 ```text
-POST /rest/v1/rpc/rpc_get_city_page
-POST /rest/v1/rpc/rpc_search_city_direct_routes
+POST /functions/v1/page-query
+POST /functions/v1/route-search-query
 ```
 
-The browser must never receive the service-role key. The page shell should render from
-`rpc_get_city_page`; URL-backed filters should call `rpc_search_city_direct_routes`.
+The browser must never receive the service-role key. Every page shell renders from exactly one
+page-specific current read-model row through `page-query`; interactive filters call
+`route-search-query`.
 
 Filter URLs canonicalize to the base city page and are not sitemap entries:
 
@@ -200,21 +206,32 @@ supabase db reset --local --yes
 
 psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
   -v ON_ERROR_STOP=1 \
-  -f supabase/snippets/e2e_city_pseo.sql
+  -f supabase/snippets/e2e_provider_ready_pages.sql
 
 psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
   -v ON_ERROR_STOP=1 \
-  -f supabase/snippets/e2e_route_discovery.sql
+  -f supabase/snippets/e2e_shared_route_search.sql
 ```
+
+## Provider-ready page foundation
+
+Homepage discovery, City Hub, Airport Hub and city-pair Route Page now have stable database RPCs
+and thin Edge transports. Structured facts always carry a citation and verification timestamp.
+Price ranges are kept separate from live offers and return `missing`, `expired`, or `unlicensed`
+instead of silently becoming zero. Sitemap eligibility is owned by Postgres; development fixtures
+remain `noindex` through refreshes.
+
+To change a price-data provider, register a new adapter under
+`supabase/functions/v1/ingestion/price-estimates`, configure its provider key and credentials, and
+map its response to `route-price-estimates.v1`. No page RPC, canonical table, or frontend contract
+changes. Source rows in `admin.data_sources` must explicitly grant storage, derived-data and display
+rights before publication succeeds.
 
 ## Deferred scope
 
-- Production source ingestion and publish workflow.
+- Production provider credentials and scheduled operations.
 - Public Next.js route handlers and CDN cache headers.
-- City-to-city route page payloads.
-- Airline-city, country-route, and guide page payloads.
-- Sitemap endpoint.
 - Localized editorial workflow beyond the seeded `en-GB` preview.
-- Live dated schedules, availability, prices, offers, and booking.
+- Live dated availability, offers, booking and affiliate redirects.
 - Indexable filter combinations.
 - Automated AI content publishing.

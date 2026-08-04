@@ -67,6 +67,8 @@ SELECT pg_temp.test_assert(
     WHERE origin.iata = 'SGN'
       AND destination.iata = 'LHR'
       AND connection.iata = 'BKK'
+      AND route_option.stop_count = 1
+      AND route_option.layover_minutes < 45
   ),
   'rejects the SGN to BKK to LHR connection shorter than 45 minutes'
 );

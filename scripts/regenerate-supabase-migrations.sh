@@ -79,13 +79,21 @@ emit_migration \
   "supabase/sql_src/schema/flight_routing/cities.sql" \
   "supabase/sql_src/schema/flight_routing/airports.sql" \
   "supabase/sql_src/schema/flight_routing/airlines.sql" \
+  "supabase/sql_src/schema/flight_routing/metro_areas.sql" \
+  "supabase/sql_src/schema/flight_routing/metro_area_airports.sql" \
+  "supabase/sql_src/schema/flight_routing/place_aliases.sql" \
+  "supabase/sql_src/schema/flight_routing/nearby_airports.sql" \
+  "supabase/sql_src/schema/flight_routing/airport_terminals.sql" \
+  "supabase/sql_src/schema/flight_routing/airport_terminal_airlines.sql" \
   "supabase/sql_src/schema/flight_routing/flight_routes.sql"
 
 emit_migration \
   "20260714080300_route_discovery_schema.sql" \
   "route discovery schema" \
   "supabase/sql_src/schema/route_discovery/flight_services.sql" \
-  "supabase/sql_src/schema/route_discovery/route_options.sql"
+  "supabase/sql_src/schema/route_discovery/route_options.sql" \
+  "supabase/sql_src/schema/pseo/shared/publication_versions.sql" \
+  "supabase/sql_src/schema/route_discovery/route_search_options.sql"
 
 emit_migration \
   "20260714080350_ingestion_schema.sql" \
@@ -98,19 +106,32 @@ emit_migration \
 emit_migration \
   "20260714080400_pseo_schema.sql" \
   "pSEO schema" \
-  "supabase/sql_src/schema/pseo/pseo_direct_routes.sql" \
-  "supabase/sql_src/schema/pseo/city_destination_summaries.sql" \
-  "supabase/sql_src/schema/pseo/pseo_pages.sql" \
-  "supabase/sql_src/schema/pseo/city_pages.sql" \
-  "supabase/sql_src/schema/pseo/city_page_airport_content.sql" \
-  "supabase/sql_src/schema/pseo/city_page_faqs.sql" \
-  "supabase/sql_src/schema/pseo/airport_pages.sql" \
-  "supabase/sql_src/schema/pseo/airport_access_options.sql" \
-  "supabase/sql_src/schema/pseo/airport_lounges.sql" \
-  "supabase/sql_src/schema/pseo/airport_parking_information.sql" \
-  "supabase/sql_src/schema/pseo/airport_page_notices.sql" \
-  "supabase/sql_src/schema/pseo/airport_page_faqs.sql" \
-  "supabase/sql_src/schema/pseo/pseo_internal_links.sql"
+  "supabase/sql_src/schema/pseo/shared/pseo_direct_routes.sql" \
+  "supabase/sql_src/schema/pseo/city/city_destination_summaries.sql" \
+  "supabase/sql_src/schema/pseo/shared/route_price_estimates.sql" \
+  "supabase/sql_src/schema/pseo/shared/pseo_pages.sql" \
+  "supabase/sql_src/schema/pseo/city/city_pages.sql" \
+  "supabase/sql_src/schema/pseo/city/city_facts.sql" \
+  "supabase/sql_src/schema/pseo/city/city_page_airport_content.sql" \
+  "supabase/sql_src/schema/pseo/city/city_page_faqs.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_pages.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_access_options.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_lounges.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_parking_information.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_page_notices.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_page_faqs.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_facilities.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_facts.sql" \
+  "supabase/sql_src/schema/pseo/route/route_pages.sql" \
+  "supabase/sql_src/schema/pseo/route/route_page_faqs.sql" \
+  "supabase/sql_src/schema/pseo/route/route_page_airport_comparisons.sql" \
+  "supabase/sql_src/schema/pseo/route/route_page_travel_facts.sql" \
+  "supabase/sql_src/schema/pseo/route/route_page_editorial_sections.sql" \
+  "supabase/sql_src/schema/pseo/homepage/homepage_read_models.sql" \
+  "supabase/sql_src/schema/pseo/city/city_page_read_models.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_page_read_models.sql" \
+  "supabase/sql_src/schema/pseo/route/route_page_read_models.sql" \
+  "supabase/sql_src/schema/pseo/shared/pseo_internal_links.sql"
 
 emit_migration \
   "20260714080450_shared_functions.sql" \
@@ -142,38 +163,47 @@ emit_migration \
   "route discovery functions" \
   "supabase/sql_src/functions/route_discovery/calculate_layover_minutes.sql" \
   "supabase/sql_src/functions/route_discovery/refresh_route_options.sql" \
-  "supabase/sql_src/functions/route_discovery/rpc_search_routes.sql"
+  "supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql" \
+  "supabase/sql_src/functions/route_discovery/rpc_search_route_options_v2.sql"
 
 emit_migration \
   "20260714080900_pseo_functions.sql" \
   "pSEO functions" \
-  "supabase/sql_src/functions/pseo/refresh_pseo_read_models.sql" \
-  "supabase/sql_src/functions/pseo/refresh_city_pseo_read_models.sql" \
-  "supabase/sql_src/functions/pseo/parse_city_page_identity.sql" \
-  "supabase/sql_src/functions/pseo/resolve_city_page_context.sql" \
-  "supabase/sql_src/functions/pseo/parse_airport_page_identity.sql" \
-  "supabase/sql_src/functions/pseo/resolve_airport_page_context.sql" \
-  "supabase/sql_src/functions/pseo/get_city_airport_route_stats.sql" \
-  "supabase/sql_src/functions/pseo/get_city_quick_facts.sql" \
-  "supabase/sql_src/functions/pseo/get_city_route_map.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_overview.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_airports.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_quick_facts.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_route_map.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_airlines.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_insights.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_internal_links.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_faqs.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_city_page.sql" \
-  "supabase/sql_src/functions/pseo/rpc_search_city_direct_routes.sql" \
-  "supabase/sql_src/functions/pseo/rpc_get_airport_page.sql" \
-  "supabase/sql_src/functions/pseo/rpc_search_airport_direct_routes.sql"
+  "supabase/sql_src/functions/pseo/shared/refresh_pseo_read_models.sql" \
+  "supabase/sql_src/functions/pseo/city/refresh_city_pseo_read_models.sql" \
+  "supabase/sql_src/functions/pseo/city/parse_city_page_identity.sql" \
+  "supabase/sql_src/functions/pseo/city/resolve_city_page_context.sql" \
+  "supabase/sql_src/functions/pseo/airport/parse_airport_page_identity.sql" \
+  "supabase/sql_src/functions/pseo/airport/resolve_airport_page_context.sql" \
+  "supabase/sql_src/functions/pseo/city/get_city_airport_route_stats.sql" \
+  "supabase/sql_src/functions/pseo/city/get_city_quick_facts.sql" \
+  "supabase/sql_src/functions/pseo/city/get_city_route_map.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_overview.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_airports.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_quick_facts.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_route_map.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_airlines.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_insights.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_internal_links.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_faqs.sql" \
+  "supabase/sql_src/functions/pseo/city/rpc_get_city_page.sql" \
+  "supabase/sql_src/functions/pseo/airport/rpc_get_airport_page.sql" \
+  "supabase/sql_src/functions/pseo/shared/resolve_route_price_estimate.sql" \
+  "supabase/sql_src/functions/pseo/homepage/rpc_search_places.sql" \
+  "supabase/sql_src/functions/pseo/homepage/rpc_get_homepage_discovery.sql" \
+  "supabase/sql_src/functions/pseo/route/rpc_search_route_options.sql" \
+  "supabase/sql_src/functions/pseo/route/rpc_get_route_page.sql" \
+  "supabase/sql_src/functions/pseo/shared/rpc_get_sitemap.sql" \
+  "supabase/sql_src/functions/pseo/shared/refresh_page_read_models.sql" \
+  "supabase/sql_src/functions/pseo/shared/publish_read_model_version.sql" \
+  "supabase/sql_src/functions/pseo/shared/rpc_get_page_v2.sql"
 
 emit_migration \
   "20260714081000_ingestion_functions.sql" \
   "base data ingestion functions" \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
-  "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql"
+  "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
+  "supabase/sql_src/functions/ingestion/publish_price_estimate_batch.sql"
 
 find "$source_root" -type f -name "*.sql" \
   | sed "s|$repo_root/||" \

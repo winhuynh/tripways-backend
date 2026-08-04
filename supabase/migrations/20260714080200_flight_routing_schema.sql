@@ -15,18 +15,34 @@
 CREATE TABLE admin.data_sources (
   id                    UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   code                  TEXT         NOT NULL UNIQUE,
+  provider_code         TEXT         NOT NULL DEFAULT 'internal',
   name                  TEXT         NOT NULL,
   source_type           TEXT         NOT NULL,
   environment_scope     TEXT         NOT NULL,
   production_allowed    BOOLEAN      NOT NULL DEFAULT FALSE,
   seo_allowed           BOOLEAN      NOT NULL DEFAULT FALSE,
   derived_data_allowed  BOOLEAN      NOT NULL DEFAULT FALSE,
+  storage_allowed       BOOLEAN      NOT NULL DEFAULT FALSE,
+  retention_days        INTEGER      NULL,
+  production_display_allowed BOOLEAN NOT NULL DEFAULT FALSE,
+  cache_allowed         BOOLEAN      NOT NULL DEFAULT FALSE,
+  max_cache_ttl_seconds INTEGER      NULL,
+  attribution_text      TEXT         NULL,
+  attribution_url       TEXT         NULL,
+  rights_effective_at   TIMESTAMPTZ  NULL,
+  rights_expires_at     TIMESTAMPTZ  NULL,
   license_notes         TEXT         NULL,
   created_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
   CONSTRAINT data_sources_code_check
     CHECK (code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
+
+  CONSTRAINT data_sources_provider_code_key
+    UNIQUE (provider_code, code),
+
+  CONSTRAINT data_sources_provider_code_check
+    CHECK (provider_code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
 
   CONSTRAINT data_sources_name_trimmed_check
     CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
@@ -37,10 +53,44 @@ CREATE TABLE admin.data_sources (
   CONSTRAINT data_sources_environment_check
     CHECK (environment_scope IN ('development', 'production')),
 
+  CONSTRAINT data_sources_retention_check
+    CHECK (
+      (storage_allowed = FALSE AND retention_days IS NULL)
+      OR (storage_allowed = TRUE AND retention_days > 0)
+    ),
+
+  CONSTRAINT data_sources_cache_check
+    CHECK (
+      (cache_allowed = FALSE AND max_cache_ttl_seconds IS NULL)
+      OR (cache_allowed = TRUE AND max_cache_ttl_seconds > 0)
+    ),
+
+  CONSTRAINT data_sources_attribution_check
+    CHECK (
+      (attribution_text IS NULL) = (attribution_url IS NULL)
+      AND (
+        attribution_url IS NULL
+        OR attribution_url ~ '^https://'
+      )
+    ),
+
+  CONSTRAINT data_sources_rights_window_check
+    CHECK (
+      (rights_effective_at IS NULL) = (rights_expires_at IS NULL)
+      AND (
+        rights_effective_at IS NULL
+        OR rights_effective_at < rights_expires_at
+      )
+    ),
+
   CONSTRAINT data_sources_development_rights_check
     CHECK (
       environment_scope = 'production'
-      OR (production_allowed = FALSE AND seo_allowed = FALSE)
+      OR (
+        production_allowed = FALSE
+        AND production_display_allowed = FALSE
+        AND seo_allowed = FALSE
+      )
     )
 );
 
@@ -335,6 +385,162 @@ ALTER TABLE public.airlines ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.airlines FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airlines TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/metro_areas.sql
+
+-- Table: public.metro_areas
+-- Feature: Place Discovery
+-- Purpose: Group airports under a stable multi-airport market identity.
+
+CREATE TABLE public.metro_areas (
+  id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  country_id        UUID         NOT NULL REFERENCES public.countries (id),
+  city_id           UUID         NULL REFERENCES public.cities (id),
+  code              TEXT         NOT NULL UNIQUE,
+  name              TEXT         NOT NULL,
+  slug              TEXT         NOT NULL UNIQUE,
+  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id  TEXT         NOT NULL,
+  last_verified_at  TIMESTAMPTZ  NOT NULL,
+  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT metro_areas_source_record_key UNIQUE (source_id, source_record_id),
+  CONSTRAINT metro_areas_code_check CHECK (code ~ '^[A-Z]{3}$'),
+  CONSTRAINT metro_areas_slug_check CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$')
+);
+
+ALTER TABLE public.metro_areas ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.metro_areas FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.metro_areas TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/metro_area_airports.sql
+
+-- Table: public.metro_area_airports
+-- Feature: Place Discovery
+-- Purpose: Associate airports with a multi-airport market.
+
+CREATE TABLE public.metro_area_airports (
+  metro_area_id  UUID         NOT NULL REFERENCES public.metro_areas (id) ON DELETE CASCADE,
+  airport_id     UUID         NOT NULL REFERENCES public.airports (id),
+  relevance      NUMERIC(6,5) NOT NULL DEFAULT 1,
+  created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (metro_area_id, airport_id),
+  CONSTRAINT metro_area_airports_relevance_check CHECK (relevance BETWEEN 0 AND 1)
+);
+
+CREATE INDEX metro_area_airports_airport_idx ON public.metro_area_airports USING btree (airport_id);
+ALTER TABLE public.metro_area_airports ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.metro_area_airports FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.metro_area_airports TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/place_aliases.sql
+
+-- Table: public.place_aliases
+-- Feature: Place Discovery
+-- Purpose: Provide localized provider-neutral search aliases for cities, airports, and metro areas.
+
+CREATE TABLE public.place_aliases (
+  id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  entity_type       TEXT         NOT NULL,
+  entity_id         UUID         NOT NULL,
+  locale            TEXT         NOT NULL,
+  alias             TEXT         NOT NULL,
+  normalized_alias  TEXT         NOT NULL,
+  alias_type        TEXT         NOT NULL DEFAULT 'name',
+  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id  TEXT         NOT NULL,
+  last_verified_at  TIMESTAMPTZ  NOT NULL,
+  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT place_aliases_source_record_key UNIQUE (source_id, source_record_id),
+  CONSTRAINT place_aliases_identity_key UNIQUE (entity_type, entity_id, locale, normalized_alias),
+  CONSTRAINT place_aliases_entity_type_check CHECK (entity_type IN ('city', 'airport', 'metro_area')),
+  CONSTRAINT place_aliases_alias_type_check CHECK (alias_type IN ('name', 'code', 'historic', 'local')),
+  CONSTRAINT place_aliases_locale_check CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$')
+);
+
+CREATE INDEX place_aliases_lookup_idx ON public.place_aliases USING btree (locale, normalized_alias);
+ALTER TABLE public.place_aliases ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.place_aliases FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.place_aliases TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/nearby_airports.sql
+
+-- Table: public.nearby_airports
+-- Feature: Place Discovery
+-- Purpose: Store directional nearby-airport alternatives with deterministic relevance.
+
+CREATE TABLE public.nearby_airports (
+  airport_id         UUID         NOT NULL REFERENCES public.airports (id),
+  nearby_airport_id  UUID         NOT NULL REFERENCES public.airports (id),
+  distance_km        NUMERIC(8,2) NOT NULL,
+  relevance          NUMERIC(6,5) NOT NULL,
+  source_id          UUID         NOT NULL REFERENCES admin.data_sources (id),
+  last_verified_at   TIMESTAMPTZ  NOT NULL,
+  created_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (airport_id, nearby_airport_id),
+  CONSTRAINT nearby_airports_direction_check CHECK (airport_id <> nearby_airport_id),
+  CONSTRAINT nearby_airports_distance_check CHECK (distance_km > 0),
+  CONSTRAINT nearby_airports_relevance_check CHECK (relevance BETWEEN 0 AND 1)
+);
+
+ALTER TABLE public.nearby_airports ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.nearby_airports FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.nearby_airports TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/airport_terminals.sql
+
+-- Table: public.airport_terminals
+-- Feature: Airport Knowledge
+-- Purpose: Store provider-neutral terminal identities and review state.
+
+CREATE TABLE public.airport_terminals (
+  id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  airport_id        UUID         NOT NULL REFERENCES public.airports (id),
+  code              TEXT         NOT NULL,
+  name              TEXT         NOT NULL,
+  status            TEXT         NOT NULL DEFAULT 'unknown',
+  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id  TEXT         NOT NULL,
+  last_verified_at  TIMESTAMPTZ  NOT NULL,
+  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT airport_terminals_airport_code_key UNIQUE (airport_id, code),
+  CONSTRAINT airport_terminals_source_record_key UNIQUE (source_id, source_record_id),
+  CONSTRAINT airport_terminals_status_check CHECK (status IN ('active', 'inactive', 'unknown'))
+);
+
+ALTER TABLE public.airport_terminals ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.airport_terminals FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_terminals TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/airport_terminal_airlines.sql
+
+-- Table: public.airport_terminal_airlines
+-- Feature: Airport Knowledge
+-- Purpose: Associate airlines with terminals for a bounded validity window.
+
+CREATE TABLE public.airport_terminal_airlines (
+  terminal_id       UUID         NOT NULL REFERENCES public.airport_terminals (id) ON DELETE CASCADE,
+  airline_id        UUID         NOT NULL REFERENCES public.airlines (id),
+  valid_from        DATE         NULL,
+  valid_to          DATE         NULL,
+  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
+  last_verified_at  TIMESTAMPTZ  NOT NULL,
+  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  PRIMARY KEY (terminal_id, airline_id),
+  CONSTRAINT airport_terminal_airlines_validity_check CHECK ((valid_from IS NULL) = (valid_to IS NULL)),
+  CONSTRAINT airport_terminal_airlines_order_check CHECK (valid_from IS NULL OR valid_from <= valid_to)
+);
+
+ALTER TABLE public.airport_terminal_airlines ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.airport_terminal_airlines FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_terminal_airlines TO service_role;
 
 -- >>> supabase/sql_src/schema/flight_routing/flight_routes.sql
 

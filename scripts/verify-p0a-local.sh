@@ -15,9 +15,11 @@ deno check --config supabase/functions/deno.json \
   supabase/functions/v1/user/profile/index.ts \
   supabase/functions/v1/user/account-security/index.ts \
   supabase/functions/v1/user/delete-account/index.ts \
-  supabase/functions/v1/city-page/query/index.ts \
-  supabase/functions/v1/airport-page/query/index.ts \
-  supabase/functions/v1/ingestion/base-data/index.ts
+  supabase/functions/v1/page/query/index.ts \
+  supabase/functions/v1/route-search/query/index.ts \
+  supabase/functions/v1/sitemap/query/index.ts \
+  supabase/functions/v1/ingestion/base-data/index.ts \
+  supabase/functions/v1/ingestion/price-estimates/index.ts
 deno test --config supabase/functions/deno.json --allow-read supabase/functions
 psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
   -v ON_ERROR_STOP=1 \
