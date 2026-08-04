@@ -1,8 +1,8 @@
 # PRD P3: MVP thương mại
 
-**Trạng thái:** Đề xuất để duyệt sản phẩm  
-**Ngày:** 2026-07-30  
-**Chủ sở hữu:** Tripways  
+**Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P3
+**Cập nhật:** 2026-08-04
+**Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
 ## 1. Vấn đề
@@ -35,6 +35,10 @@ Tripways kết hợp:
 - Chuyển tiếp minh bạch tới hãng bay hoặc OTA để hoàn tất đặt chỗ.
 
 Tripways vẫn là sản phẩm metasearch và khám phá, không phải đại lý du lịch.
+
+Schema estimated route-price range được chuẩn bị trước chỉ phục vụ nội dung khám phá và trạng thái
+giá ước tính. Nó không phải live offer, không chứng minh availability và không được tính là tiến độ
+P3. P3 chỉ bắt đầu sau khi P2 hoàn tất và live-search/affiliate agreements được phê duyệt.
 
 ## 5. Hành trình người dùng
 
@@ -92,6 +96,14 @@ Tripways vẫn là sản phẩm metasearch và khám phá, không phải đại 
 - Kết quả trùng được xử lý theo quy tắc ổn định đã tài liệu hóa.
 - Hành lý hoặc thuộc tính giá vé chưa biết phải giữ là chưa biết.
 - Giá luôn lấy từ phản hồi provider, không lấy từ đầu vào client.
+- Với itinerary nhiều leg, Tripways chỉ khẳng định vé chung, số vé, validating carrier, kết nối được
+  bảo vệ, self-transfer hoặc chuyển hành lý khi live provider trả bằng chứng explicit cho chính offer
+  đó. Không được kế thừa hoặc suy luận các thuộc tính này từ route graph P2 hay AirLabs.
+- Thuộc tính provider không hỗ trợ, bị thiếu hoặc có semantics chưa được xác minh phải giữ là chưa
+  biết. UI phải diễn đạt “chưa có thông tin” thay vì biến `unknown` thành “không”, “có” hoặc
+  “được bảo vệ”.
+- Offer không xác định được loại kết nối vẫn có thể hiển thị nếu provider cho phép, nhưng phải có
+  cảnh báo rõ trước khi người dùng chọn chuyển hướng sang đối tác.
 
 ### 6.4 Chuyển hướng liên kết
 
@@ -170,6 +182,8 @@ P3 chỉ được nghiệm thu khi:
 - Nội dung pháp lý, quyền riêng tư, affiliate và ghi nguồn đã được xuất bản.
 - Tên miền production, HTTPS, tách biệt môi trường, monitoring, backup và rollback đã sẵn sàng.
 - Đã xác định nhóm ra mắt giới hạn và người chịu trách nhiệm.
+- Đã kiểm chứng UI/API không biến commercial connection field bị thiếu thành khẳng định về vé chung,
+  connection được bảo vệ, self-transfer hoặc chuyển hành lý.
 
 ## 10. Ngoài phạm vi
 
@@ -188,7 +202,42 @@ P3 chỉ được nghiệm thu khi:
 - Deeplink đối tác có thể thay đổi hoặc từ chối một số tổ hợp tìm kiếm.
 - Analytics có thể thu thập nhiều dữ liệu hành khách hơn cần thiết.
 - Lưu lượng SEO có thể tạo tìm kiếm tự động lạm dụng.
+- Provider có thể trả itinerary và giá nhưng không trả đầy đủ điều kiện vé hoặc bảo vệ nối chuyến;
+  nếu UI tự suy luận, Tripways có thể over-promise trách nhiệm của airline/OTA.
 
 Các rủi ro được kiểm soát bằng phạm vi ra mắt giới hạn, giới hạn lưu lượng và chi phí, hết hạn kết
 quả, monitoring provider, schema analytics nghiêm ngặt, chuyển hướng an toàn và tách biệt trang khám
 phá có cache khỏi lời gọi provider trực tiếp.
+
+## 12. Mở rộng thương mại City Hub
+
+Kế hoạch đầy đủ nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
+
+Định hướng provider ưu tiên:
+
+- Skyscanner Indicative Prices cho khoảng giá khám phá và month-level discovery khi được duyệt.
+- Skyscanner Live Prices và Affiliate Links cho luồng metasearch/redirect.
+- Duffel hoặc Amadeus chỉ khi Tripways quyết định xây live shopping sâu hơn; offer không được dùng
+  như giá tĩnh cho hàng triệu trang.
+- AirLabs không phải price hoặc affiliate provider.
+
+Vị trí affiliate được phép trên City Hub:
+
+- CTA phụ trong map preview sau khi destination đã rõ.
+- CTA `Kiểm tra giá` trong route row hoặc Route Page, không thay CTA khám phá chính.
+- Một flight-search affiliate module sau Airport Comparison và trước FAQ.
+- Hotel, transfer và eSIM chỉ sau khi user chọn destination; lounge/parking chỉ theo origin airport.
+
+Không đặt affiliate giữa map và route list, không dùng `Book from` với estimated fare và không bật
+module thương mại khi thiếu disclosure, source rights, coverage, expiry, allowlist redirect,
+analytics hoặc kill switch.
+
+## 13. Commercial content phải đến từ backend
+
+- Advertisement slot có page type, placement, format, eligibility, locale, disclosure và stable
+  tracking identifier; frontend không tự chèn slot ngoài contract.
+- Affiliate offer, CTA và outbound destination do backend phát hành theo partner capability và
+  allowlist; frontend không giữ arbitrary URL hoặc copy cam kết giá.
+- Sponsored module phải được gắn nhãn rõ, tách khỏi organic ranking và không thay đổi indexability.
+- Mọi commercial capability có kill switch; khi tắt, layout co lại mà không tạo empty ad container
+  hoặc làm mất nội dung hữu ích chính.

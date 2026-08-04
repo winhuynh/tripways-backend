@@ -2,16 +2,19 @@
 
 **PRD sản phẩm liên quan:** `docs/product/p0-staging-readiness-prd.md`  
 **Kho mã:** `tripways-backend`, `tripways-web`  
-**Kết quả:** Một release candidate chạy end-to-end ở local và đạt ít nhất 11/12 năng lực P0A.
+**Trạng thái:** Đang thực hiện
+**Cập nhật:** 2026-08-04
+**Kết quả:** Một release candidate chạy end-to-end ở local, đạt ít nhất 11/12 năng lực P0A và hoàn
+tất approved-API smoke trước formal acceptance.
 
 ## 1. Kiến trúc mục tiêu
 
 ```text
 Next.js Server Component
   → Next.js Route Handler hoặc server repository thống nhất
-    → Supabase Edge Function public-read
+    → unified page/search backend gateway
       → service-role RPC
-        → PostgreSQL read model
+        → page-specific read model hoặc shared route-search projection
 
 Mock Provider API / Approved Real API
   → privileged local ingestion Edge Function
@@ -20,9 +23,11 @@ Mock Provider API / Approved Real API
         → canonical country/city/airport tables
 ```
 
-City page và airport page không được duy trì hai mô hình trust khác nhau. Web không gọi public RPC
-bằng `SUPABASE_SERVICE_ROLE_KEY` trực tiếp từ từng feature. Service-role chỉ tồn tại trong Edge
-Function hoặc một server transport duy nhất được phê duyệt.
+Homepage, City, Airport và Route Page không được duy trì các mô hình trust khác nhau. Initial page
+load dùng unified page contract và một page-specific read-model lookup; mọi tương tác route filter
+dùng shared route-search contract. Web không gọi RPC bằng `SUPABASE_SERVICE_ROLE_KEY` trực tiếp từ
+từng feature. Service-role chỉ tồn tại trong backend gateway hoặc server transport duy nhất được
+phê duyệt.
 
 ## 2. Thay đổi backend bắt buộc
 
@@ -127,8 +132,12 @@ Mã lỗi tối thiểu:
 - `ERR_INGESTION_BATCH_DUPLICATE`
 - `ERR_INGESTION_VALIDATION_FAILED`
 - `ERR_INGESTION_PUBLISH_FAILED`
-- `ERR_CITY_PAGE_UNAVAILABLE`
-- `ERR_AIRPORT_PAGE_UNAVAILABLE`
+- `ERR_PAGE_INVALID_REQUEST`
+- `ERR_PAGE_NOT_FOUND`
+- `ERR_PAGE_UNAVAILABLE`
+- `ERR_PAGE_CONTRACT`
+- `ERR_ROUTE_SEARCH_INVALID_REQUEST`
+- `ERR_ROUTE_SEARCH_CONTRACT`
 
 ## 5. Bảo mật
 
@@ -143,8 +152,8 @@ Mã lỗi tối thiểu:
 ## 6. Cache
 
 - Local có thể dùng cache bypass để dễ kiểm thử ingestion.
-- City và airport repository phải hỗ trợ cache identity gồm locale, entity identity, filter và
-  `data_version`.
+- Unified page/search boundary phải hỗ trợ cache identity gồm page/scope, locale, normalized filter
+  và `data_version`.
 - P0A kiểm thử được cache invalidation contract bằng version change, chưa cần CDN thật.
 - Không thêm Redis.
 
@@ -154,14 +163,15 @@ Mã lỗi tối thiểu:
 - SQL E2E: valid batch, invalid batch rollback, duplicate batch, unknown-safe mapping.
 - Adapter unit test cho mock và sanitized real fixture.
 - Edge handler test cho auth, idempotency, input và normalized error.
-- Web tests cho city/airport transport thống nhất, 404, error UI, metadata và noindex.
-- Browser smoke test desktop/mobile cho homepage, city, airport, filters và map fallback.
+- Web tests cho unified Homepage/City/Airport/Route transport, 404, error UI, metadata và noindex.
+- Browser smoke test desktop/mobile cho Homepage, City, Airport, Route Page, filters và map fallback.
 - Full local command chạy format, lint, typecheck, Deno test, SQL E2E và production build.
 
 ## 8. Cổng nghiệm thu
 
 - Đạt ít nhất 11/12 năng lực trong PRD sản phẩm P0.
-- Năng lực chưa đạt phải phụ thuộc cloud thực sự và được ghi rõ.
+- Năng lực chưa đạt phải phụ thuộc external approval thực sự và được ghi rõ; đạt ngưỡng local không
+  tự động trở thành formal acceptance.
 - Test mặc định chạy offline và xác định.
 - Smoke test API thật đã phê duyệt chạy thành công nhưng không chặn CI khi mạng không có.
 - Không có fixture hoặc API P0A nào indexable.
@@ -173,3 +183,13 @@ Mã lỗi tối thiểu:
 - Dữ liệu route/schedule thật.
 - Remote deployment.
 - Production cache và monitoring.
+
+## 10. Contract foundation cho frontend rebuild
+
+- Xoá contract trùng lặp bằng deprecation plan; đích cuối chỉ có API versionless cho page query và
+  route search.
+- JSON Schema hoặc validator tương đương phải kiểm tra read model gồm identity, SEO, modules,
+  internal links, commercial capability, freshness, provenance và indexability trước publication.
+- Fixture cho bốn page type chứng minh frontend không cần hardcode heading, CTA, empty state hoặc
+  disclosure có giá trị content.
+- Request path chỉ đọc current materialized publication; không compose page bằng nhiều query động.

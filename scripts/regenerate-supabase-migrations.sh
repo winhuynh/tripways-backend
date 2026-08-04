@@ -190,6 +190,7 @@ emit_migration \
   "supabase/sql_src/functions/pseo/airport/rpc_get_airport_page.sql" \
   "supabase/sql_src/functions/pseo/shared/resolve_route_price_estimate.sql" \
   "supabase/sql_src/functions/pseo/homepage/rpc_search_places.sql" \
+  "supabase/sql_src/functions/pseo/homepage/rpc_resolve_homepage_origin.sql" \
   "supabase/sql_src/functions/pseo/homepage/rpc_get_homepage_discovery.sql" \
   "supabase/sql_src/functions/pseo/route/rpc_search_route_options.sql" \
   "supabase/sql_src/functions/pseo/route/rpc_get_route_page.sql" \

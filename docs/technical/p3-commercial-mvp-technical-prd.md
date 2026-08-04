@@ -2,6 +2,12 @@
 
 **PRD sản phẩm liên quan:** `docs/product/p3-commercial-mvp-prd.md`  
 **Phụ thuộc:** P2 hoàn tất, live-search và affiliate agreements được phê duyệt
+**Trạng thái:** Chưa bắt đầu
+**Cập nhật:** 2026-08-04
+
+`route_price_estimates` và price ingestion foundation hiện tại không phải offer search, search state,
+affiliate handoff hoặc P3 acceptance. Live offer luôn là short-lived provider result với expiry và
+server-owned outbound reference riêng.
 
 ## 1. Kiến trúc
 
@@ -77,6 +83,32 @@ Offer canonical gồm:
 - Offer expiry.
 - Server-owned affiliate reference.
 
+Với itinerary nhiều leg, canonical offer còn có:
+
+```text
+ticketing_type: single_ticket | separate_tickets | unknown
+ticket_count: integer | null
+validating_carrier: airline_reference | null
+connection_type: protected | self_transfer | unknown
+through_baggage: true | false | unknown
+commercial_evidence: provider_explicit | unavailable
+```
+
+Quy tắc normalization:
+
+- Chỉ dùng `provider_explicit` khi adapter ánh xạ từ field provider đã được tài liệu hóa và contract
+  test; không dùng inference từ route graph, airline, alliance, codeshare, terminal hoặc layover.
+- `ticket_count` và `validating_carrier` là `null` khi provider không trả hoặc semantics chưa rõ.
+- `unknown` không được normalize thành `false`. Không có bằng chứng self-transfer không đồng nghĩa
+  connection được bảo vệ, và ngược lại.
+- Nếu provider chỉ trả itinerary/price mà không trả connection semantics, offer vẫn giữ toàn bộ field
+  trên ở trạng thái unknown/unavailable và public response kèm warning ổn định.
+- AirLabs route, schedule, codeshare hoặc flight-status payload không được dùng làm commercial
+  evidence cho các field này. AirLabs có thể enrich operating/marketing flight facts, nhưng không
+  thay thế live shopping/offer provider.
+- Provider adapter phải khai báo capability matrix theo version. Field ngoài capability đã phê duyệt
+  bị bỏ qua hoặc giữ unknown cho đến khi mapping được review.
+
 Client không gửi giá để tạo redirect hoặc analytics authoritative event.
 
 ## 6. API
@@ -148,6 +180,10 @@ limit và sampling policy nếu cần.
 - Filter live offer không nhầm với stored route filters.
 - Price có currency và thời điểm/expiry context.
 - Hiển thị disclosure booking với partner.
+- Hiển thị rõ “protected connection”, “self-transfer” hoặc “separate tickets” chỉ khi
+  `commercial_evidence=provider_explicit`; nếu không, hiển thị “Chưa có thông tin về bảo vệ nối
+  chuyến” và hướng người dùng kiểm tra điều kiện trên trang đối tác.
+- Không dùng màu sắc, icon hoặc copy ngầm truyền đạt connection an toàn khi trạng thái là `unknown`.
 - Legal, privacy, affiliate disclosure và attribution có route thật, không dùng anchor placeholder.
 
 ## 12. Observability
@@ -162,6 +198,11 @@ limit và sampling policy nếu cần.
 
 - Search input matrix.
 - Provider adapter normalization, polling, timeout và error mapping.
+- Capability-matrix tests cho từng provider/version và fixtures có/không có commercial connection
+  fields.
+- Tests chống suy luận từ AirLabs/codeshare/airline/alliance/layover và phân biệt `unknown` với
+  `false`.
+- Contract/UI tests đảm bảo unknown connection hiển thị warning, không over-promise.
 - Offer deduplication và expiry.
 - Rate-limit/concurrency/cost guard tests.
 - Affiliate allowlist, tampering, expiry và open-redirect tests.
@@ -188,6 +229,8 @@ limit và sampling policy nếu cần.
 - Analytics và privacy retention được review.
 - Monitoring, backup, rollback và incident runbook hoàn chỉnh.
 - Legal và affiliate disclosure đã publish.
+- Mỗi provider/version có capability matrix và test xác nhận commercial connection field chỉ dùng
+  `provider_explicit`; trường thiếu hiển thị warning và giữ `unknown`/`unavailable` xuyên suốt.
 
 ## 16. Thao tác cần approval
 
@@ -196,3 +239,12 @@ limit và sampling policy nếu cần.
 - Production deploy và domain/DNS.
 - Bật analytics production.
 - Mở traffic cohort hoặc tăng rate limits.
+
+## 17. Advertisement và affiliate read model
+
+- Schema placement dùng stable slot key, page/module adjacency, locale, format, eligibility, partner,
+  campaign window, disclosure và enabled state.
+- Publication composer chỉ đưa commercial module vào payload khi rights/capability/campaign hợp lệ.
+- Affiliate redirect nhận signed offer/partner identifier, resolve server-side và chặn open redirect.
+- Organic ranking/read model được tính độc lập; sponsored module không được chen vào organic array
+  hoặc làm thay đổi structured data SEO.

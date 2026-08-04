@@ -2,6 +2,12 @@
 
 **PRD sản phẩm liên quan:** `docs/product/p2-licensed-flight-data-prd.md`  
 **Phụ thuộc:** P1 hoàn tất và provider rights được phê duyệt
+**Trạng thái:** Chưa bắt đầu — canonical graph/read-model foundation không phải P2 acceptance
+**Cập nhật:** 2026-08-04
+
+Canonical route/service tables, 0–3-stop graph search, page read models và estimated-price schema
+được chuẩn bị sớm trong P0A. P2 chỉ bắt đầu sau P1 và chỉ được nghiệm thu bằng licensed provider,
+production rights, staging publication và remote evidence.
 
 ## 1. Kiến trúc
 
@@ -53,6 +59,49 @@ Recurring service:
 
 Không lưu live availability hoặc fare trong các bảng này.
 
+### 3.1 Capability boundary của AirLabs
+
+Với contract API được review tại thời điểm tích hợp, AirLabs có thể cung cấp dữ liệu hàng không phục
+vụ P2 như route, lịch định kỳ, flight number, sân bay, thời gian, ngày khai thác, duration, aircraft
+khi có và các trường codeshare. Adapter phải ánh xạ rõ:
+
+- `airline_*`/`flight_*`: marketing carrier/flight theo semantics đã xác minh với provider.
+- `cs_airline_*`/`cs_flight_*`: operating carrier/flight của codeshare theo semantics đã xác minh.
+- Field thiếu hoặc coverage không chắc chắn: `null`/`unknown`, không tự điền từ dữ liệu gần giống.
+
+AirLabs Routes/Schedules không phải flight-shopping hoặc ticketing response. Nếu payload/contract
+được phê duyệt không cung cấp bằng chứng explicit, nó không xác nhận:
+
+- Các leg được bán trong cùng một offer hoặc cùng một vé.
+- Số lượng vé hay validating carrier của toàn itinerary.
+- Kết nối được bảo vệ khi delay/misconnect.
+- Self-transfer hay airport/terminal transfer do người dùng tự thực hiện.
+- Hành lý được check-through đến điểm cuối.
+- Fare, availability, fare rules hoặc khả năng đặt hành trình nhiều leg.
+
+Không được suy luận các thuộc tính trên từ cùng airline, alliance, codeshare, airport/terminal hoặc
+layover compatibility. Khi AirLabs thay đổi version hoặc field semantics, adapter contract test và
+capability matrix phải được review lại trước khi publish.
+
+### 3.2 Commercial connection truth trong P2
+
+Mỗi `route_option` nhiều leg phải có contract an toàn sau ở public read model, dù implementation có
+thể tính từ constant thay vì lưu lặp trong từng row:
+
+```text
+commercial_status: schedule_only
+ticketing_type: unknown
+protected_connection: unknown
+self_transfer: unknown
+through_baggage: unknown
+validating_carrier: null
+commercial_evidence: unavailable
+```
+
+Không expose boolean `false` khi giá trị thực tế là chưa biết. `unknown` khác với `false`: ví dụ
+`self_transfer: unknown` không có nghĩa hành trình được bảo vệ. API phải kèm disclaimer ổn định rằng
+kết quả được tạo từ stored schedules và cần live offer để xác nhận khả năng bán cùng điều kiện vé.
+
 ## 4. Publication transaction
 
 Một publication schedule thành công phải:
@@ -61,7 +110,7 @@ Một publication schedule thành công phải:
 2. Resolve airport/airline references.
 3. Publish route/service canonical.
 4. Deactivate theo explicit provider rule.
-5. Rebuild direct và one-stop `route_options`.
+5. Rebuild zero-to-three-stop `route_options`.
 6. Rebuild affected pSEO read models.
 7. Tính indexability.
 8. Tạo data version mới.
@@ -71,17 +120,20 @@ Nếu bước nào fail, rollback toàn bộ version mới.
 
 ## 5. Route discovery
 
-- Hỗ trợ direct và tối đa một connection.
+- Hỗ trợ từ không đến ba connection; `stop_count` là số sân bay nối chuyến trung gian.
 - Database sở hữu minimum/maximum layover, compatibility, ranking và facets.
 - Ranking ổn định: stops, duration, confidence, frequency, connection quality, stable tie-breaker.
-- Input gồm airport identity, airlines, exclude airports, duration, layover, departure window,
-  operating day, limit và offset.
+- Shared input gồm scope toàn cục, origin city, origin airport hoặc city pair; filters gồm airlines,
+  connection airports, stops, duration, layover, cabin và price/currency khi có quyền hiển thị.
+- Pagination dùng bounded page size và deterministic keyset cursor. Operating-day/departure-window
+  chỉ thêm khi licensed schedule contract và UX tương ứng được phê duyệt.
 - Missing schedule data không bị chuyển thành zero/year-round.
 
 ## 6. pSEO read models
 
 P2 hoàn thiện:
 
+- Homepage discovery read model.
 - City origin pages.
 - Airport pages.
 - Route detail read model tối thiểu.
@@ -97,6 +149,7 @@ Next.js Route Handlers:
 ```text
 GET /api/pages/cities/:slug
 GET /api/pages/airports/:slug
+GET /api/pages/homepage
 GET /api/routes/search
 GET /api/pages/routes/:slug
 GET /api/sitemap
@@ -143,7 +196,12 @@ Indexability thuộc PostgreSQL. Web chỉ phản ánh quyết định.
 - Provider adapter fixture tests.
 - Rights matrix tests.
 - Schedule normalization tests.
-- Direct/one-stop compatibility and ranking tests.
+- AirLabs field-semantics và missing-field normalization tests.
+- Tests chứng minh P2 không suy luận ticketing/protection/self-transfer/through-baggage từ airline,
+  alliance, codeshare, terminal hoặc layover.
+- Public contract tests phân biệt `unknown` với `false` và luôn trả schedule-only disclaimer cho
+  route nhiều leg.
+- Zero-to-three-stop compatibility and ranking tests.
 - Atomic publication + read-model rebuild E2E.
 - Indexability matrix tests.
 - Cache/version contract tests.
@@ -154,12 +212,14 @@ Indexability thuộc PostgreSQL. Web chỉ phản ánh quyết định.
 ## 12. Cổng nghiệm thu
 
 - Snapshot provider có bản quyền publish nguyên tử ở staging.
-- Route discovery direct/one-stop đúng và deterministic.
+- Route discovery 0–3 stops đúng và deterministic.
 - Initial city/airport inventory đã review.
 - Sitemap chỉ gồm page đủ điều kiện.
 - Cache tuân thủ provider rights.
 - Freshness alert và rollback đã kiểm chứng.
 - Không có live price/availability claim.
+- AirLabs capability matrix đã được xác minh theo API version/contract sử dụng và mọi commercial
+  connection field không được nguồn cung cấp đều trả `unknown`/`unavailable`.
 
 ## 13. Thao tác cần approval
 
@@ -168,3 +228,29 @@ Indexability thuộc PostgreSQL. Web chỉ phản ánh quyết định.
 - Production publication.
 - Bật indexability và sitemap production.
 - Thay đổi cache TTL dựa trên provider rights.
+
+## 14. City Hub AirLabs POC kỹ thuật
+
+Tham chiếu `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
+
+- POC dùng khoảng 100 origin airports trong 14–30 ngày và đối chứng top routes, operating days,
+  inactive routes cùng codeshare duplication.
+- Acceptance mục tiêu: `>=95%` top-route endpoint accuracy, `>=90%` operating-day accuracy,
+  `<3%` inactive route được publish active và `100%` codeshare trong mẫu có deterministic outcome.
+- Adapter phải map provider fields vào canonical DTO; raw payload chỉ nằm private schema.
+- Publication phải tính lại city aggregation, frequency, facets và affected City Hub read models.
+- `seasonality_status` giữ `unknown` nếu contract không có dated evidence đủ điều kiện.
+- Page query không gọi AirLabs; cache/read model đọc publication hiện hành.
+- Price estimate, live offer và affiliate redirect không thuộc AirLabs adapter và không phải P2
+  acceptance.
+
+## 15. Route projection và estimated fare
+
+- Hợp nhất route search trên `route_search_options`; không duy trì đồng thời
+  `rpc_search_route_options` và `rpc_search_route_options_v2` sau compatibility window.
+- Projection bổ sung destination country/region, domestic flag và facet; scope origin-city phải lọc
+  được departure airport.
+- Price join chọn đúng `trip_type = one_way` cho City/Airport discovery, đúng stop bucket/cabin,
+  production rights, currency và validity. Missing/expired/unlicensed là state riêng.
+- Contract test bao phủ global, origin-city, origin-airport, city-pair, keyset pagination và facet
+  count sau khi áp dụng toàn bộ filter.

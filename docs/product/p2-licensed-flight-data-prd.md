@@ -1,8 +1,8 @@
 # PRD P2: Dữ liệu chuyến bay có bản quyền
 
-**Trạng thái:** Đề xuất để duyệt sản phẩm  
-**Ngày:** 2026-07-30  
-**Chủ sở hữu:** Tripways  
+**Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P2
+**Cập nhật:** 2026-08-04
+**Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
 ## 1. Vấn đề
@@ -11,17 +11,18 @@ Dữ liệu định danh sân bay và thành phố không đủ để trả lờ
 Tripways cần dữ liệu tuyến bay và lịch bay định kỳ có bản quyền, đủ mới và đủ quyền để vận hành khám
 phá tuyến và pSEO mà không mô tả lịch bay đã lưu như tình trạng còn chỗ trực tiếp.
 
-Dữ liệu tuyến mẫu chứng minh được hành vi kỹ thuật nhưng không thể công bố như sự thật production.
+Dữ liệu tuyến mẫu và các read-model foundation 0–3 stops chứng minh được hành vi kỹ thuật nhưng không
+thể công bố như sự thật production và không có nghĩa P2 đã bắt đầu.
 
 ## 2. Mục tiêu
 
 Nhập và xuất bản tuyến bay có hướng cùng dịch vụ bay định kỳ có bản quyền, tái dựng read model tuyến
-thẳng và một điểm dừng, đồng thời cung cấp trang khám phá thành phố và sân bay đáng tin cậy với độ
+từ không đến ba điểm dừng, đồng thời cung cấp Homepage, City, Airport và Route Page đáng tin cậy với độ
 mới, độ tin cậy và điều kiện lập chỉ mục dựa trên nguồn rõ ràng.
 
 ## 3. Người dùng mục tiêu
 
-- Người dùng khám phá khả năng bay thẳng và một điểm dừng.
+- Người dùng khám phá khả năng bay từ không đến ba điểm dừng.
 - Người dùng so sánh các sân bay phục vụ cùng một thành phố.
 - Người dùng tìm kiếm truy cập vào hub tuyến bay của thành phố hoặc sân bay.
 - Người vận hành theo dõi độ mới và quá trình xuất bản dữ liệu provider.
@@ -55,10 +56,10 @@ Credentials và payload thô của provider luôn nằm phía máy chủ và tro
 2. Người dùng chuyển giữa điểm đến chiều đi và điểm xuất phát chiều đến.
 3. Người dùng lọc mẫu tuyến và xem hãng bay cùng hướng dẫn sân bay.
 
-### Hành trình C: Khám phá hành trình một điểm dừng
+### Hành trình C: Khám phá hành trình có điểm dừng
 
 1. Người dùng tìm điểm đi và điểm đến.
-2. Tripways trả các mẫu lịch bay thẳng và một điểm dừng đủ điều kiện.
+2. Tripways trả các mẫu lịch bay từ không đến ba điểm dừng đủ điều kiện.
 3. Kết quả được xếp hạng ổn định theo số điểm dừng, thời lượng, độ tin cậy, tần suất và chất lượng nối
    chuyến.
 
@@ -85,13 +86,23 @@ Credentials và payload thô của provider luôn nằm phía máy chủ và tro
   độ tin cậy và thời gian xác minh khi có.
 - Tần suất và mùa vụ bị thiếu phải giữ là chưa biết.
 - Không gắn nhãn dữ liệu đã lưu là trực tiếp, còn chỗ, có thể đặt hoặc rẻ nhất.
+- Tuyến nhiều chặng do Tripways ghép từ lịch bay chỉ biểu diễn khả năng nối chuyến về mặt lịch trình.
+  Nó không chứng minh các chặng được bán cùng nhau, nằm trên một vé, được bảo vệ khi lỡ nối chuyến
+  hoặc được chuyển hành lý đến điểm cuối.
+- Không được suy luận vé chung, kết nối được bảo vệ, tự nối chuyến hoặc chuyển hành lý từ việc các
+  chặng cùng hãng, cùng liên minh, có codeshare, cùng terminal hay có thời gian nối chuyến hợp lệ.
+- Khi nguồn không cung cấp bằng chứng thương mại rõ ràng, các thuộc tính `single_ticket`,
+  `protected_connection`, `self_transfer`, `through_baggage` và `validating_carrier` phải được coi là
+  chưa biết và không được chuyển thành khẳng định trong API, UI, metadata hoặc nội dung SEO.
 
 ### 6.3 Khám phá tuyến
 
-- Tái dựng tuyến thẳng và một điểm dừng sau khi xuất bản thành công.
+- Tái dựng tuyến từ không đến ba điểm dừng sau khi xuất bản thành công.
 - Tương thích nối chuyến, bộ lọc, facet, phân trang và xếp hạng vẫn thuộc sở hữu cơ sở dữ liệu.
 - Kết quả tìm kiếm gồm phiên bản dữ liệu, độ mới, độ tin cậy và thông báo đây là lịch bay đã lưu.
 - Lỗi provider không được biến thành kết quả sai “tuyến không tồn tại”.
+- Kết quả nhiều chặng phải kèm thông báo rằng đây là gợi ý dựa trên lịch bay; người dùng cần tìm
+  live offer để xác nhận hành trình có được bán và điều kiện nối chuyến thực tế.
 
 ### 6.4 Xuất bản pSEO
 
@@ -143,12 +154,14 @@ P2 chỉ được nghiệm thu khi:
 
 - Quyền provider được tài liệu hóa và phê duyệt.
 - Một snapshot có bản quyền hoàn thành ingestion và xuất bản nguyên tử trên staging.
-- Khám phá tuyến thẳng và một điểm dừng hoạt động từ dữ liệu có bản quyền.
+- Khám phá tuyến từ không đến ba điểm dừng hoạt động từ dữ liệu có bản quyền.
 - Kho trang thành phố và sân bay production ban đầu đã được review.
 - Sitemap chỉ chứa trang đủ điều kiện.
 - Đã kiểm chứng độ mới, ingestion bị lỡ và rollback.
 - Cache tuân thủ quyền provider.
 - Trang production không đưa ra khẳng định về giá hoặc tình trạng còn chỗ trực tiếp.
+- Route nhiều chặng không đưa ra khẳng định về vé chung, protected connection, self-transfer hoặc
+  through baggage khi provider không cung cấp bằng chứng explicit.
 
 ## 10. Ngoài phạm vi
 
@@ -163,9 +176,45 @@ P2 chỉ được nghiệm thu khi:
 
 - Quyền provider có thể cấm SEO, TTL cache dài hoặc graph tuyến phái sinh.
 - Snapshot lịch bay có thể khác hoạt động thực tế theo ngày.
-- Tuyến một điểm dừng có thể tương thích về lý thuyết nhưng không bán được về thương mại.
+- Tuyến nhiều điểm dừng có thể tương thích về lý thuyết nhưng không bán được về thương mại.
+- Dữ liệu codeshare có thể bị hiểu nhầm thành vé chung hoặc kết nối được bảo vệ, dù codeshare chỉ mô
+  tả quan hệ marketing/khai thác của một chặng bay.
 - Kho dữ liệu lớn có thể tạo trang mỏng hoặc trùng lặp.
 
 Các rủi ro được kiểm soát bằng review hợp đồng, khẳng định an toàn, cổng độ tin cậy và độ mới, quy
-tắc một điểm dừng giới hạn, kho ban đầu được review và tách biệt khám phá tuyến khỏi kết quả trực
+tắc tối đa ba điểm dừng có giới hạn, kho ban đầu được review và tách biệt khám phá tuyến khỏi kết quả trực
 tiếp trong tương lai.
+
+## 12. AirLabs POC và City Hub capability gate
+
+Kế hoạch đầy đủ nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
+
+AirLabs là ứng viên P2 cho route, recurring schedule, airport, city, country, airline và timezone.
+Trước tích hợp production phải chạy POC 14–30 ngày, xác minh API version/package, coverage,
+operating-day accuracy, codeshare semantics, freshness, full-refresh cost và quyền production/SEO/
+cache/snapshot/derived data.
+
+P2 có thể bật trên City Hub:
+
+- Direct destinations, map, airport/country-region/airline/duration/route-type filters.
+- Operating days, frequency đã dedupe, freshness và provenance.
+- City-level aggregation và route groups do Tripways tính.
+
+P2 không được bật chỉ từ AirLabs:
+
+- Estimated fare, price filter, cheapest month hoặc price trend.
+- Live availability, booking hoặc affiliate CTA dựa trên offer.
+- Year-round/seasonal claim khi thiếu effective date range hoặc lịch sử đủ tin cậy.
+
+City Hub P2 phải render đúng khi toàn bộ price và commercial module vắng mặt.
+
+## 13. Page capability sau khi có dữ liệu licensed
+
+- City Hub và Airport Page tập trung direct routes; Route Page hỗ trợ cả direct và hành trình có tối
+  đa ba điểm dừng.
+- City/Airport discovery phải có departure-airport, destination country/region,
+  domestic/international, duration và price facet khi capability tương ứng có dữ liệu.
+- Estimated fare trên City/Airport là giá một chiều theo mặc định và phải ghi rõ range, currency,
+  method, confidence, sample window, expiry và trạng thái unavailable khi thiếu dữ liệu.
+- Read model không duy trì standalone airline section chỉ vì provider có airline data; airline chỉ
+  xuất hiện khi giúp so sánh route hoặc làm filter.

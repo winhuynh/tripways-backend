@@ -1,8 +1,14 @@
 # PRD kỹ thuật P1: Pipeline nhập dữ liệu production
 
 **PRD sản phẩm liên quan:** `docs/product/p1-production-data-ingestion-prd.md`  
-**Phụ thuộc:** P0 hoàn tất  
+**Phụ thuộc:** P0 hoàn tất
+**Trạng thái:** Chưa bắt đầu — foundation P0A không phải P1 acceptance
+**Cập nhật:** 2026-08-04
 **Kho mã chính:** `tripways-backend`
+
+Các bảng source rights, raw batch, ingestion run/issue và atomic development publication hiện có là
+foundation chuẩn bị sớm. P1 chỉ bắt đầu sau khi P0 hoàn tất và vẫn phải triển khai đầy đủ state
+machine, diff, approval, anomaly gate, production adapter, retention và staging evidence bên dưới.
 
 ## 1. Mục tiêu kiến trúc
 
@@ -166,3 +172,12 @@ identity, idempotency, authorization và rate limit.
 - Cấp credential/download access.
 - Chạy publication trên remote production.
 - Thay đổi retention hoặc xóa raw batch.
+
+## 13. Content ingestion và completeness
+
+- Tách provider facts, reviewed editorial copy và localized UX copy nhưng cùng tham gia publication
+  version và provenance graph.
+- Airport access/parking/lounge/notice có validator type-specific, source rights và expiry policy.
+- Materialize completeness result theo page type với required/optional module, reason codes và
+  indexability outcome.
+- Internal links chỉ trỏ đến page tồn tại trong cùng current publication hoặc URL static allowlist.

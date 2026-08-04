@@ -1,13 +1,13 @@
 # Lộ trình sản phẩm MVP Tripways
 
-**Trạng thái:** Đề xuất để duyệt sản phẩm  
-**Ngày:** 2026-07-30  
+**Trạng thái:** Đang thực hiện — phase hiện tại P0A
+**Cập nhật:** 2026-08-04
 **Phạm vi:** `tripways-backend` và `tripways-web`
 
 ## 1. Định hướng sản phẩm
 
 Tripways là sản phẩm dữ liệu đồ thị du lịch và khám phá chuyến bay, lấy hàng không làm trọng tâm
-đầu tiên. Sản phẩm giúp người dùng hiểu những tuyến bay thẳng và một điểm dừng nào thường tồn tại
+đầu tiên. Sản phẩm giúp người dùng hiểu những tuyến bay từ không đến ba điểm dừng nào thường tồn tại
 giữa các thành phố và sân bay, sau đó từng bước mở rộng sang tìm kiếm chuyến bay theo ngày và
 chuyển tiếp an toàn tới đối tác liên kết.
 
@@ -20,9 +20,10 @@ Nguyên mẫu cục bộ hiện có:
 
 - Các bảng quốc gia, thành phố, sân bay, hãng bay, tuyến bay và dịch vụ bay định kỳ đã được chuẩn
   hóa.
-- Khám phá tuyến bay thẳng và một điểm dừng bằng dữ liệu mẫu phát triển có tính xác định.
+- Khám phá tuyến bay từ không đến ba điểm dừng bằng dữ liệu mẫu phát triển có tính xác định.
 - Các mô hình đọc pSEO cho thành phố và sân bay.
-- Nguyên mẫu trang thành phố và sân bay bằng Next.js.
+- Contract và primitive Next.js từ nguyên mẫu cũ được giữ lại để phục vụ rebuild; các page cũ đã
+  được dọn khỏi frontend.
 - RLS, phân quyền tối thiểu, sử dụng khóa `service-role` phía máy chủ và kiểm thử hợp đồng.
 
 Nguyên mẫu hiện chưa có:
@@ -36,13 +37,17 @@ Nguyên mẫu hiện chưa có:
 
 ## 3. Các giai đoạn bàn giao
 
-| Giai đoạn | Kết quả sản phẩm                                                                     | Điều kiện bắt đầu                                               | Điều kiện hoàn tất                                                                       |
-| --------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| P0A       | Local release candidate hoàn thành phần lớn hành vi sản phẩm và pipeline dữ liệu nhỏ | Nguyên mẫu cục bộ hiện tại                                      | Toàn bộ hành vi không phụ thuộc cloud chạy end-to-end ở local và đạt cổng chất lượng P0A |
-| P0B       | Sản phẩm staging ổn định, riêng tư và `noindex`                                      | P0A được nghiệm thu                                             | Cùng release candidate hoạt động từ xa; chỉ còn khác biệt hạ tầng, bí mật và vận hành    |
-| P1        | Có thể nhập và kiểm duyệt dữ liệu nền thật một cách an toàn                          | P0 được nghiệm thu                                              | Dữ liệu quốc gia, thành phố và sân bay thật được xuất bản qua pipeline có thể kiểm toán  |
-| P2        | Dữ liệu tuyến bay và lịch bay có bản quyền vận hành lớp khám phá đáng tin cậy        | P1 được nghiệm thu và quyền sử dụng nhà cung cấp được phê duyệt | Khám phá tuyến bay và pSEO sử dụng dữ liệu production mới, có bản quyền                  |
-| P3        | Người dùng có thể tìm chuyến bay theo ngày và rời Tripways qua liên kết an toàn      | P2 được nghiệm thu và đã chọn đối tác tìm kiếm trực tiếp        | MVP production đáp ứng các cổng ra mắt, bảo mật, phân tích và độ tin cậy                 |
+| Giai đoạn | Trạng thái         | Kết quả sản phẩm                                                                     | Điều kiện hoàn tất                                                                       |
+| --------- | ------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
+| P0A       | **Đang thực hiện** | Local release candidate hoàn thành phần lớn hành vi sản phẩm và pipeline dữ liệu nhỏ | Toàn bộ hành vi không phụ thuộc cloud chạy end-to-end ở local và đạt cổng chất lượng P0A |
+| P0B       | Chưa bắt đầu       | Sản phẩm staging ổn định, riêng tư và `noindex`                                      | Cùng release candidate hoạt động từ xa; chỉ còn khác biệt hạ tầng, bí mật và vận hành    |
+| P1        | Chưa bắt đầu       | Có thể nhập và kiểm duyệt dữ liệu nền thật một cách an toàn                          | Dữ liệu quốc gia, thành phố và sân bay thật được xuất bản qua pipeline có thể kiểm toán  |
+| P2        | Chưa bắt đầu       | Dữ liệu tuyến bay và lịch bay có bản quyền vận hành lớp khám phá đáng tin cậy        | Khám phá tuyến bay và pSEO sử dụng dữ liệu production mới, có bản quyền                  |
+| P3        | Chưa bắt đầu       | Người dùng có thể tìm chuyến bay theo ngày; quảng cáo và affiliate hoạt động an toàn | MVP production đáp ứng cổng thương mại, bảo mật, disclosure, phân tích và độ tin cậy     |
+| P4        | Chưa bắt đầu       | Mở rộng pSEO có kiểm soát từ tập thị trường đã chứng minh giá trị                    | Coverage, quality, indexability, cost và freshness gate hoạt động ở quy mô production    |
+
+Một số schema, contract và read model phục vụ P1–P3 có thể được chuẩn bị trong P0A để tránh thiết kế
+lại. Những foundation đó không làm thay đổi trạng thái phase và không phải bằng chứng nghiệm thu.
 
 Không giai đoạn nào được phụ thuộc vào hành vi chưa hoàn thành của giai đoạn sau. Mỗi giai đoạn phải
 vẫn hữu ích và có thể kiểm thử độc lập khi các giai đoạn sau chưa tồn tại.
@@ -64,6 +69,12 @@ candidate trên hạ tầng từ xa. P0 chỉ hoàn tất khi cả P0A và P0B �
    cấp, đích liên kết, trạng thái xuất bản hoặc khả năng lập chỉ mục.
 7. **Hạ tầng dựa trên đo lường:** Ưu tiên bộ nhớ đệm HTTP và tính năng nền tảng trước khi thêm dịch
    vụ cache hoặc hàng đợi.
+8. **Backend sở hữu content pSEO:** Heading, mô tả, FAQ, CTA có ý nghĩa, empty state, disclosure,
+   internal link và cấu hình module công khai phải đến từ read model đã xuất bản; frontend không
+   chứa content thay thế có thể tạo ra hàng triệu trang giống nhau.
+9. **Contract không mang hậu tố phiên bản:** Mỗi capability chỉ có một contract canonical đang hoạt
+   động. Migration contract dùng compatibility window và deprecation plan, không duy trì lâu dài
+   các cặp `rpc_*` và `rpc_*_v2` song song.
 
 ## 5. Thước đo thành công tổng thể
 
@@ -86,8 +97,9 @@ Lộ trình MVP thành công khi:
 - Lập hành trình bằng AI.
 - Đánh giá do người dùng tạo và nội dung cộng đồng.
 - Tàu hỏa, xe buýt, phà, du thuyền và các phương thức vận tải khác.
-- Hành trình nhiều thành phố hoặc có hơn một điểm nối chuyến.
-- Tài khoản thành viên, gói đăng ký và tính năng cao cấp.
+- Hành trình nhiều thành phố hoặc có hơn ba điểm nối chuyến.
+- Trải nghiệm thành viên trả phí, gói đăng ký và tính năng cao cấp. Auth/account-security foundation
+  có thể tồn tại trước nhưng không đồng nghĩa sản phẩm membership đã nằm trong MVP.
 - Redis, hàng đợi bền vững hoặc công cụ tìm kiếm riêng khi chưa có nhu cầu đã đo được.
 
 ## 7. Quản trị
@@ -97,3 +109,54 @@ Lộ trình MVP thành công khi:
 - Mọi thao tác triển khai production, thay đổi tên miền, ký hợp đồng dữ liệu, thao tác cơ sở dữ liệu
   từ xa hoặc cấp bí mật đều cần chủ sở hữu phê duyệt rõ ràng.
 - Thay đổi phạm vi đáng kể phải cập nhật PRD tương ứng trước khi triển khai.
+
+## 8. Kế hoạch mở rộng City Hub đã ghi nhận
+
+Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md` và đang
+ở trạng thái chưa triển khai.
+
+- P0A/P0B giữ provider-neutral contract, fixture và staging `noindex`; không tích hợp AirLabs thật.
+- P1 hoàn thiện dữ liệu nền, quyền nguồn và city-airport/region taxonomy; không nhập route/schedule.
+- P2 đánh giá AirLabs bằng POC và chỉ bật route/schedule pSEO sau khi quyền SEO, cache, snapshot và
+  derived data được phê duyệt.
+- P3 chọn price/live-search/affiliate provider; AirLabs không thay thế flight-shopping provider.
+- Module giá, tháng khởi hành và affiliate luôn optional; City Hub core không phụ thuộc chúng.
+
+## 9. Bổ sung phạm vi pSEO theo phase
+
+### P0A/P0B — Khoá contract và rebuild foundation
+
+- Dọn frontend cũ; chỉ giữ app shell, Terms và các primitive dùng lại được cho tới khi contract mới
+  có test.
+- Chọn một public page contract và một route-search contract không có hậu tố `_v2`.
+- Định nghĩa page read model cho Homepage, City Hub, Airport và Route gồm module order, UX copy,
+  CTA, empty state, metadata, freshness, provenance và indexability.
+- Fixture chỉ chứng minh contract và luôn `noindex`; không được xem là content coverage production.
+
+### P1 — Content foundation và dữ liệu tham chiếu production
+
+- Nhập country, region, city, airport, timezone và city-airport grouping có quyền sử dụng rõ ràng.
+- Xây workflow biên tập/kiểm duyệt cho airport access, parking, lounge, notice, FAQ và internal link.
+- Tính content completeness theo page type; page thiếu dữ liệu không được tự động index.
+
+### P2 — Route, schedule và estimated fare có bản quyền
+
+- Xuất bản direct route cho City/Airport và cả direct lẫn connecting options cho Route Page.
+- City/Airport hỗ trợ filter theo departure airport, country/region, domestic/international,
+  duration và estimated one-way price.
+- Estimated fare là observation/range có trip type, source, confidence, sample window và expiry; không
+  được mô tả như live offer.
+
+### P3 — Advertisement, affiliate và live search
+
+- Advertisement slot, sponsored module, affiliate offer, CTA và disclosure được cấu hình từ backend.
+- Commercial module optional, có capability gate và kill switch; thiếu partner không làm hỏng page.
+- Tách rõ estimated fare của pSEO khỏi live offer theo ngày và affiliate handoff.
+
+### P4 — Mở rộng pSEO có kiểm soát
+
+- Chỉ mở rộng page count khi query demand, unique value, content completeness và freshness đạt ngưỡng.
+- Publication gate tự động `noindex` page mỏng, trùng lặp, stale, thiếu quyền nguồn hoặc không có route.
+- Theo dõi crawl/index coverage, organic landing quality, filter usage, affiliate conversion, ad impact,
+  provider cost và stale-data SLO theo page cohort.
+- Rollout theo country/market cohort và có rollback về publication version gần nhất.

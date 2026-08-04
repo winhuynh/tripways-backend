@@ -33,7 +33,7 @@ Build a trustworthy backend foundation that enables Tripways to:
 
 - Import and normalize airport, city, country, airline, and route data.
 - Model transportation data as a graph while delivering flight-first functionality.
-- Discover direct and one-stop flight routes.
+- Discover flight routes with zero to three stops.
 - Generate useful, SEO-safe airport, city, route, airline, and country pages.
 - Track data source rights, freshness, confidence, ingestion state, and publish history.
 - Capture product analytics and affiliate outbound clicks safely.
@@ -62,7 +62,7 @@ Build a trustworthy backend foundation that enables Tripways to:
 - Shared runtime request and response contracts.
 - Normalized country, city, airport, airline, route, graph, source, affiliate, and analytics schemas.
 - Data ingestion batches, validation results, diffs, publish runs, and rollback-safe publishing.
-- A deterministic local fixture covering representative direct and one-stop routes.
+- A deterministic local fixture covering representative zero-to-three-stop routes.
 - A manually invoked OurAirports importer.
 - A production provider ingestion contract and a sample adapter using non-production fixture data.
 - Public APIs for health, search, airports, cities, routes, airlines, countries, and sitemap data.
@@ -96,7 +96,7 @@ The foundation is accepted when:
 - The OurAirports importer parses a known fixture offline and supports an explicit manual download
   command for real source files.
 - Search and all planned public entity endpoints return contract-valid responses.
-- Direct and one-stop route queries return deterministic, correctly ranked results.
+- Zero-to-three-stop route queries return deterministic, correctly ranked results.
 - Every published route includes source, status, confidence, and verification timestamps.
 - Development fixture data cannot become production or SEO-indexable data.
 - Invalid or unlicensed ingestion cannot replace the currently published dataset.
@@ -364,7 +364,7 @@ The foundation recognizes allowlisted events for:
 
 - Search and no-result search.
 - Filter and map interactions.
-- Direct destination and one-stop result clicks.
+- Direct-destination and multi-stop result clicks.
 - SEO landing-page interaction.
 - Share actions.
 - Affiliate outbound clicks.
@@ -396,7 +396,7 @@ partners and links before recording the event.
 - SQL tests for constraints, grants, RLS, license gating, fixture isolation, and indexability.
 - Import tests for canonical mapping, invalid rows, duplicate rows, and snapshot identity.
 - Integration tests for raw batch through transactional publish.
-- Route tests for direct, one-stop, directionality, duplicates, unknown values, ordering, and
+- Route tests for zero-to-three stops, directionality, duplicates, unknown values, ordering, and
   exclusions.
 - API integration tests against the local Supabase database for critical read flows.
 - Security guards for public RLS coverage, schema exposure, privileged functions, and grants.

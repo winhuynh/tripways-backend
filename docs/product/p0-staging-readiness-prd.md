@@ -1,16 +1,16 @@
 # PRD P0: Sẵn sàng cho staging
 
-**Trạng thái:** Đề xuất để duyệt sản phẩm  
-**Ngày:** 2026-07-30  
-**Chủ sở hữu:** Tripways  
+**Trạng thái:** P0A đang thực hiện; P0B chưa bắt đầu
+**Cập nhật:** 2026-08-04
+**Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
 ## 1. Vấn đề
 
-Tripways đã có nguyên mẫu cục bộ đáng tin cậy nhưng các hành trình chính chưa hoạt động end-to-end
-một cách ổn định. Trang thành phố phụ thuộc Edge Runtime cục bộ, trang sân bay dùng một ranh giới dữ
-liệu khác, một số liên kết ở trang chủ dẫn tới trang chưa tồn tại và quy trình build production chưa
-hoàn toàn có thể tái lập.
+Tripways đang hợp nhất nguyên mẫu cục bộ thành một release candidate có thể kiểm chứng. Backend đã
+có unified page/search gateway và các read model riêng cho Homepage, City, Airport và Route Page,
+nhưng toàn bộ hành trình backend + web, approved-API smoke và source state bất biến vẫn phải được
+nghiệm thu lại trước khi bắt đầu staging.
 
 Nếu chưa có staging ổn định, nhóm sản phẩm không thể kiểm chứng quyết định trên thiết bị thật, hạ
 tầng từ xa hoặc với người thử nghiệm đại diện.
@@ -76,8 +76,8 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 
 ### 5.1 P0A — Local Release Candidate
 
-- Trang chủ, thành phố và sân bay phải chạy end-to-end với Supabase và Edge Functions local.
-- Cùng một server boundary được dùng cho thành phố và sân bay.
+- Trang chủ, thành phố, sân bay và route page phải chạy end-to-end với Supabase local.
+- Cùng unified page/search boundary được dùng cho mọi page type.
 - Build production, test, lint và typecheck phải chạy được từ lệnh đã tài liệu hóa.
 - Không hành vi sản phẩm bắt buộc nào chỉ có thể kiểm thử sau khi deploy staging.
 - P0A phải tạo release candidate bất biến theo commit hoặc định danh source state; P0B triển khai
@@ -105,7 +105,8 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 
 ### 5.3 Kho nội dung local và staging
 
-- Local và staging chỉ hiển thị thành phố và sân bay có dữ liệu phát triển hoàn chỉnh.
+- Local và staging chỉ hiển thị homepage, thành phố, sân bay và route page có dữ liệu phát triển hoàn
+  chỉnh.
 - Trang chủ, header, footer, thư mục và liên kết hành lang bay không được dẫn tới trang chưa tồn tại.
 - Trang dùng fixture, provider giả lập hoặc API thật trong P0 phải luôn được đánh dấu phi production
   và `noindex`.
@@ -113,8 +114,8 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 
 ### 5.4 Ranh giới máy chủ ổn định
 
-- Đọc dữ liệu thành phố và sân bay phải tuân theo một mô hình tin cậy phía máy chủ đã được tài liệu
-  hóa.
+- Đọc dữ liệu Homepage, City, Airport và Route Page phải tuân theo một mô hình tin cậy phía máy chủ
+  đã được tài liệu hóa.
 - Khóa `service-role` hoặc khóa bí mật không được xuất hiện trong bundle trình duyệt, props, log hoặc
   phản hồi lỗi.
 - Phản hồi RPC bên ngoài phải được kiểm tra hợp đồng trước khi render.
@@ -122,7 +123,7 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 
 ### 5.5 Hành vi trang
 
-- Trang chủ, thành phố và sân bay phải render trên desktop và mobile.
+- Homepage, City, Airport và Route Page phải render trên desktop và mobile.
 - Trạng thái tải phải kết thúc bằng nội dung, không tìm thấy hoặc lỗi có giới hạn.
 - Metadata canonical phải trỏ về URL gốc của trang.
 - URL có bộ lọc phải giữ `noindex` và canonical về trang gốc.
@@ -198,10 +199,12 @@ chuyển sang P0B.
 
 P0A chỉ được nghiệm thu khi:
 
-- Homepage, city page, airport page, route filters, route map và error/not-found states chạy được ở
-  local.
+- Homepage, city page, airport page, route page, shared route filters, route map và
+  error/not-found states chạy được ở local.
 - Provider API giả lập và pipeline nhập dữ liệu nhỏ vượt qua kiểm thử offline.
-- Một API thật đã được phê duyệt vượt qua smoke test giới hạn ở local.
+- Một API thật đã được phê duyệt vượt qua smoke test giới hạn ở local. Nếu chưa có phê duyệt nguồn,
+  capability này giữ trạng thái `Blocked external` và P0A chưa được formally accepted dù đạt ngưỡng
+  hành vi local.
 - Chạy lại cùng batch không tạo dữ liệu trùng; batch lỗi không thay đổi dữ liệu tốt.
 - Tất cả dữ liệu P0 giữ trạng thái phi production và `noindex`.
 - Format, lint, typecheck, unit test, contract test, SQL E2E và production build đều pass.
@@ -214,7 +217,7 @@ P0B chỉ được nghiệm thu khi:
 
 - URL staging hoạt động mà không cần hạ tầng cục bộ.
 - Source state đã triển khai đúng với release candidate P0A được nghiệm thu.
-- Hành trình thành phố và sân bay sử dụng ranh giới máy chủ nhất quán, đã review.
+- Hành trình Homepage, City, Airport và Route Page sử dụng ranh giới máy chủ nhất quán, đã review.
 - Các lỗi runtime ghi nhận trong lần review hiện tại đã được xử lý.
 - Liên kết trang chủ bị hỏng hoặc mang tính suy đoán đã bị xóa hoặc giới hạn vào kho dữ liệu hiện có.
 - Hành vi lỗi và không tìm thấy đã được kiểm chứng.
@@ -237,8 +240,7 @@ P0 chỉ hoàn tất khi cả P0A và P0B đều được nghiệm thu.
 ## 10. Rủi ro
 
 - Triển khai staging có thể vô tình để công cụ tìm kiếm lập chỉ mục dữ liệu mẫu.
-- Ranh giới thành phố và sân bay không nhất quán có thể làm lộ đặc quyền hoặc tạo hành vi cache khác
-  nhau.
+- Ranh giới page không nhất quán có thể làm lộ đặc quyền hoặc tạo hành vi cache khác nhau.
 - Cold start của Edge hoặc SSR từ xa có thể tạo trải nghiệm tải kém.
 - Môi trường preview về sau có thể vô tình dùng lại bí mật production.
 - Test phụ thuộc mạng có thể không ổn định hoặc API thật thay đổi contract.
@@ -247,3 +249,14 @@ P0 chỉ hoàn tất khi cả P0A và P0B đều được nghiệm thu.
 Các rủi ro này được kiểm soát bằng tách biệt môi trường, metadata robots rõ ràng, kiểm tra bí mật chỉ
 dùng phía máy chủ, test offline có tính xác định, smoke test API thật tách riêng, giới hạn phạm vi dữ
 liệu và ranh giới P0/P1 được tài liệu hóa.
+
+## 11. Điều chỉnh readiness cho rebuild pSEO
+
+- P0 chỉ nghiệm thu contract và fixture, không nghiệm thu độ phủ content production.
+- Backend phải có một page contract và một route-search contract canonical, không giữ lâu dài API
+  có hậu tố `_v2` song song với API cũ.
+- Homepage, City, Airport và Route fixture phải chứng minh module order, localized UX copy, CTA,
+  empty state, metadata, provenance, freshness và indexability đều đến từ backend payload.
+- Frontend P0 được phép chỉ giữ app shell và Terms trong thời gian rebuild; không cần giữ page cũ làm
+  acceptance evidence.
+- Staging tiếp tục private và `noindex` cho tới khi P1/P2 cung cấp dữ liệu production hợp lệ.

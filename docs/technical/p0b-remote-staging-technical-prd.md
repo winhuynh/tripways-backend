@@ -1,7 +1,9 @@
 # PRD kỹ thuật P0B: Remote Staging
 
 **PRD sản phẩm liên quan:** `docs/product/p0-staging-readiness-prd.md`  
-**Phụ thuộc:** P0A đã nghiệm thu  
+**Phụ thuộc:** P0A đã nghiệm thu
+**Trạng thái:** Chưa bắt đầu — P0A chưa nghiệm thu
+**Cập nhật:** 2026-08-04
 **Kết quả:** Release candidate P0A chạy ổn định trên staging riêng tư.
 
 ## 1. Nguyên tắc
@@ -128,3 +130,9 @@ Chạy ba lần liên tiếp trên desktop và mobile viewport chính.
 - Cấu hình DNS/subdomain.
 - Thiết lập secrets và Cloudflare Access.
 - Deploy remote hoặc thay đổi quyền truy cập.
+
+## 15. Smoke contract cho pSEO rebuild
+
+- Staging xác minh page-query versionless trả cùng schema cho Homepage, City, Airport và Route.
+- Invalid/incomplete read model không thể trở thành current publication.
+- Sitemap staging rỗng hoặc bị chặn toàn bộ; Terms vẫn truy cập được mà không cần service-role key.

@@ -1,19 +1,22 @@
 # PRD P1: Nhập dữ liệu production
 
-**Trạng thái:** Đề xuất để duyệt sản phẩm  
-**Ngày:** 2026-07-30  
-**Chủ sở hữu:** Tripways  
+**Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P1
+**Cập nhật:** 2026-08-04
+**Chủ sở hữu:** Tripways
 **Kho mã chính:** `tripways-backend`
 
 ## 1. Vấn đề
 
-P0 đã chứng minh một pipeline nhỏ ở local bằng provider giả lập và smoke test với API thật đã được
-phê duyệt. Tuy nhiên, pipeline đó chỉ xác nhận ranh giới kỹ thuật; nó chưa đủ để công bố kho sân bay,
-thành phố hoặc quốc gia production ở quy mô thật.
+P0A đang xây dựng một pipeline nhỏ ở local bằng provider giả lập. Approved real API smoke và P0A
+acceptance chưa hoàn tất. Foundation hiện tại chỉ xác nhận hướng ranh giới kỹ thuật; nó chưa đủ để
+công bố kho sân bay, thành phố hoặc quốc gia production ở quy mô thật.
 
 Tripways vẫn thiếu workflow nhập dữ liệu production có thể kiểm toán, bao gồm quyền nguồn, batch bất
 biến, validation đầy đủ, diff quy mô thật, phê duyệt thay đổi, xuất bản nguyên tử, retention, vận
 hành định kỳ và rollback.
+
+Một số bảng rights/raw/run và contract idempotency được chuẩn bị sớm trong P0A. Chúng không làm P1
+bắt đầu và không thay thế dependency P0 đã nghiệm thu.
 
 Đưa file nguồn trực tiếp vào bảng public sẽ khiến lỗi khó chẩn đoán và có thể công bố dữ liệu cũ,
 sai định dạng hoặc không đủ bản quyền.
@@ -166,3 +169,21 @@ P1 chỉ được nghiệm thu khi:
 
 Các rủi ro được kiểm soát bằng batch bất biến, parser nghiêm ngặt, quyền rõ ràng, cổng bất thường,
 xuất bản theo transaction và bảo toàn bộ dữ liệu tốt gần nhất.
+
+## 12. Liên hệ với kế hoạch mở rộng City Hub
+
+`docs/product/city-hub-provider-and-commercial-expansion-plan.md` không mở rộng scope P1.
+
+P1 chỉ chuẩn bị country, city, airport, timezone, city-airport grouping, region taxonomy và rights
+matrix để P2 có thể nhập route/schedule. AirLabs route, seasonality, price, live offer và affiliate
+đều chưa được triển khai hoặc dùng làm acceptance evidence trong P1.
+
+## 13. Content foundation cho pSEO
+
+- P1 nhập và xuất bản taxonomy country/region/city/airport/timezone cùng city-airport grouping làm
+  nền cho filter và internal links.
+- Airport guidance gồm transportation, parking, lounge và operational notice phải có source URL,
+  quyền hiển thị production, `last_verified_at`, trạng thái review và locale.
+- Editorial content, FAQ, UX copy và CTA được quản lý như dữ liệu có version; không chép vào frontend.
+- Mỗi page type có completeness score và danh sách required modules. Page thiếu required content,
+  rights hoặc freshness phải `noindex`.
