@@ -301,6 +301,7 @@ CREATE TABLE public.pseo_pages (
   CONSTRAINT pseo_pages_type_check
     CHECK (
       page_type IN (
+        'homepage',
         'city',
         'airport',
         'city_route',
@@ -317,7 +318,7 @@ CREATE TABLE public.pseo_pages (
     CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT pseo_pages_canonical_path_check
-    CHECK (canonical_path ~ '^/[a-z0-9]+(?:[-/][a-z0-9]+)*$'),
+    CHECK (canonical_path = '/' OR canonical_path ~ '^/[a-z0-9]+(?:[-/][a-z0-9]+)*$'),
 
   CONSTRAINT pseo_pages_title_check
     CHECK (
@@ -348,6 +349,229 @@ ALTER TABLE public.pseo_pages ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.pseo_pages FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.pseo_pages TO service_role;
+
+-- >>> supabase/sql_src/schema/pseo/homepage/homepage_pages.sql
+
+-- Table: public.homepage_pages
+-- Feature: Homepage pSEO
+-- Purpose: Store reviewed homepage SEO and primary editorial content by locale.
+
+CREATE TABLE public.homepage_pages (
+  id                   UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  pseo_page_id         UUID         NOT NULL UNIQUE REFERENCES public.pseo_pages (id) ON DELETE CASCADE,
+  locale               TEXT         NOT NULL UNIQUE,
+  h1                   TEXT         NOT NULL,
+  subheadline          TEXT         NOT NULL,
+  intro                TEXT         NOT NULL,
+  seo_title            TEXT         NOT NULL,
+  meta_description     TEXT         NOT NULL,
+  status               TEXT         NOT NULL DEFAULT 'draft',
+  is_indexable         BOOLEAN      NOT NULL DEFAULT FALSE,
+  noindex_reason       TEXT         NULL,
+  content_reviewed_at  TIMESTAMPTZ  NULL,
+  source_freshness_at  TIMESTAMPTZ  NULL,
+  data_version         UUID         NULL,
+  created_at           TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at           TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT homepage_pages_locale_check
+    CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
+
+  CONSTRAINT homepage_pages_status_check
+    CHECK (status IN ('draft', 'review', 'published', 'archived')),
+
+  CONSTRAINT homepage_pages_indexability_check
+    CHECK (
+      (is_indexable = TRUE AND status = 'published' AND noindex_reason IS NULL)
+      OR (is_indexable = FALSE AND noindex_reason IS NOT NULL)
+    )
+);
+
+ALTER TABLE public.homepage_pages ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.homepage_pages FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.homepage_pages TO service_role;
+
+-- >>> supabase/sql_src/schema/pseo/homepage/homepage_featured_origins.sql
+
+-- Table: public.homepage_featured_origins
+-- Feature: Homepage pSEO
+-- Purpose: Store reviewed origin cards without duplicating aviation identity facts.
+
+CREATE TABLE public.homepage_featured_origins (
+  id                        UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  homepage_page_id          UUID         NOT NULL REFERENCES public.homepage_pages (id) ON DELETE CASCADE,
+  city_id                   UUID         NULL REFERENCES public.cities (id),
+  airport_id                UUID         NULL REFERENCES public.airports (id),
+  title                     TEXT         NOT NULL,
+  summary                   TEXT         NOT NULL,
+  direct_destination_count  INTEGER      NOT NULL,
+  image_path                TEXT         NULL,
+  display_order             SMALLINT     NOT NULL,
+  status                    TEXT         NOT NULL DEFAULT 'draft',
+  primary_source_url        TEXT         NULL,
+  last_verified_at          TIMESTAMPTZ  NULL,
+  reviewed_at               TIMESTAMPTZ  NULL,
+  data_version              UUID         NOT NULL,
+  created_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT homepage_featured_origins_order_key
+    UNIQUE (homepage_page_id, display_order, data_version),
+
+  CONSTRAINT homepage_featured_origins_identity_check
+    CHECK ((city_id IS NOT NULL)::INTEGER + (airport_id IS NOT NULL)::INTEGER = 1),
+
+  CONSTRAINT homepage_featured_origins_count_check
+    CHECK (direct_destination_count >= 0),
+
+  CONSTRAINT homepage_featured_origins_image_check
+    CHECK (image_path IS NULL OR (image_path !~* '^[a-z][a-z0-9+.-]*://' AND image_path !~ '\.\.')),
+
+  CONSTRAINT homepage_featured_origins_order_check
+    CHECK (display_order > 0),
+
+  CONSTRAINT homepage_featured_origins_status_check
+    CHECK (status IN ('draft', 'review', 'published'))
+);
+
+ALTER TABLE public.homepage_featured_origins ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.homepage_featured_origins FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.homepage_featured_origins TO service_role;
+
+-- >>> supabase/sql_src/schema/pseo/homepage/homepage_featured_routes.sql
+
+-- Table: public.homepage_featured_routes
+-- Feature: Homepage pSEO
+-- Purpose: Store reviewed featured route selections backed by canonical city identities.
+
+CREATE TABLE public.homepage_featured_routes (
+  id                      UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
+  homepage_page_id        UUID          NOT NULL REFERENCES public.homepage_pages (id) ON DELETE CASCADE,
+  origin_city_id          UUID          NOT NULL REFERENCES public.cities (id),
+  destination_city_id     UUID          NOT NULL REFERENCES public.cities (id),
+  origin_airport_id       UUID          NULL REFERENCES public.airports (id),
+  destination_airport_id  UUID          NULL REFERENCES public.airports (id),
+  stop_bucket             TEXT          NOT NULL,
+  duration_min_minutes    INTEGER       NOT NULL,
+  duration_max_minutes    INTEGER       NOT NULL,
+  route_path              TEXT          NOT NULL,
+  display_order           SMALLINT      NOT NULL,
+  status                  TEXT          NOT NULL DEFAULT 'draft',
+  reviewed_at             TIMESTAMPTZ   NULL,
+  data_version            UUID          NOT NULL,
+  created_at              TIMESTAMPTZ   NOT NULL DEFAULT now(),
+
+  CONSTRAINT homepage_featured_routes_order_key
+    UNIQUE (homepage_page_id, display_order, data_version),
+
+  CONSTRAINT homepage_featured_routes_direction_check
+    CHECK (origin_city_id <> destination_city_id),
+
+  CONSTRAINT homepage_featured_routes_stops_check
+    CHECK (stop_bucket IN ('direct', 'one_stop', 'two_stops', 'three_stops')),
+
+  CONSTRAINT homepage_featured_routes_duration_check
+    CHECK (duration_min_minutes > 0 AND duration_max_minutes >= duration_min_minutes),
+
+  CONSTRAINT homepage_featured_routes_path_check
+    CHECK (route_path ~ '^/[a-z0-9]+(?:[-/][a-z0-9]+)*$'),
+
+  CONSTRAINT homepage_featured_routes_order_check
+    CHECK (display_order > 0),
+
+  CONSTRAINT homepage_featured_routes_status_check
+    CHECK (status IN ('draft', 'review', 'published'))
+);
+
+ALTER TABLE public.homepage_featured_routes ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.homepage_featured_routes FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.homepage_featured_routes TO service_role;
+
+-- >>> supabase/sql_src/schema/pseo/homepage/homepage_content_sections.sql
+
+-- Table: public.homepage_content_sections
+-- Feature: Homepage pSEO
+-- Purpose: Store bounded reviewed homepage editorial sections.
+
+CREATE TABLE public.homepage_content_sections (
+  id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  homepage_page_id    UUID         NOT NULL REFERENCES public.homepage_pages (id) ON DELETE CASCADE,
+  locale              TEXT         NOT NULL,
+  section_type        TEXT         NOT NULL,
+  heading             TEXT         NOT NULL,
+  body                TEXT         NOT NULL,
+  display_order       SMALLINT     NOT NULL,
+  status              TEXT         NOT NULL DEFAULT 'draft',
+  primary_source_url  TEXT         NULL,
+  last_verified_at    TIMESTAMPTZ  NULL,
+  reviewed_at         TIMESTAMPTZ  NULL,
+  data_version        UUID         NOT NULL,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT homepage_content_sections_order_key
+    UNIQUE (homepage_page_id, locale, display_order, data_version),
+
+  CONSTRAINT homepage_content_sections_type_check
+    CHECK (section_type IN ('discovery_intro', 'methodology', 'data_disclaimer', 'directory_intro')),
+
+  CONSTRAINT homepage_content_sections_status_check
+    CHECK (status IN ('draft', 'review', 'published')),
+
+  CONSTRAINT homepage_content_sections_order_check
+    CHECK (display_order > 0)
+);
+
+ALTER TABLE public.homepage_content_sections ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.homepage_content_sections FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.homepage_content_sections TO service_role;
+
+-- >>> supabase/sql_src/schema/pseo/homepage/homepage_faqs.sql
+
+-- Table: public.homepage_faqs
+-- Feature: Homepage pSEO
+-- Purpose: Store reviewed homepage FAQs independently from other page types.
+
+CREATE TABLE public.homepage_faqs (
+  id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  homepage_page_id    UUID         NOT NULL REFERENCES public.homepage_pages (id) ON DELETE CASCADE,
+  locale              TEXT         NOT NULL,
+  question            TEXT         NOT NULL,
+  answer              TEXT         NOT NULL,
+  answer_type         TEXT         NOT NULL,
+  display_order       SMALLINT     NOT NULL,
+  status              TEXT         NOT NULL DEFAULT 'draft',
+  primary_source_url  TEXT         NULL,
+  last_verified_at    TIMESTAMPTZ  NULL,
+  reviewed_at         TIMESTAMPTZ  NULL,
+  data_version        UUID         NOT NULL,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT homepage_faqs_order_key
+    UNIQUE (homepage_page_id, locale, display_order, data_version),
+
+  CONSTRAINT homepage_faqs_question_key
+    UNIQUE (homepage_page_id, locale, question, data_version),
+
+  CONSTRAINT homepage_faqs_type_check
+    CHECK (answer_type IN ('editorial', 'data_backed', 'hybrid')),
+
+  CONSTRAINT homepage_faqs_status_check
+    CHECK (status IN ('draft', 'review', 'published')),
+
+  CONSTRAINT homepage_faqs_order_check
+    CHECK (display_order > 0)
+);
+
+ALTER TABLE public.homepage_faqs ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.homepage_faqs FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.homepage_faqs TO service_role;
 
 -- >>> supabase/sql_src/schema/pseo/city/city_pages.sql
 
@@ -555,20 +779,27 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.city_page_airport_content T
 CREATE TABLE public.city_page_faqs (
   id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   city_page_id   UUID         NOT NULL REFERENCES public.city_pages (id) ON DELETE CASCADE,
+  locale         TEXT         NOT NULL DEFAULT 'en-GB',
   question       TEXT         NOT NULL,
   answer         TEXT         NOT NULL,
   answer_type    TEXT         NOT NULL,
   display_order  SMALLINT     NOT NULL,
   status         TEXT         NOT NULL DEFAULT 'draft',
   reviewed_at    TIMESTAMPTZ  NULL,
+  primary_source_url TEXT     NULL,
+  last_verified_at TIMESTAMPTZ NULL,
+  data_version   UUID         NULL,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
   CONSTRAINT city_page_faqs_page_order_key
-    UNIQUE (city_page_id, display_order),
+    UNIQUE (city_page_id, locale, display_order),
 
   CONSTRAINT city_page_faqs_page_question_key
-    UNIQUE (city_page_id, question),
+    UNIQUE (city_page_id, locale, question),
+
+  CONSTRAINT city_page_faqs_locale_check
+    CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT city_page_faqs_question_check
     CHECK (
@@ -604,6 +835,46 @@ ALTER TABLE public.city_page_faqs ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.city_page_faqs FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.city_page_faqs TO service_role;
 
+-- >>> supabase/sql_src/schema/pseo/city/city_content_sections.sql
+
+-- Table: public.city_content_sections
+-- Feature: City pSEO
+-- Purpose: Store bounded reviewed editorial sections for one City Hub.
+
+CREATE TABLE public.city_content_sections (
+  id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  city_page_id        UUID         NOT NULL REFERENCES public.city_pages (id) ON DELETE CASCADE,
+  locale              TEXT         NOT NULL,
+  section_type        TEXT         NOT NULL,
+  heading             TEXT         NOT NULL,
+  body                TEXT         NOT NULL,
+  display_order       SMALLINT     NOT NULL,
+  status              TEXT         NOT NULL DEFAULT 'draft',
+  primary_source_url  TEXT         NULL,
+  last_verified_at    TIMESTAMPTZ  NULL,
+  reviewed_at         TIMESTAMPTZ  NULL,
+  data_version        UUID         NOT NULL,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT city_content_sections_order_key
+    UNIQUE (city_page_id, locale, display_order, data_version),
+
+  CONSTRAINT city_content_sections_type_check
+    CHECK (section_type IN ('route_context', 'airport_context', 'travel_context', 'methodology', 'data_disclaimer')),
+
+  CONSTRAINT city_content_sections_status_check
+    CHECK (status IN ('draft', 'review', 'published')),
+
+  CONSTRAINT city_content_sections_order_check
+    CHECK (display_order > 0)
+);
+
+ALTER TABLE public.city_content_sections ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.city_content_sections FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.city_content_sections TO service_role;
+
 -- >>> supabase/sql_src/schema/pseo/airport/airport_pages.sql
 
 -- Table: public.airport_pages
@@ -625,22 +896,17 @@ CREATE TABLE public.airport_pages (
   og_description              TEXT         NOT NULL,
   og_image_path               TEXT         NULL,
   intro                       TEXT         NOT NULL,
-  route_summary               TEXT         NOT NULL,
-  access_summary              TEXT         NULL,
-  parking_summary             TEXT         NULL,
-  lounge_summary              TEXT         NULL,
-  outbound_destination_count  INTEGER      NOT NULL DEFAULT 0,
-  outbound_country_count      INTEGER      NOT NULL DEFAULT 0,
-  inbound_origin_count        INTEGER      NOT NULL DEFAULT 0,
-  inbound_country_count       INTEGER      NOT NULL DEFAULT 0,
-  airline_count               INTEGER      NOT NULL DEFAULT 0,
-  shortest_route_minutes      INTEGER      NULL,
-  longest_route_minutes       INTEGER      NULL,
+  orientation_summary         TEXT         NOT NULL,
+  arrival_summary             TEXT         NOT NULL,
+  departure_summary           TEXT         NOT NULL,
+  primary_city_area_label     TEXT         NULL,
+  city_distance_km            NUMERIC(8,2) NULL,
   status                      TEXT         NOT NULL DEFAULT 'draft',
   is_indexable                BOOLEAN      NOT NULL DEFAULT FALSE,
   noindex_reason              TEXT         NULL,
   content_reviewed_at         TIMESTAMPTZ  NULL,
   source_freshness_at         TIMESTAMPTZ  NULL,
+  route_data_refreshed_at     TIMESTAMPTZ  NULL,
   data_version                UUID         NULL,
   generated_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
   published_at                TIMESTAMPTZ  NULL,
@@ -668,7 +934,9 @@ CREATE TABLE public.airport_pages (
       AND og_title = btrim(og_title)
       AND og_description = btrim(og_description)
       AND intro = btrim(intro)
-      AND route_summary = btrim(route_summary)
+      AND orientation_summary = btrim(orientation_summary)
+      AND arrival_summary = btrim(arrival_summary)
+      AND departure_summary = btrim(departure_summary)
     ),
 
   CONSTRAINT airport_pages_status_check
@@ -681,25 +949,10 @@ CREATE TABLE public.airport_pages (
       (is_indexable = FALSE AND noindex_reason IS NOT NULL)
     ),
 
-  CONSTRAINT airport_pages_counts_check
+  CONSTRAINT airport_pages_city_distance_check
     CHECK (
-      outbound_destination_count >= 0
-      AND outbound_country_count >= 0
-      AND inbound_origin_count >= 0
-      AND inbound_country_count >= 0
-      AND airline_count >= 0
-    ),
-
-  CONSTRAINT airport_pages_duration_check
-    CHECK (
-      (shortest_route_minutes IS NULL) = (longest_route_minutes IS NULL)
-      AND (
-        shortest_route_minutes IS NULL
-        OR (
-          shortest_route_minutes > 0
-          AND longest_route_minutes >= shortest_route_minutes
-        )
-      )
+      city_distance_km IS NULL
+      OR city_distance_km >= 0
     )
 );
 
@@ -711,6 +964,58 @@ ALTER TABLE public.airport_pages ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.airport_pages FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_pages TO service_role;
 
+-- >>> supabase/sql_src/schema/pseo/airport/airport_journey_steps.sql
+
+-- Table: public.airport_journey_steps
+-- Feature: Airport Journey pSEO
+-- Purpose: Store ordered, reviewed arrival and departure guidance.
+
+CREATE TABLE public.airport_journey_steps (
+  id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  airport_page_id     UUID         NOT NULL REFERENCES public.airport_pages (id) ON DELETE CASCADE,
+  locale              TEXT         NOT NULL,
+  journey_type        TEXT         NOT NULL,
+  audience            TEXT         NOT NULL DEFAULT 'all',
+  title               TEXT         NOT NULL,
+  body                TEXT         NOT NULL,
+  display_order       SMALLINT     NOT NULL,
+  primary_source_url  TEXT         NOT NULL,
+  last_verified_at    TIMESTAMPTZ  NOT NULL,
+  status              TEXT         NOT NULL DEFAULT 'draft',
+  data_version        UUID         NOT NULL,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT airport_journey_steps_order_key
+    UNIQUE (airport_page_id, locale, journey_type, audience, display_order, data_version),
+
+  CONSTRAINT airport_journey_steps_type_check
+    CHECK (journey_type IN ('arrival', 'departure')),
+
+  CONSTRAINT airport_journey_steps_audience_check
+    CHECK (audience IN ('all', 'domestic', 'international')),
+
+  CONSTRAINT airport_journey_steps_status_check
+    CHECK (status IN ('draft', 'review', 'published')),
+
+  CONSTRAINT airport_journey_steps_order_check
+    CHECK (display_order > 0)
+);
+
+CREATE INDEX airport_journey_steps_page_status_order_idx
+ON public.airport_journey_steps USING btree (
+  airport_page_id,
+  locale,
+  journey_type,
+  status,
+  display_order
+);
+
+ALTER TABLE public.airport_journey_steps ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.airport_journey_steps FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_journey_steps TO service_role;
+
 -- >>> supabase/sql_src/schema/pseo/airport/airport_access_options.sql
 
 -- Table: public.airport_access_options
@@ -720,6 +1025,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_pages TO service_ro
 CREATE TABLE public.airport_access_options (
   id                       UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   airport_page_id          UUID          NOT NULL REFERENCES public.airport_pages (id) ON DELETE CASCADE,
+  journey_direction       TEXT          NOT NULL DEFAULT 'from_airport',
   access_type              TEXT          NOT NULL,
   name                     TEXT          NOT NULL,
   destination_label        TEXT          NOT NULL,
@@ -730,6 +1036,10 @@ CREATE TABLE public.airport_access_options (
   price_max                NUMERIC(12,2) NULL,
   currency_code            TEXT          NULL,
   operating_hours_summary  TEXT          NULL,
+  pickup_location_summary  TEXT          NULL,
+  best_for_label           TEXT          NULL,
+  luggage_summary          TEXT          NULL,
+  accessibility_summary    TEXT          NULL,
   booking_url              TEXT          NULL,
   primary_source_url       TEXT          NOT NULL,
   last_verified_at         TIMESTAMPTZ   NOT NULL,
@@ -743,6 +1053,9 @@ CREATE TABLE public.airport_access_options (
 
   CONSTRAINT airport_access_options_type_check
     CHECK (access_type IN ('rail', 'metro', 'bus', 'taxi', 'ride_hailing', 'transfer', 'other')),
+
+  CONSTRAINT airport_access_options_direction_check
+    CHECK (journey_direction IN ('from_airport', 'to_airport', 'both')),
 
   CONSTRAINT airport_access_options_duration_check
     CHECK (
@@ -913,20 +1226,27 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_page_notices TO ser
 CREATE TABLE public.airport_page_faqs (
   id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   airport_page_id  UUID         NOT NULL REFERENCES public.airport_pages (id) ON DELETE CASCADE,
+  locale           TEXT         NOT NULL DEFAULT 'en-GB',
   question         TEXT         NOT NULL,
   answer           TEXT         NOT NULL,
   answer_type      TEXT         NOT NULL,
   display_order    SMALLINT     NOT NULL,
   status           TEXT         NOT NULL DEFAULT 'draft',
   reviewed_at      TIMESTAMPTZ  NULL,
+  primary_source_url TEXT       NULL,
+  last_verified_at TIMESTAMPTZ  NULL,
+  data_version     UUID         NULL,
   created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
   CONSTRAINT airport_page_faqs_page_order_key
-    UNIQUE (airport_page_id, display_order),
+    UNIQUE (airport_page_id, locale, display_order),
 
   CONSTRAINT airport_page_faqs_page_question_key
-    UNIQUE (airport_page_id, question),
+    UNIQUE (airport_page_id, locale, question),
+
+  CONSTRAINT airport_page_faqs_locale_check
+    CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT airport_page_faqs_answer_type_check
     CHECK (answer_type IN ('editorial', 'data_backed', 'hybrid')),
@@ -1011,6 +1331,57 @@ ALTER TABLE public.airport_facts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.airport_facts FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_facts TO service_role;
 
+-- >>> supabase/sql_src/schema/pseo/airport/airport_content_sections.sql
+
+-- Table: public.airport_content_sections
+-- Feature: Airport pSEO
+-- Purpose: Store bounded reviewed Airport Hub editorial sections.
+
+CREATE TABLE public.airport_content_sections (
+  id                  UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  airport_page_id     UUID         NOT NULL REFERENCES public.airport_pages (id) ON DELETE CASCADE,
+  locale              TEXT         NOT NULL,
+  section_type        TEXT         NOT NULL,
+  heading             TEXT         NOT NULL,
+  body                TEXT         NOT NULL,
+  display_order       SMALLINT     NOT NULL,
+  status              TEXT         NOT NULL DEFAULT 'draft',
+  primary_source_url  TEXT         NULL,
+  last_verified_at    TIMESTAMPTZ  NULL,
+  reviewed_at         TIMESTAMPTZ  NULL,
+  data_version        UUID         NOT NULL,
+  created_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT airport_content_sections_order_key
+    UNIQUE (airport_page_id, locale, display_order, data_version),
+
+  CONSTRAINT airport_content_sections_type_check
+    CHECK (
+      section_type IN (
+        'arrival_intro',
+        'departure_intro',
+        'transport_intro',
+        'parking_cars_intro',
+        'terminals_connections_intro',
+        'facilities_intro',
+        'methodology',
+        'data_disclaimer'
+      )
+    ),
+
+  CONSTRAINT airport_content_sections_status_check
+    CHECK (status IN ('draft', 'review', 'published')),
+
+  CONSTRAINT airport_content_sections_order_check
+    CHECK (display_order > 0)
+);
+
+ALTER TABLE public.airport_content_sections ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON TABLE public.airport_content_sections FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_content_sections TO service_role;
+
 -- >>> supabase/sql_src/schema/pseo/route/route_pages.sql
 
 -- Table: public.route_pages
@@ -1066,17 +1437,22 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.route_pages TO service_role
 CREATE TABLE public.route_page_faqs (
   id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   route_page_id  UUID         NOT NULL REFERENCES public.route_pages (id) ON DELETE CASCADE,
+  locale         TEXT         NOT NULL DEFAULT 'en-GB',
   question       TEXT         NOT NULL,
   answer         TEXT         NOT NULL,
   answer_type    TEXT         NOT NULL,
   display_order  SMALLINT     NOT NULL,
   status         TEXT         NOT NULL DEFAULT 'draft',
   reviewed_at    TIMESTAMPTZ  NULL,
+  primary_source_url TEXT     NULL,
+  last_verified_at TIMESTAMPTZ NULL,
+  data_version   UUID         NULL,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
-  CONSTRAINT route_page_faqs_order_key UNIQUE (route_page_id, display_order),
-  CONSTRAINT route_page_faqs_question_key UNIQUE (route_page_id, question),
+  CONSTRAINT route_page_faqs_order_key UNIQUE (route_page_id, locale, display_order),
+  CONSTRAINT route_page_faqs_question_key UNIQUE (route_page_id, locale, question),
+  CONSTRAINT route_page_faqs_locale_check CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
   CONSTRAINT route_page_faqs_type_check CHECK (answer_type IN ('editorial', 'data_backed', 'hybrid')),
   CONSTRAINT route_page_faqs_status_check CHECK (status IN ('draft', 'review', 'published'))
 );
@@ -1163,6 +1539,9 @@ CREATE TABLE public.route_page_editorial_sections (
   display_order  SMALLINT     NOT NULL,
   status         TEXT         NOT NULL DEFAULT 'draft',
   reviewed_at    TIMESTAMPTZ  NULL,
+  primary_source_url TEXT     NULL,
+  last_verified_at TIMESTAMPTZ NULL,
+  data_version   UUID         NULL,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
 

@@ -80,21 +80,21 @@ khi chưa đạt cổng dữ liệu tương ứng.
 
 ## 3. Capability matrix dự kiến
 
-| Nhu cầu City Hub | AirLabs | Tripways | Provider khác | Phase bật sớm nhất |
-| --- | --- | --- | --- | --- |
-| Direct destinations | Routes DB | Gom theo city | Không | P2 |
-| Airport/city/country | Airports, Cities, Countries DB | Canonical mapping | OurAirports có thể làm nền | P1/P2 |
-| Map geometry | Airport coordinates + routes | Sinh map read model | Không | P2 |
-| Airline | Routes + Airlines DB | Dedupe/canonicalize | Không | P2 |
-| Duration | Routes DB | Normalize phút | Không | P2 |
-| Operating days | `days` | UX copy và facets | Không | P2 |
-| Weekly frequency | Record lịch | Dedupe codeshare và tổng hợp | Không | P2 |
-| Seasonality | Chưa đủ theo docs công khai | Snapshot history có kiểm soát | Dated schedule provider | Sau P2 POC |
-| Departure month | Chưa đủ | Filter contract | Dated schedule/price provider | P3 hoặc P2 extension được duyệt |
-| Estimated one-way fare | Không | Observation aggregation | Skyscanner Indicative hoặc nguồn được duyệt | P3 |
-| Live fare | Không | Normalize/cache theo terms | Skyscanner Live, Duffel hoặc Amadeus | P3 |
-| Flight affiliate link | Không | Signed/allowlisted redirect | Skyscanner Affiliate hoặc partner được duyệt | P3 |
-| Hotel/car affiliate | Không | Context gating | Affiliate vertical provider | P3 extension |
+| Nhu cầu City Hub       | AirLabs                        | Tripways                      | Provider khác                                | Phase bật sớm nhất              |
+| ---------------------- | ------------------------------ | ----------------------------- | -------------------------------------------- | ------------------------------- |
+| Direct destinations    | Routes DB                      | Gom theo city                 | Không                                        | P2                              |
+| Airport/city/country   | Airports, Cities, Countries DB | Canonical mapping             | OurAirports có thể làm nền                   | P1/P2                           |
+| Map geometry           | Airport coordinates + routes   | Sinh map read model           | Không                                        | P2                              |
+| Airline                | Routes + Airlines DB           | Dedupe/canonicalize           | Không                                        | P2                              |
+| Duration               | Routes DB                      | Normalize phút                | Không                                        | P2                              |
+| Operating days         | `days`                         | UX copy và facets             | Không                                        | P2                              |
+| Weekly frequency       | Record lịch                    | Dedupe codeshare và tổng hợp  | Không                                        | P2                              |
+| Seasonality            | Chưa đủ theo docs công khai    | Snapshot history có kiểm soát | Dated schedule provider                      | Sau P2 POC                      |
+| Departure month        | Chưa đủ                        | Filter contract               | Dated schedule/price provider                | P3 hoặc P2 extension được duyệt |
+| Estimated one-way fare | Không                          | Observation aggregation       | Skyscanner Indicative hoặc nguồn được duyệt  | P3                              |
+| Live fare              | Không                          | Normalize/cache theo terms    | Skyscanner Live, Duffel hoặc Amadeus         | P3                              |
+| Flight affiliate link  | Không                          | Signed/allowlisted redirect   | Skyscanner Affiliate hoặc partner được duyệt | P3                              |
+| Hotel/car affiliate    | Không                          | Context gating                | Affiliate vertical provider                  | P3 extension                    |
 
 ## 4. Định hướng provider
 

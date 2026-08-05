@@ -17,22 +17,17 @@ CREATE TABLE public.airport_pages (
   og_description              TEXT         NOT NULL,
   og_image_path               TEXT         NULL,
   intro                       TEXT         NOT NULL,
-  route_summary               TEXT         NOT NULL,
-  access_summary              TEXT         NULL,
-  parking_summary             TEXT         NULL,
-  lounge_summary              TEXT         NULL,
-  outbound_destination_count  INTEGER      NOT NULL DEFAULT 0,
-  outbound_country_count      INTEGER      NOT NULL DEFAULT 0,
-  inbound_origin_count        INTEGER      NOT NULL DEFAULT 0,
-  inbound_country_count       INTEGER      NOT NULL DEFAULT 0,
-  airline_count               INTEGER      NOT NULL DEFAULT 0,
-  shortest_route_minutes      INTEGER      NULL,
-  longest_route_minutes       INTEGER      NULL,
+  orientation_summary         TEXT         NOT NULL,
+  arrival_summary             TEXT         NOT NULL,
+  departure_summary           TEXT         NOT NULL,
+  primary_city_area_label     TEXT         NULL,
+  city_distance_km            NUMERIC(8,2) NULL,
   status                      TEXT         NOT NULL DEFAULT 'draft',
   is_indexable                BOOLEAN      NOT NULL DEFAULT FALSE,
   noindex_reason              TEXT         NULL,
   content_reviewed_at         TIMESTAMPTZ  NULL,
   source_freshness_at         TIMESTAMPTZ  NULL,
+  route_data_refreshed_at     TIMESTAMPTZ  NULL,
   data_version                UUID         NULL,
   generated_at                TIMESTAMPTZ  NOT NULL DEFAULT now(),
   published_at                TIMESTAMPTZ  NULL,
@@ -60,7 +55,9 @@ CREATE TABLE public.airport_pages (
       AND og_title = btrim(og_title)
       AND og_description = btrim(og_description)
       AND intro = btrim(intro)
-      AND route_summary = btrim(route_summary)
+      AND orientation_summary = btrim(orientation_summary)
+      AND arrival_summary = btrim(arrival_summary)
+      AND departure_summary = btrim(departure_summary)
     ),
 
   CONSTRAINT airport_pages_status_check
@@ -73,25 +70,10 @@ CREATE TABLE public.airport_pages (
       (is_indexable = FALSE AND noindex_reason IS NOT NULL)
     ),
 
-  CONSTRAINT airport_pages_counts_check
+  CONSTRAINT airport_pages_city_distance_check
     CHECK (
-      outbound_destination_count >= 0
-      AND outbound_country_count >= 0
-      AND inbound_origin_count >= 0
-      AND inbound_country_count >= 0
-      AND airline_count >= 0
-    ),
-
-  CONSTRAINT airport_pages_duration_check
-    CHECK (
-      (shortest_route_minutes IS NULL) = (longest_route_minutes IS NULL)
-      AND (
-        shortest_route_minutes IS NULL
-        OR (
-          shortest_route_minutes > 0
-          AND longest_route_minutes >= shortest_route_minutes
-        )
-      )
+      city_distance_km IS NULL
+      OR city_distance_km >= 0
     )
 );
 

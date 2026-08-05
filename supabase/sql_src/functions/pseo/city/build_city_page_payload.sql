@@ -1,12 +1,12 @@
 -- ============================================================================
--- Function: public.rpc_get_city_page
+-- Function: private.build_city_page_payload
 -- Feature: Interactive pSEO
 -- Purpose: Return one bounded, frontend-ready city pSEO page payload.
 -- Responsibilities: Validate identity, resolve reviewed content, and group page modules.
 -- Notes: Indexability metadata is returned from Postgres and is never inferred by the transport.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_get_city_page(p_input JSONB)
+CREATE OR REPLACE FUNCTION private.build_city_page_payload(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
@@ -230,36 +230,6 @@ BEGIN
           LIMIT v_destination_limit
         ) destination_payload
       ), '[]'::JSONB),
-      'featured_airlines', COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'iata', airline_summary.iata,
-            'name', airline_summary.name,
-            'slug', airline_summary.slug,
-            'direct_destinations', airline_summary.direct_destinations,
-            'origin_airports', airline_summary.origin_airports
-          )
-          ORDER BY
-            airline_summary.direct_destinations DESC,
-            airline_summary.name
-        )
-        FROM (
-          SELECT
-            airline.iata,
-            airline.name,
-            airline.slug,
-            count(DISTINCT city_route.destination_city_id) AS direct_destinations,
-            jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports
-          FROM public.pseo_direct_routes city_route
-          JOIN public.airlines airline
-            ON airline.id = city_route.operating_airline_id
-          JOIN public.airports origin_airport
-            ON origin_airport.id = city_route.origin_airport_id
-          WHERE city_route.origin_city_id = city.id
-            AND city_route.data_version = v_data_version
-          GROUP BY airline.id
-        ) airline_summary
-      ), '[]'::JSONB),
       'direct_countries', COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -297,6 +267,7 @@ BEGIN
         )
         FROM public.city_page_faqs faq
         WHERE faq.city_page_id = city_page.id
+          AND faq.locale = v_locale
           AND faq.status = 'published'
       ), '[]'::JSONB),
       'structured_facts', COALESCE((SELECT jsonb_agg(jsonb_build_object(
@@ -366,6 +337,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_get_city_page(JSONB)
+REVOKE ALL ON FUNCTION private.build_city_page_payload(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_page(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION private.build_city_page_payload(JSONB) TO service_role;

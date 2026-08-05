@@ -1,7 +1,7 @@
 # PRD P0: Sẵn sàng cho staging
 
 **Trạng thái:** P0A đang thực hiện; P0B chưa bắt đầu
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
@@ -124,6 +124,14 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 ### 5.5 Hành vi trang
 
 - Homepage, City, Airport và Route Page phải render trên desktop và mobile.
+- Airport Page phải ưu tiên nhu cầu tìm hiểu một sân bay cụ thể: định hướng, arrive, transport và
+  depart. City Hub tiếp tục sở hữu intent khám phá chuyến bay theo thành phố.
+- Khối `Verified direct flights` của Airport Page được tải riêng sau phần journey chính, hỗ trợ cả
+  `From airport` và `To airport`, và chỉ chứa tuyến bay thẳng có lịch khai thác đã xuất bản; không
+  chứa hành trình nối chuyến do Tripways dựng từ route graph.
+- Bộ lọc Airport Page chỉ gồm hướng from/to, tìm counterpart, domestic/international, operating
+  airline và counterpart country/region. Không dùng connection, duration, layover, cabin hoặc price
+  filter trong khối này.
 - Trạng thái tải phải kết thúc bằng nội dung, không tìm thấy hoặc lỗi có giới hạn.
 - Metadata canonical phải trỏ về URL gốc của trang.
 - URL có bộ lọc phải giữ `noindex` và canonical về trang gốc.
@@ -257,6 +265,8 @@ liệu và ranh giới P0/P1 được tài liệu hóa.
   có hậu tố `_v2` song song với API cũ.
 - Homepage, City, Airport và Route fixture phải chứng minh module order, localized UX copy, CTA,
   empty state, metadata, provenance, freshness và indexability đều đến từ backend payload.
+- Airport fixture phải chứng minh payload journey không nhúng featured route/price summary cũ và
+  route-search hai chiều luôn trả direct route đúng airport ở đầu tương ứng.
 - Frontend P0 được phép chỉ giữ app shell và Terms trong thời gian rebuild; không cần giữ page cũ làm
   acceptance evidence.
 - Staging tiếp tục private và `noindex` cho tới khi P1/P2 cung cấp dữ liệu production hợp lệ.

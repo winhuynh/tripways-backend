@@ -5,6 +5,7 @@
 CREATE TABLE public.airport_access_options (
   id                       UUID          PRIMARY KEY DEFAULT gen_random_uuid(),
   airport_page_id          UUID          NOT NULL REFERENCES public.airport_pages (id) ON DELETE CASCADE,
+  journey_direction       TEXT          NOT NULL DEFAULT 'from_airport',
   access_type              TEXT          NOT NULL,
   name                     TEXT          NOT NULL,
   destination_label        TEXT          NOT NULL,
@@ -15,6 +16,10 @@ CREATE TABLE public.airport_access_options (
   price_max                NUMERIC(12,2) NULL,
   currency_code            TEXT          NULL,
   operating_hours_summary  TEXT          NULL,
+  pickup_location_summary  TEXT          NULL,
+  best_for_label           TEXT          NULL,
+  luggage_summary          TEXT          NULL,
+  accessibility_summary    TEXT          NULL,
   booking_url              TEXT          NULL,
   primary_source_url       TEXT          NOT NULL,
   last_verified_at         TIMESTAMPTZ   NOT NULL,
@@ -28,6 +33,9 @@ CREATE TABLE public.airport_access_options (
 
   CONSTRAINT airport_access_options_type_check
     CHECK (access_type IN ('rail', 'metro', 'bus', 'taxi', 'ride_hailing', 'transfer', 'other')),
+
+  CONSTRAINT airport_access_options_direction_check
+    CHECK (journey_direction IN ('from_airport', 'to_airport', 'both')),
 
   CONSTRAINT airport_access_options_duration_check
     CHECK (

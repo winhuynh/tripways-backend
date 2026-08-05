@@ -134,10 +134,11 @@ INSERT INTO public.airport_pages (
   og_title,
   og_description,
   intro,
-  route_summary,
-  access_summary,
-  parking_summary,
-  lounge_summary,
+  orientation_summary,
+  arrival_summary,
+  departure_summary,
+  primary_city_area_label,
+  city_distance_km,
   status,
   is_indexable,
   noindex_reason,
@@ -157,10 +158,11 @@ VALUES
     'Suvarnabhumi Airport routes and travel information',
     'Compare direct routes, airlines and essential planning information for BKK.',
     'Suvarnabhumi Airport is Bangkok''s primary international airport and connects the city with destinations across Asia and Europe.',
-    'Use the direct-route explorer to compare destinations, origins, airlines and typical stored flight durations. This preview does not show live fares or availability.',
-    'Rail, taxi, bus and transfer options connect the airport with central Bangkok.',
-    'Short-stay and long-stay parking are available; confirm current conditions with the official airport source.',
-    'Selected lounges are shown when access and location information has been reviewed.',
+    'BKK is east of central Bangkok. Check your terminal and whether the journey is domestic or international before travel.',
+    'After landing, follow the signed arrival flow for baggage reclaim, immigration when applicable, customs and onward transport.',
+    'Before departure, confirm the terminal, airline check-in guidance and any immigration or security requirements.',
+    'Central Bangkok',
+    30,
     'review',
     FALSE,
     'development_fixture',
@@ -179,10 +181,11 @@ VALUES
     'Don Mueang Airport routes and travel information',
     'Compare direct routes, airlines and essential planning information for DMK.',
     'Don Mueang International Airport is a major Bangkok base for low-cost and regional flights across Thailand and Southeast Asia.',
-    'Use the route explorer to compare direct destinations, origins and airlines. Stored schedules are not live availability.',
-    'Bus, taxi, rail connections and private transfers link DMK with central Bangkok.',
-    'Short-stay and long-stay parking are available; confirm current conditions before travel.',
-    'Selected lounge information is included when access details have been reviewed.',
+    'DMK is north of central Bangkok and is distinct from BKK. Confirm the airport code before arranging transport.',
+    'After landing, follow signs for baggage reclaim, immigration when applicable, customs and the public arrival area.',
+    'Before departure, confirm the terminal and allow time for check-in, security and immigration when applicable.',
+    'Central Bangkok',
+    24,
     'review',
     FALSE,
     'development_fixture',
@@ -201,18 +204,59 @@ VALUES
     'Singapore Changi Airport routes and travel information',
     'Compare direct routes, airlines and essential planning information for SIN.',
     'Singapore Changi Airport is the city-state''s principal international gateway and a major connection hub for Asia and long-haul travel.',
-    'Use the route explorer to compare direct destinations, origins and airlines. Stored schedules are not live availability.',
-    'Metro, bus, taxi and private transfers connect Changi Airport with central Singapore.',
-    'Short-stay and long-stay parking are available; verify current arrangements with the airport.',
-    'Selected lounge information is grouped around access and useful amenities.',
+    'SIN is east of central Singapore. Terminal and immigration steps vary by flight, so verify them before travel.',
+    'After landing, follow the applicable immigration, baggage reclaim and customs flow before choosing onward transport.',
+    'Before departure, confirm the terminal and airline guidance, then allow time for check-in, immigration and security.',
+    'Central Singapore',
+    20,
     'review',
     FALSE,
     'development_fixture',
     '2026-07-27T00:00:00Z'
   );
 
+INSERT INTO public.airport_journey_steps (
+  airport_page_id,
+  locale,
+  journey_type,
+  audience,
+  title,
+  body,
+  display_order,
+  primary_source_url,
+  last_verified_at,
+  status,
+  data_version
+)
+SELECT
+  page.id,
+  page.locale,
+  step.journey_type,
+  step.audience,
+  step.title,
+  step.body,
+  step.display_order,
+  step.primary_source_url,
+  '2026-07-27T00:00:00Z',
+  'published',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1)
+FROM public.airport_pages page
+CROSS JOIN (
+  VALUES
+    ('arrival', 'all', 'Follow the arrival signs', 'Follow the signed route for baggage reclaim and the public arrivals area.', 1, 'https://example.com/development-only/airport-arrivals'),
+    ('arrival', 'international', 'Complete border formalities', 'Follow the official immigration and customs process that applies to your journey.', 2, 'https://example.com/development-only/airport-arrivals'),
+    ('departure', 'all', 'Confirm terminal and check-in', 'Check the airline terminal and check-in guidance before travelling to the airport.', 1, 'https://example.com/development-only/airport-departures'),
+    ('departure', 'international', 'Allow time for formalities', 'Allow time for check-in, immigration and security requirements that apply to the flight.', 2, 'https://example.com/development-only/airport-departures')
+) AS step(journey_type, audience, title, body, display_order, primary_source_url)
+WHERE page.id IN (
+  '82100000-0000-4000-8000-000000000001',
+  '82100000-0000-4000-8000-000000000002',
+  '82100000-0000-4000-8000-000000000003'
+);
+
 INSERT INTO public.airport_access_options (
   airport_page_id,
+  journey_direction,
   access_type,
   name,
   destination_label,
@@ -230,6 +274,7 @@ INSERT INTO public.airport_access_options (
 )
 VALUES (
   '82100000-0000-4000-8000-000000000001',
+  'both',
   'rail',
   'Airport Rail Link',
   'Central Bangkok',
@@ -338,6 +383,7 @@ VALUES (
 
 INSERT INTO public.airport_access_options (
   airport_page_id,
+  journey_direction,
   access_type,
   name,
   destination_label,
@@ -353,6 +399,7 @@ INSERT INTO public.airport_access_options (
 VALUES
   (
     '82100000-0000-4000-8000-000000000002',
+    'both',
     'bus',
     'Bangkok public bus',
     'Central Bangkok',
@@ -367,6 +414,7 @@ VALUES
   ),
   (
     '82100000-0000-4000-8000-000000000003',
+    'both',
     'metro',
     'MRT connection',
     'Central Singapore',

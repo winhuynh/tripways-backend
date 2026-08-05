@@ -314,45 +314,10 @@ BEGIN
   FROM page_eligibility
   WHERE city_page.id = page_eligibility.city_page_id;
 
-  -- STEP 05: Refresh airport facts from the same eligible route version.
+  -- STEP 05: Refresh airport route provenance without embedding flight-led page facts.
   WITH airport_facts AS (
     SELECT
       airport_page.id AS airport_page_id,
-      count(DISTINCT outbound_route.destination_city_id)::INTEGER
-        AS outbound_destination_count,
-      count(DISTINCT outbound_route.destination_country_id)::INTEGER
-        AS outbound_country_count,
-      count(DISTINCT inbound_route.origin_city_id)::INTEGER
-        AS inbound_origin_count,
-      count(DISTINCT inbound_route.origin_country_id)::INTEGER
-        AS inbound_country_count,
-      (
-        SELECT count(DISTINCT route.operating_airline_id)::INTEGER
-        FROM public.pseo_direct_routes route
-        WHERE route.data_version = v_data_version
-          AND (
-            route.origin_airport_id = airport_page.airport_id
-            OR route.destination_airport_id = airport_page.airport_id
-          )
-      ) AS airline_count,
-      (
-        SELECT min(route.shortest_duration_minutes)
-        FROM public.pseo_direct_routes route
-        WHERE route.data_version = v_data_version
-          AND (
-            route.origin_airport_id = airport_page.airport_id
-            OR route.destination_airport_id = airport_page.airport_id
-          )
-      ) AS shortest_route_minutes,
-      (
-        SELECT max(route.longest_duration_minutes)
-        FROM public.pseo_direct_routes route
-        WHERE route.data_version = v_data_version
-          AND (
-            route.origin_airport_id = airport_page.airport_id
-            OR route.destination_airport_id = airport_page.airport_id
-          )
-      ) AS longest_route_minutes,
       (
         SELECT min(route.source_freshness_at)
         FROM public.pseo_direct_routes route
@@ -363,24 +328,11 @@ BEGIN
           )
       ) AS source_freshness_at
     FROM public.airport_pages airport_page
-    LEFT JOIN public.pseo_direct_routes outbound_route
-      ON outbound_route.origin_airport_id = airport_page.airport_id
-      AND outbound_route.data_version = v_data_version
-    LEFT JOIN public.pseo_direct_routes inbound_route
-      ON inbound_route.destination_airport_id = airport_page.airport_id
-      AND inbound_route.data_version = v_data_version
-    GROUP BY airport_page.id
   )
   UPDATE public.airport_pages airport_page
   SET
-    outbound_destination_count = airport_facts.outbound_destination_count,
-    outbound_country_count = airport_facts.outbound_country_count,
-    inbound_origin_count = airport_facts.inbound_origin_count,
-    inbound_country_count = airport_facts.inbound_country_count,
-    airline_count = airport_facts.airline_count,
-    shortest_route_minutes = airport_facts.shortest_route_minutes,
-    longest_route_minutes = airport_facts.longest_route_minutes,
     source_freshness_at = airport_facts.source_freshness_at,
+    route_data_refreshed_at = airport_facts.source_freshness_at,
     data_version = v_data_version,
     generated_at = now(),
     updated_at = now()
@@ -401,6 +353,31 @@ BEGIN
           AND access.status = 'published'
           AND access.last_verified_at IS NOT NULL
       ) AS has_access,
+      EXISTS (
+        SELECT 1
+        FROM public.airport_journey_steps step
+        WHERE step.airport_page_id = airport_page.id
+          AND step.journey_type = 'arrival'
+          AND step.status = 'published'
+          AND step.last_verified_at IS NOT NULL
+      ) AS has_arrival_guide,
+      EXISTS (
+        SELECT 1
+        FROM public.airport_journey_steps step
+        WHERE step.airport_page_id = airport_page.id
+          AND step.journey_type = 'departure'
+          AND step.status = 'published'
+          AND step.last_verified_at IS NOT NULL
+      ) AS has_departure_guide,
+      EXISTS (
+        SELECT 1
+        FROM public.pseo_direct_routes route
+        WHERE route.data_version = v_data_version
+          AND (
+            route.origin_airport_id = airport_page.airport_id
+            OR route.destination_airport_id = airport_page.airport_id
+          )
+      ) AS has_verified_direct_route,
       EXISTS (
         SELECT 1
         FROM public.pseo_direct_routes route
@@ -444,9 +421,11 @@ BEGIN
       WHEN airport_page.status <> 'published' THEN FALSE
       WHEN airport_eligibility.airport_status <> 'active' THEN FALSE
       WHEN airport_eligibility.iata IS NULL THEN FALSE
-      WHEN airport_page.outbound_destination_count + airport_page.inbound_origin_count = 0 THEN FALSE
+      WHEN airport_eligibility.has_verified_direct_route = FALSE THEN FALSE
       WHEN airport_page.content_reviewed_at IS NULL THEN FALSE
       WHEN airport_eligibility.has_access = FALSE THEN FALSE
+      WHEN airport_eligibility.has_arrival_guide = FALSE THEN FALSE
+      WHEN airport_eligibility.has_departure_guide = FALSE THEN FALSE
       WHEN airport_eligibility.has_disallowed_source THEN FALSE
       ELSE TRUE
     END,
@@ -455,10 +434,11 @@ BEGIN
       WHEN airport_page.status <> 'published' THEN 'not_published'
       WHEN airport_eligibility.airport_status <> 'active' THEN 'airport_inactive'
       WHEN airport_eligibility.iata IS NULL THEN 'missing_iata'
-      WHEN airport_page.outbound_destination_count + airport_page.inbound_origin_count = 0
-        THEN 'no_direct_routes'
+      WHEN airport_eligibility.has_verified_direct_route = FALSE THEN 'no_verified_direct_routes'
       WHEN airport_page.content_reviewed_at IS NULL THEN 'content_not_reviewed'
       WHEN airport_eligibility.has_access = FALSE THEN 'missing_access_information'
+      WHEN airport_eligibility.has_arrival_guide = FALSE THEN 'missing_arrival_guide'
+      WHEN airport_eligibility.has_departure_guide = FALSE THEN 'missing_departure_guide'
       WHEN airport_eligibility.has_disallowed_source THEN 'source_not_seo_eligible'
       ELSE NULL
     END,
@@ -536,29 +516,6 @@ $$;
 REVOKE ALL ON FUNCTION public.refresh_pseo_read_models()
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.refresh_pseo_read_models() TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/refresh_city_pseo_read_models.sql
-
--- ============================================================================
--- Function: public.refresh_city_pseo_read_models
--- Feature: Interactive pSEO
--- Purpose: Preserve the previous refresh contract during the airport-page rollout.
--- Responsibilities: Delegate directly to the single shared pSEO refresh function.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.refresh_city_pseo_read_models()
-RETURNS JSONB
-LANGUAGE sql
-VOLATILE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-  SELECT public.refresh_pseo_read_models();
-$$;
-
-REVOKE ALL ON FUNCTION public.refresh_city_pseo_read_models()
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.refresh_city_pseo_read_models() TO service_role;
 
 -- >>> supabase/sql_src/functions/pseo/city/parse_city_page_identity.sql
 
@@ -1308,905 +1265,17 @@ GRANT EXECUTE ON FUNCTION private.get_city_route_map(
   INTEGER
 ) TO service_role;
 
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_overview.sql
+-- >>> supabase/sql_src/functions/pseo/city/build_city_page_payload.sql
 
 -- ============================================================================
--- Function: public.rpc_get_city_overview
--- Feature: Interactive pSEO
--- Purpose: Return the required identity, publication metadata, and quick facts for a city page.
--- Responsibilities: Resolve city context and expose one bounded above-the-fold read model.
--- Notes: Database-owned indexability controls web metadata and robots output.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_overview(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  v_identity JSONB;
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_route_direction TEXT;
-  v_city_id UUID;
-  v_city_page_id UUID;
-  v_result JSONB;
-BEGIN
-  v_identity := private.parse_city_page_identity(p_input);
-
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      v_identity #>> '{error,code}',
-      v_identity #>> '{error,message}'
-    );
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_route_direction := v_identity #>> '{data,route_direction}';
-  v_context := private.resolve_city_page_context(
-    v_city_slug,
-    v_locale,
-    v_route_direction
-  );
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      v_context #>> '{error,code}',
-      v_context #>> '{error,message}'
-    );
-  END IF;
-
-  v_city_id := (v_context #>> '{data,city_id}')::UUID;
-  v_city_page_id := (v_context #>> '{data,city_page_id}')::UUID;
-
-  SELECT jsonb_build_object(
-    'data', jsonb_build_object(
-      'city', jsonb_build_object(
-        'name', city.name,
-        'slug', city.slug,
-        'latitude', city.latitude,
-        'longitude', city.longitude,
-        'timezone', city.timezone
-      ),
-      'country', jsonb_build_object(
-        'iso2', country.iso2,
-        'name', country.name,
-        'slug', country.slug,
-        'region', country.region
-      ),
-      'content', jsonb_build_object(
-        'h1', city_page.h1,
-        'subheadline', city_page.subheadline,
-        'intro', city_page.intro,
-        'airport_summary', city_page.airport_summary
-      ),
-      'seo', jsonb_build_object(
-        'title', city_page.seo_title,
-        'description', city_page.meta_description,
-        'canonical_path', pseo_page.canonical_path,
-        'og_title', city_page.og_title,
-        'og_description', city_page.og_description,
-        'og_image_path', city_page.og_image_path,
-        'is_indexable', city_page.is_indexable,
-        'noindex_reason', city_page.noindex_reason
-      ),
-      'quick_facts', jsonb_build_object(
-        'airport_count', city_page.airport_count,
-        'direct_counterpart_city_count', city_page.direct_counterpart_city_count,
-        'direct_counterpart_country_count', city_page.direct_counterpart_country_count,
-        'airline_count', city_page.airline_count,
-        'shortest_route_minutes', city_page.shortest_route_minutes,
-        'longest_route_minutes', city_page.longest_route_minutes
-      )
-    ),
-    'meta', jsonb_build_object(
-      'data_version', city_page.data_version,
-      'generated_at', city_page.generated_at,
-      'source_freshness_at', city_page.source_freshness_at
-    ),
-    'error', NULL
-  )
-  INTO v_result
-  FROM public.cities city
-  JOIN public.countries country
-    ON country.id = city.country_id
-  JOIN public.city_pages city_page
-    ON city_page.id = v_city_page_id
-  JOIN public.pseo_pages pseo_page
-    ON pseo_page.id = city_page.pseo_page_id
-  WHERE city.id = v_city_id;
-
-  RETURN v_result;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_overview(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_overview(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_airports.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_airports
--- Feature: Interactive pSEO
--- Purpose: Return active airport hubs for one city page.
--- Responsibilities: Compose airport facts, reviewed copy, and reusable versioned route statistics.
--- Notes: Airport pages are semantic children of the city page.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_airports(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_route_direction TEXT;
-  v_city_id UUID;
-  v_city_page_id UUID;
-  v_data_version UUID;
-  v_result JSONB;
-BEGIN
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_identity #>> '{error,code}', v_identity #>> '{error,message}');
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_route_direction := v_identity #>> '{data,route_direction}';
-  v_context := private.resolve_city_page_context(
-    v_city_slug,
-    v_locale,
-    v_route_direction
-  );
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_context #>> '{error,code}', v_context #>> '{error,message}');
-  END IF;
-
-  v_city_id := (v_context #>> '{data,city_id}')::UUID;
-  v_city_page_id := (v_context #>> '{data,city_page_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
-
-  SELECT jsonb_build_object(
-    'data', COALESCE(jsonb_agg(
-      jsonb_build_object(
-        'iata', airport.iata,
-        'icao', airport.icao,
-        'name', airport.name,
-        'slug', airport.slug,
-        'image_path', airport.image_path,
-        'airport_type', airport.airport_type,
-        'latitude', airport.latitude,
-        'longitude', airport.longitude,
-        'timezone', airport.timezone,
-        'is_primary', airport.id = city_page.primary_airport_id,
-        'hub_label', airport_content.hub_label,
-        'description', airport_content.description,
-        'display_order', airport_content.display_order,
-        'direct_counterpart_city_count', airport_stats.direct_counterpart_city_count,
-        'domestic_destination_count', airport_stats.domestic_destination_count,
-        'international_destination_count', airport_stats.international_destination_count,
-        'domestic_destination_percentage', airport_stats.domestic_destination_percentage,
-        'international_destination_percentage', airport_stats.international_destination_percentage,
-        'airline_count', airport_stats.airline_count,
-        'dominant_airline_business_model', airport_stats.dominant_airline_business_model,
-        'page_path', format('/flights-from/%s/%s', v_city_slug, lower(airport.iata))
-      )
-      ORDER BY
-        airport_content.display_order NULLS LAST,
-        (airport.id = city_page.primary_airport_id) DESC,
-        airport.iata
-    ), '[]'::JSONB),
-    'meta', jsonb_build_object(
-      'city_slug', v_city_slug,
-      'locale', v_locale,
-      'data_version', v_data_version
-    ),
-    'error', NULL
-  )
-  INTO v_result
-  FROM public.airports airport
-  JOIN public.city_pages city_page
-    ON city_page.id = v_city_page_id
-  JOIN private.get_city_airport_route_stats(
-    v_city_id,
-    v_data_version
-  ) airport_stats
-    ON airport_stats.airport_id = airport.id
-  LEFT JOIN public.city_page_airport_content airport_content
-    ON airport_content.city_page_id = city_page.id
-    AND airport_content.airport_id = airport.id
-    AND airport_content.status = 'published'
-  WHERE airport.city_id = v_city_id
-    AND airport.status = 'active';
-
-  RETURN v_result;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_airports(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_airports(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_quick_facts.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_quick_facts
--- Feature: Interactive pSEO
--- Purpose: Return one independently loadable city Quick Facts read model.
--- Responsibilities: Resolve page identity and compose the shared RPC envelope.
--- Notes: Facts are derived from the city page's current data version.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_quick_facts(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  ------------------------------------------------------------------
-  -- Input and resolved context
-  ------------------------------------------------------------------
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_city_id UUID;
-  v_data_version UUID;
-BEGIN
-  -- STEP 01: Validate the shared city-page identity.
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      v_identity #>> '{error,code}',
-      v_identity #>> '{error,message}'
-    );
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(
-    v_city_slug,
-    v_locale
-  );
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      v_context #>> '{error,code}',
-      v_context #>> '{error,message}'
-    );
-  END IF;
-
-  v_city_id := (v_context #>> '{data,city_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
-
-  -- STEP 02: Return one helper-owned, version-consistent read model.
-  RETURN jsonb_build_object(
-    'data', private.get_city_quick_facts(
-      v_city_id,
-      v_data_version
-    ),
-    'meta', jsonb_build_object(
-      'city_slug', v_city_slug,
-      'locale', v_locale,
-      'data_version', v_data_version
-    ),
-    'error', NULL
-  );
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_quick_facts(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_quick_facts(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_route_map.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_route_map
--- Feature: Route Map
--- Purpose: Return one independently loadable city direct-route map read model.
--- Responsibilities: Validate filters, resolve page context, and compose the RPC envelope.
--- Notes: The first contract supports city origins; airport-origin support is intentionally deferred.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_route_map(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  ------------------------------------------------------------------
-  -- Input and resolved context
-  ------------------------------------------------------------------
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_city_id UUID;
-  v_data_version UUID;
-
-  ------------------------------------------------------------------
-  -- Filters and bounds
-  ------------------------------------------------------------------
-  v_origin_airports TEXT[] := '{}'::TEXT[];
-  v_airlines TEXT[] := '{}'::TEXT[];
-  v_destination_countries TEXT[] := '{}'::TEXT[];
-  v_max_duration_minutes INTEGER;
-  v_departure_window TEXT;
-  v_limit INTEGER := 100;
-
-  ------------------------------------------------------------------
-  -- Result
-  ------------------------------------------------------------------
-  v_route_map JSONB;
-BEGIN
-  -- STEP 01: Validate the shared city-page identity.
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      v_identity #>> '{error,code}',
-      v_identity #>> '{error,message}'
-    );
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-
-  -- STEP 02: Normalize bounded route-map filters.
-  IF p_input ? 'origin_airports' THEN
-    IF jsonb_typeof(p_input->'origin_airports') <> 'array'
-      OR EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements_text(p_input->'origin_airports') code
-        WHERE private.normalize_airport_iata(code) IS NULL
-      )
-    THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'origin_airports must contain valid IATA codes.'
-      );
-    END IF;
-
-    SELECT COALESCE(
-      array_agg(DISTINCT private.normalize_airport_iata(code)),
-      '{}'::TEXT[]
-    )
-    INTO v_origin_airports
-    FROM jsonb_array_elements_text(p_input->'origin_airports') code;
-  END IF;
-
-  IF p_input ? 'airlines' THEN
-    IF jsonb_typeof(p_input->'airlines') <> 'array'
-      OR EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements_text(p_input->'airlines') code
-        WHERE private.normalize_airline_iata(code) IS NULL
-      )
-    THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'airlines must contain valid IATA codes.'
-      );
-    END IF;
-
-    SELECT COALESCE(
-      array_agg(DISTINCT private.normalize_airline_iata(code)),
-      '{}'::TEXT[]
-    )
-    INTO v_airlines
-    FROM jsonb_array_elements_text(p_input->'airlines') code;
-  END IF;
-
-  IF p_input ? 'destination_countries' THEN
-    IF jsonb_typeof(p_input->'destination_countries') <> 'array' THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'destination_countries must be an array.'
-      );
-    END IF;
-
-    SELECT COALESCE(
-      array_agg(DISTINCT upper(btrim(code))),
-      '{}'::TEXT[]
-    )
-    INTO v_destination_countries
-    FROM jsonb_array_elements_text(p_input->'destination_countries') code;
-
-    IF EXISTS (
-      SELECT 1
-      FROM UNNEST(v_destination_countries) code
-      WHERE code !~ '^[A-Z]{2}$'
-    ) THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'destination_countries contains an invalid ISO code.'
-      );
-    END IF;
-  END IF;
-
-  IF p_input ? 'max_duration_minutes' THEN
-    IF jsonb_typeof(p_input->'max_duration_minutes') <> 'number' THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'max_duration_minutes must be an integer.'
-      );
-    END IF;
-
-    v_max_duration_minutes := (p_input->>'max_duration_minutes')::INTEGER;
-    IF v_max_duration_minutes NOT BETWEEN 1 AND 1440 THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'max_duration_minutes is outside accepted bounds.'
-      );
-    END IF;
-  END IF;
-
-  v_departure_window := nullif(
-    lower(btrim(COALESCE(p_input->>'departure_window', ''))),
-    ''
-  );
-  IF v_departure_window IS NOT NULL
-    AND v_departure_window NOT IN ('morning', 'afternoon', 'evening', 'night')
-  THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      'ERR_INVALID_REQUEST',
-      'departure_window is not supported.'
-    );
-  END IF;
-
-  IF p_input ? 'limit' THEN
-    IF jsonb_typeof(p_input->'limit') <> 'number' THEN
-      RETURN private.build_rpc_error(
-        'null'::JSONB,
-        'ERR_INVALID_REQUEST',
-        'limit must be an integer.'
-      );
-    END IF;
-    v_limit := (p_input->>'limit')::INTEGER;
-  END IF;
-
-  IF v_limit NOT BETWEEN 1 AND 100 THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      'ERR_INVALID_REQUEST',
-      'limit is outside accepted bounds.'
-    );
-  END IF;
-
-  -- STEP 03: Resolve the published city-page version.
-  v_context := private.resolve_city_page_context(
-    v_city_slug,
-    v_locale
-  );
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error(
-      'null'::JSONB,
-      v_context #>> '{error,code}',
-      v_context #>> '{error,message}'
-    );
-  END IF;
-
-  v_city_id := (v_context #>> '{data,city_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
-
-  -- STEP 04: Delegate aggregation and compose the shared envelope.
-  v_route_map := private.get_city_route_map(
-    v_city_id,
-    v_city_slug,
-    v_data_version,
-    v_origin_airports,
-    v_airlines,
-    v_destination_countries,
-    v_max_duration_minutes,
-    v_departure_window,
-    v_limit
-  );
-
-  RETURN jsonb_build_object(
-    'data', jsonb_build_object(
-      'origin', v_route_map->'origin',
-      'destinations', v_route_map->'destinations'
-    ),
-    'meta', jsonb_build_object(
-      'city_slug', v_city_slug,
-      'locale', v_locale,
-      'data_version', v_data_version,
-      'total', (v_route_map->>'total')::INTEGER,
-      'omitted_destination_count',
-        (v_route_map->>'omitted_destination_count')::INTEGER,
-      'limit', v_limit,
-      'filters', jsonb_build_object(
-        'origin_airports', to_jsonb(v_origin_airports),
-        'airlines', to_jsonb(v_airlines),
-        'destination_countries', to_jsonb(v_destination_countries),
-        'max_duration_minutes', v_max_duration_minutes,
-        'departure_window', v_departure_window
-      )
-    ),
-    'error', NULL
-  );
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_route_map(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_route_map(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_airlines.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_airlines
--- Feature: Interactive pSEO
--- Purpose: Return airlines operating direct routes from one city.
--- Responsibilities: Aggregate served airports and destinations for the current page version.
--- Notes: Results contain discovery facts, not live schedules or fares.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_airlines(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_city_id UUID;
-  v_data_version UUID;
-  v_result JSONB;
-BEGIN
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_identity #>> '{error,code}', v_identity #>> '{error,message}');
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(v_city_slug, v_locale);
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_context #>> '{error,code}', v_context #>> '{error,message}');
-  END IF;
-
-  v_city_id := (v_context #>> '{data,city_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
-
-  SELECT jsonb_build_object(
-    'data', COALESCE(jsonb_agg(
-      jsonb_build_object(
-        'iata', summary.iata,
-        'icao', summary.icao,
-        'name', summary.name,
-        'slug', summary.slug,
-        'logo_path', summary.logo_path,
-        'origin_airports', summary.origin_airports,
-        'direct_counterpart_city_count', summary.direct_counterpart_city_count,
-        'page_path', format('/airlines/%s/flights-from/%s', summary.slug, v_city_slug)
-      )
-      ORDER BY summary.direct_counterpart_city_count DESC, summary.name
-    ), '[]'::JSONB),
-    'meta', jsonb_build_object('data_version', v_data_version),
-    'error', NULL
-  )
-  INTO v_result
-  FROM (
-    SELECT
-      airline.iata,
-      airline.icao,
-      airline.name,
-      airline.slug,
-      airline.logo_path,
-      jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports,
-      count(DISTINCT city_route.destination_city_id) AS direct_counterpart_city_count
-    FROM public.pseo_direct_routes city_route
-    JOIN public.airlines airline
-      ON airline.id = city_route.operating_airline_id
-    JOIN public.airports origin_airport
-      ON origin_airport.id = city_route.origin_airport_id
-    WHERE city_route.origin_city_id = v_city_id
-      AND city_route.data_version = v_data_version
-    GROUP BY airline.id
-  ) summary;
-
-  RETURN v_result;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_airlines(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_airlines(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_insights.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_insights
--- Feature: Interactive pSEO
--- Purpose: Return factual city-level direct-flight insights.
--- Responsibilities: Derive bounded facts from the current published route projection.
--- Notes: Unknown frequency-based facts remain NULL.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_insights(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_city_id UUID;
-  v_data_version UUID;
-  v_quick_facts JSONB;
-  v_result JSONB;
-BEGIN
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('null'::JSONB, v_identity #>> '{error,code}', v_identity #>> '{error,message}');
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(v_city_slug, v_locale);
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('null'::JSONB, v_context #>> '{error,code}', v_context #>> '{error,message}');
-  END IF;
-
-  v_city_id := (v_context #>> '{data,city_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
-  v_quick_facts := private.get_city_quick_facts(
-    v_city_id,
-    v_data_version
-  );
-
-  WITH routes AS MATERIALIZED (
-    SELECT city_route.*
-    FROM public.pseo_direct_routes city_route
-    WHERE city_route.origin_city_id = v_city_id
-      AND city_route.data_version = v_data_version
-  ),
-  destination_frequency AS (
-    SELECT
-      route.destination_city_id,
-      sum(route.frequency_per_week) AS frequency_per_week
-    FROM routes route
-    WHERE route.frequency_per_week IS NOT NULL
-    GROUP BY route.destination_city_id
-    ORDER BY sum(route.frequency_per_week) DESC, route.destination_city_id
-    LIMIT 1
-  ),
-  airline_frequency AS (
-    SELECT
-      route.operating_airline_id,
-      sum(route.frequency_per_week) AS frequency_per_week
-    FROM routes route
-    WHERE route.frequency_per_week IS NOT NULL
-    GROUP BY route.operating_airline_id
-    ORDER BY sum(route.frequency_per_week) DESC, route.operating_airline_id
-    LIMIT 1
-  )
-  SELECT jsonb_build_object(
-    'data', jsonb_build_object(
-      'most_popular_destination', (
-        SELECT destination_city.name
-        FROM destination_frequency
-        JOIN public.cities destination_city
-          ON destination_city.id = destination_frequency.destination_city_id
-      ),
-      'shortest_destination', v_quick_facts #>> '{shortest_route,destination_name}',
-      'longest_destination', v_quick_facts #>> '{longest_route,destination_name}',
-      'top_airline', (
-        SELECT airline.name
-        FROM airline_frequency
-        JOIN public.airlines airline
-          ON airline.id = airline_frequency.operating_airline_id
-      ),
-      'average_duration_minutes', (
-        SELECT round(avg(route.shortest_duration_minutes))::INTEGER
-        FROM routes route
-      ),
-      'direct_counterpart_country_count', (v_quick_facts ->> 'direct_counterpart_country_count')::INTEGER
-    ),
-    'meta', jsonb_build_object('data_version', v_data_version),
-    'error', NULL
-  )
-  INTO v_result;
-
-  RETURN v_result;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_insights(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_insights(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_internal_links.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_internal_links
--- Feature: Interactive pSEO
--- Purpose: Return reviewed semantic internal links grouped by cluster.
--- Responsibilities: Preserve relevance, display order, and crawlable target paths.
--- Notes: Archived targets are excluded.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_internal_links(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_pseo_page_id UUID;
-  v_result JSONB;
-BEGIN
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_identity #>> '{error,code}', v_identity #>> '{error,message}');
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(v_city_slug, v_locale);
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_context #>> '{error,code}', v_context #>> '{error,message}');
-  END IF;
-
-  v_pseo_page_id := (v_context #>> '{data,pseo_page_id}')::UUID;
-
-  SELECT jsonb_build_object(
-    'data', COALESCE(jsonb_agg(
-      jsonb_build_object(
-        'cluster', link_group.link_cluster,
-        'links', link_group.links
-      )
-      ORDER BY link_group.cluster_order
-    ), '[]'::JSONB),
-    'meta', '{}'::JSONB,
-    'error', NULL
-  )
-  INTO v_result
-  FROM (
-    SELECT
-      internal_link.link_cluster,
-      min(internal_link.display_order) AS cluster_order,
-      jsonb_agg(
-        jsonb_build_object(
-          'title', target_page.display_title,
-          'path', target_page.canonical_path,
-          'anchor_text', internal_link.anchor_text,
-          'secondary_text', internal_link.secondary_text,
-          'is_featured', internal_link.is_featured
-        )
-        ORDER BY internal_link.display_order, internal_link.relevance_score DESC
-      ) AS links
-    FROM public.pseo_internal_links internal_link
-    JOIN public.pseo_pages target_page
-      ON target_page.id = internal_link.target_page_id
-    WHERE internal_link.source_page_id = v_pseo_page_id
-      AND target_page.status <> 'archived'
-    GROUP BY internal_link.link_cluster
-  ) link_group;
-
-  RETURN v_result;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_internal_links(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_internal_links(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_faqs.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_faqs
--- Feature: Interactive pSEO
--- Purpose: Return published FAQs for visible content and FAQPage structured data.
--- Responsibilities: Preserve reviewed display order and answer type.
--- Notes: Hidden or draft FAQs never reach the public read model.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION public.rpc_get_city_faqs(p_input JSONB)
-RETURNS JSONB
-LANGUAGE plpgsql
-STABLE
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-DECLARE
-  v_identity JSONB := private.parse_city_page_identity(p_input);
-  v_context JSONB;
-  v_city_slug TEXT;
-  v_locale TEXT;
-  v_city_page_id UUID;
-  v_result JSONB;
-BEGIN
-  IF v_identity #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_identity #>> '{error,code}', v_identity #>> '{error,message}');
-  END IF;
-
-  v_city_slug := v_identity #>> '{data,city_slug}';
-  v_locale := v_identity #>> '{data,locale}';
-  v_context := private.resolve_city_page_context(v_city_slug, v_locale);
-
-  IF v_context #>> '{error,code}' IS NOT NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, v_context #>> '{error,code}', v_context #>> '{error,message}');
-  END IF;
-
-  v_city_page_id := (v_context #>> '{data,city_page_id}')::UUID;
-
-  SELECT jsonb_build_object(
-    'data', COALESCE(jsonb_agg(
-      jsonb_build_object(
-        'question', faq.question,
-        'answer', faq.answer,
-        'answer_type', faq.answer_type
-      )
-      ORDER BY faq.display_order
-    ), '[]'::JSONB),
-    'meta', '{}'::JSONB,
-    'error', NULL
-  )
-  INTO v_result
-  FROM public.city_page_faqs faq
-  WHERE faq.city_page_id = v_city_page_id
-    AND faq.status = 'published';
-
-  RETURN v_result;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_get_city_faqs(JSONB)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_faqs(JSONB) TO service_role;
-
--- >>> supabase/sql_src/functions/pseo/city/rpc_get_city_page.sql
-
--- ============================================================================
--- Function: public.rpc_get_city_page
+-- Function: private.build_city_page_payload
 -- Feature: Interactive pSEO
 -- Purpose: Return one bounded, frontend-ready city pSEO page payload.
 -- Responsibilities: Validate identity, resolve reviewed content, and group page modules.
 -- Notes: Indexability metadata is returned from Postgres and is never inferred by the transport.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_get_city_page(p_input JSONB)
+CREATE OR REPLACE FUNCTION private.build_city_page_payload(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
@@ -2430,36 +1499,6 @@ BEGIN
           LIMIT v_destination_limit
         ) destination_payload
       ), '[]'::JSONB),
-      'featured_airlines', COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'iata', airline_summary.iata,
-            'name', airline_summary.name,
-            'slug', airline_summary.slug,
-            'direct_destinations', airline_summary.direct_destinations,
-            'origin_airports', airline_summary.origin_airports
-          )
-          ORDER BY
-            airline_summary.direct_destinations DESC,
-            airline_summary.name
-        )
-        FROM (
-          SELECT
-            airline.iata,
-            airline.name,
-            airline.slug,
-            count(DISTINCT city_route.destination_city_id) AS direct_destinations,
-            jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata) AS origin_airports
-          FROM public.pseo_direct_routes city_route
-          JOIN public.airlines airline
-            ON airline.id = city_route.operating_airline_id
-          JOIN public.airports origin_airport
-            ON origin_airport.id = city_route.origin_airport_id
-          WHERE city_route.origin_city_id = city.id
-            AND city_route.data_version = v_data_version
-          GROUP BY airline.id
-        ) airline_summary
-      ), '[]'::JSONB),
       'direct_countries', COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -2497,6 +1536,7 @@ BEGIN
         )
         FROM public.city_page_faqs faq
         WHERE faq.city_page_id = city_page.id
+          AND faq.locale = v_locale
           AND faq.status = 'published'
       ), '[]'::JSONB),
       'structured_facts', COALESCE((SELECT jsonb_agg(jsonb_build_object(
@@ -2566,20 +1606,21 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_get_city_page(JSONB)
+REVOKE ALL ON FUNCTION private.build_city_page_payload(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_city_page(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION private.build_city_page_payload(JSONB) TO service_role;
 
--- >>> supabase/sql_src/functions/pseo/airport/rpc_get_airport_page.sql
+-- >>> supabase/sql_src/functions/pseo/airport/build_airport_page_payload.sql
 
 -- ============================================================================
--- Function: public.rpc_get_airport_page
--- Feature: Interactive pSEO
--- Purpose: Return one frontend-ready airport landing-page payload.
--- Responsibilities: Compose identity, route summaries, reviewed guidance, and page metadata.
+-- Function: private.build_airport_page_payload
+-- Feature: Airport Journey pSEO
+-- Purpose: Return one frontend-ready airport journey-guide payload.
+-- Responsibilities: Compose reviewed journey content, practical airport modules, and provenance.
+-- Notes: Verified flights are queried separately through public.rpc_search_routes.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_get_airport_page(p_input JSONB)
+CREATE OR REPLACE FUNCTION private.build_airport_page_payload(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
@@ -2594,8 +1635,6 @@ DECLARE
   v_airport_id UUID;
   v_airport_page_id UUID;
   v_pseo_page_id UUID;
-  v_data_version UUID;
-  v_route_limit INTEGER := 8;
   v_result JSONB;
 BEGIN
   v_identity := private.parse_airport_page_identity(p_input);
@@ -2608,25 +1647,6 @@ BEGIN
 
   v_airport_iata := v_identity #>> '{data,airport_iata}';
   v_locale := v_identity #>> '{data,locale}';
-
-  IF p_input ? 'route_limit' THEN
-    IF jsonb_typeof(p_input->'route_limit') <> 'number'
-      OR (p_input->>'route_limit')::NUMERIC <> trunc((p_input->>'route_limit')::NUMERIC)
-      OR (p_input->>'route_limit')::INTEGER NOT BETWEEN 1 AND 24
-    THEN
-      RETURN jsonb_build_object(
-        'data', NULL,
-        'meta', NULL,
-        'error', jsonb_build_object(
-          'code', 'ERR_INVALID_REQUEST',
-          'message', 'route_limit must be an integer between 1 and 24.'
-        )
-      );
-    END IF;
-
-    v_route_limit := (p_input->>'route_limit')::INTEGER;
-  END IF;
-
   v_context := private.resolve_airport_page_context(v_airport_iata, v_locale);
 
   IF v_context->'error' IS NOT NULL
@@ -2638,7 +1658,6 @@ BEGIN
   v_airport_id := (v_context #>> '{data,airport_id}')::UUID;
   v_airport_page_id := (v_context #>> '{data,airport_page_id}')::UUID;
   v_pseo_page_id := (v_context #>> '{data,pseo_page_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
 
   SELECT jsonb_build_object(
     'data', jsonb_build_object(
@@ -2653,11 +1672,7 @@ BEGIN
         'timezone', airport.timezone,
         'latitude', airport.latitude,
         'longitude', airport.longitude,
-        'city', jsonb_build_object(
-          'id', city.id,
-          'name', city.name,
-          'slug', city.slug
-        ),
+        'city', jsonb_build_object('id', city.id, 'name', city.name, 'slug', city.slug),
         'country', jsonb_build_object(
           'id', country.id,
           'code', country.iso2,
@@ -2674,133 +1689,110 @@ BEGIN
         'og_description', airport_page.og_description,
         'og_image_path', airport_page.og_image_path
       ),
-      'content', jsonb_build_object(
+      'orientation', jsonb_build_object(
         'intro', airport_page.intro,
-        'route_summary', airport_page.route_summary,
-        'access_summary', airport_page.access_summary,
-        'parking_summary', airport_page.parking_summary,
-        'lounge_summary', airport_page.lounge_summary
+        'summary', airport_page.orientation_summary,
+        'primary_city_area_label', airport_page.primary_city_area_label,
+        'city_distance_km', airport_page.city_distance_km,
+        'terminal_count', (
+          SELECT count(*)::INTEGER
+          FROM public.airport_terminals terminal
+          WHERE terminal.airport_id = v_airport_id
+            AND terminal.status = 'active'
+        )
       ),
-      'quick_facts', jsonb_build_object(
-        'outbound_destinations', airport_page.outbound_destination_count,
-        'outbound_countries', airport_page.outbound_country_count,
-        'inbound_origins', airport_page.inbound_origin_count,
-        'inbound_countries', airport_page.inbound_country_count,
-        'airlines', airport_page.airline_count,
-        'shortest_route_minutes', airport_page.shortest_route_minutes,
-        'longest_route_minutes', airport_page.longest_route_minutes
+      'quick_answers', jsonb_build_object(
+        'default_transport', (
+          SELECT jsonb_build_object(
+            'name', access.name,
+            'typical_minutes', jsonb_build_object(
+              'min', access.duration_min_minutes,
+              'max', access.duration_max_minutes
+            ),
+            'estimated_price', jsonb_build_object(
+              'min', access.price_min,
+              'max', access.price_max,
+              'currency', access.currency_code
+            ),
+            'last_verified_at', access.last_verified_at
+          )
+          FROM public.airport_access_options access
+          WHERE access.airport_page_id = v_airport_page_id
+            AND access.status = 'published'
+            AND access.journey_direction IN ('from_airport', 'both')
+          ORDER BY access.display_order
+          LIMIT 1
+        ),
+        'city_distance_km', airport_page.city_distance_km,
+        'terminal_count', (
+          SELECT count(*)::INTEGER
+          FROM public.airport_terminals terminal
+          WHERE terminal.airport_id = v_airport_id
+            AND terminal.status = 'active'
+        )
       ),
-      'featured_outbound_routes', COALESCE((
-        SELECT jsonb_agg(to_jsonb(route_item) ORDER BY route_item.rank_order)
-        FROM (
-          SELECT
-            destination_airport.iata AS airport_iata,
-            destination_airport.name AS airport_name,
-            destination_city.name AS city_name,
-            destination_city.slug AS city_slug,
-            destination_country.iso2 AS country_code,
-            destination_country.name AS country_name,
-            min(route.shortest_duration_minutes) AS shortest_duration_minutes,
-            count(DISTINCT route.operating_airline_id)::INTEGER AS airline_count,
-            row_number() OVER (
-              ORDER BY
-                COALESCE(sum(route.frequency_per_week), 0) DESC,
-                count(*) DESC,
-                destination_city.name,
-                destination_airport.iata
-            ) AS rank_order
-          FROM public.pseo_direct_routes route
-          JOIN public.airports destination_airport
-            ON destination_airport.id = route.destination_airport_id
-          JOIN public.cities destination_city
-            ON destination_city.id = route.destination_city_id
-          JOIN public.countries destination_country
-            ON destination_country.id = route.destination_country_id
-          WHERE route.origin_airport_id = v_airport_id
-            AND route.data_version = v_data_version
-          GROUP BY
-            destination_airport.iata,
-            destination_airport.name,
-            destination_city.name,
-            destination_city.slug,
-            destination_country.iso2,
-            destination_country.name
-          ORDER BY rank_order
-          LIMIT v_route_limit
-        ) route_item
-      ), '[]'::JSONB),
-      'featured_inbound_routes', COALESCE((
-        SELECT jsonb_agg(to_jsonb(route_item) ORDER BY route_item.rank_order)
-        FROM (
-          SELECT
-            origin_airport.iata AS airport_iata,
-            origin_airport.name AS airport_name,
-            origin_city.name AS city_name,
-            origin_city.slug AS city_slug,
-            origin_country.iso2 AS country_code,
-            origin_country.name AS country_name,
-            min(route.shortest_duration_minutes) AS shortest_duration_minutes,
-            count(DISTINCT route.operating_airline_id)::INTEGER AS airline_count,
-            row_number() OVER (
-              ORDER BY
-                COALESCE(sum(route.frequency_per_week), 0) DESC,
-                count(*) DESC,
-                origin_city.name,
-                origin_airport.iata
-            ) AS rank_order
-          FROM public.pseo_direct_routes route
-          JOIN public.airports origin_airport
-            ON origin_airport.id = route.origin_airport_id
-          JOIN public.cities origin_city
-            ON origin_city.id = route.origin_city_id
-          JOIN public.countries origin_country
-            ON origin_country.id = route.origin_country_id
-          WHERE route.destination_airport_id = v_airport_id
-            AND route.data_version = v_data_version
-          GROUP BY
-            origin_airport.iata,
-            origin_airport.name,
-            origin_city.name,
-            origin_city.slug,
-            origin_country.iso2,
-            origin_country.name
-          ORDER BY rank_order
-          LIMIT v_route_limit
-        ) route_item
-      ), '[]'::JSONB),
-      'airlines', COALESCE((
-        SELECT jsonb_agg(to_jsonb(airline_item) ORDER BY airline_item.route_count DESC, airline_item.name)
-        FROM (
-          SELECT
-            airline.iata,
-            airline.name,
-            airline.slug,
-            airline.logo_path,
-            count(DISTINCT route.flight_route_id)::INTEGER AS route_count
-          FROM public.pseo_direct_routes route
-          JOIN public.airlines airline
-            ON airline.id = route.operating_airline_id
-          WHERE route.data_version = v_data_version
-            AND (
-              route.origin_airport_id = v_airport_id
-              OR route.destination_airport_id = v_airport_id
+      'arrival', jsonb_build_object(
+        'summary', airport_page.arrival_summary,
+        'steps', COALESCE((
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'audience', step.audience,
+              'title', step.title,
+              'body', step.body,
+              'source_url', step.primary_source_url,
+              'last_verified_at', step.last_verified_at
             )
-          GROUP BY airline.iata, airline.name, airline.slug, airline.logo_path
-        ) airline_item
-      ), '[]'::JSONB),
-      'access_options', COALESCE((
+            ORDER BY step.audience, step.display_order
+          )
+          FROM public.airport_journey_steps step
+          WHERE step.airport_page_id = v_airport_page_id
+            AND step.locale = v_locale
+            AND step.journey_type = 'arrival'
+            AND step.status = 'published'
+        ), '[]'::JSONB)
+      ),
+      'departure', jsonb_build_object(
+        'summary', airport_page.departure_summary,
+        'steps', COALESCE((
+          SELECT jsonb_agg(
+            jsonb_build_object(
+              'audience', step.audience,
+              'title', step.title,
+              'body', step.body,
+              'source_url', step.primary_source_url,
+              'last_verified_at', step.last_verified_at
+            )
+            ORDER BY step.audience, step.display_order
+          )
+          FROM public.airport_journey_steps step
+          WHERE step.airport_page_id = v_airport_page_id
+            AND step.locale = v_locale
+            AND step.journey_type = 'departure'
+            AND step.status = 'published'
+        ), '[]'::JSONB)
+      ),
+      'transport', COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
+            'direction', access.journey_direction,
             'type', access.access_type,
             'name', access.name,
             'destination_label', access.destination_label,
             'summary', access.summary,
-            'duration_min_minutes', access.duration_min_minutes,
-            'duration_max_minutes', access.duration_max_minutes,
-            'price_min', access.price_min,
-            'price_max', access.price_max,
-            'currency_code', access.currency_code,
+            'duration', jsonb_build_object(
+              'min_minutes', access.duration_min_minutes,
+              'max_minutes', access.duration_max_minutes
+            ),
+            'estimated_price', jsonb_build_object(
+              'min', access.price_min,
+              'max', access.price_max,
+              'currency', access.currency_code
+            ),
             'operating_hours_summary', access.operating_hours_summary,
+            'pickup_location_summary', access.pickup_location_summary,
+            'best_for_label', access.best_for_label,
+            'luggage_summary', access.luggage_summary,
+            'accessibility_summary', access.accessibility_summary,
             'booking_url', access.booking_url,
             'source_url', access.primary_source_url,
             'last_verified_at', access.last_verified_at
@@ -2812,20 +1804,45 @@ BEGIN
           AND access.status = 'published'
       ), '[]'::JSONB),
       'parking', (
-        SELECT jsonb_build_object(
-          'summary', parking.summary,
-          'short_stay_available', parking.short_stay_available,
-          'long_stay_available', parking.long_stay_available,
-          'reservation_available', parking.reservation_available,
-          'shuttle_available', parking.shuttle_available,
-          'official_url', parking.official_url,
-          'source_url', parking.primary_source_url,
-          'last_verified_at', parking.last_verified_at
-        )
+        SELECT to_jsonb(parking)
+          - 'id'
+          - 'airport_page_id'
+          - 'created_at'
+          - 'updated_at'
+          - 'status'
         FROM public.airport_parking_information parking
         WHERE parking.airport_page_id = v_airport_page_id
           AND parking.status = 'published'
       ),
+      'terminals', COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'code', terminal.code,
+            'name', terminal.name,
+            'status', terminal.status
+          )
+          ORDER BY terminal.code
+        )
+        FROM public.airport_terminals terminal
+        WHERE terminal.airport_id = v_airport_id
+      ), '[]'::JSONB),
+      'facilities', COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'category', facility.category,
+            'name', facility.name,
+            'summary', facility.summary,
+            'operating_hours', facility.operating_hours,
+            'source_url', facility.primary_source_url,
+            'last_verified_at', facility.last_verified_at
+          )
+          ORDER BY facility.display_order
+        )
+        FROM public.airport_facilities facility
+        WHERE facility.airport_id = v_airport_id
+          AND facility.locale = v_locale
+          AND facility.status = 'published'
+      ), '[]'::JSONB),
       'lounges', COALESCE((
         SELECT jsonb_agg(
           jsonb_build_object(
@@ -2845,17 +1862,7 @@ BEGIN
           AND lounge.status = 'published'
       ), '[]'::JSONB),
       'notices', COALESCE((
-        SELECT jsonb_agg(
-          jsonb_build_object(
-            'type', notice.notice_type,
-            'title', notice.title,
-            'body', notice.body,
-            'severity', notice.severity,
-            'source_url', notice.primary_source_url,
-            'last_verified_at', notice.last_verified_at
-          )
-          ORDER BY notice.display_order
-        )
+        SELECT jsonb_agg(to_jsonb(notice) - 'id' - 'airport_page_id' - 'created_at' - 'updated_at' - 'status' ORDER BY notice.display_order)
         FROM public.airport_page_notices notice
         WHERE notice.airport_page_id = v_airport_page_id
           AND notice.status = 'published'
@@ -2871,19 +1878,12 @@ BEGIN
         )
         FROM public.airport_page_faqs faq
         WHERE faq.airport_page_id = v_airport_page_id
+          AND faq.locale = v_locale
           AND faq.status = 'published'
       ), '[]'::JSONB),
-      'terminals',COALESCE((SELECT jsonb_agg(jsonb_build_object('code',terminal.code,'name',terminal.name,'status',terminal.status,'airlines',COALESCE((SELECT jsonb_agg(airline.iata ORDER BY airline.iata) FROM public.airport_terminal_airlines mapping JOIN public.airlines airline ON airline.id=mapping.airline_id WHERE mapping.terminal_id=terminal.id),'[]'::jsonb)) ORDER BY terminal.code) FROM public.airport_terminals terminal WHERE terminal.airport_id=airport.id),'[]'::jsonb),
-      'facilities',COALESCE((SELECT jsonb_agg(jsonb_build_object('category',facility.category,'name',facility.name,'summary',facility.summary,'operating_hours',facility.operating_hours,'source_url',facility.primary_source_url,'last_verified_at',facility.last_verified_at) ORDER BY facility.display_order) FROM public.airport_facilities facility WHERE facility.airport_id=airport.id AND facility.locale=v_locale AND facility.status='published'),'[]'::jsonb),
-      'structured_facts',COALESCE((SELECT jsonb_agg(jsonb_build_object('type',fact.fact_type,'title',fact.title,'body',fact.body,'value',fact.structured_value,'source_url',fact.primary_source_url,'last_verified_at',fact.last_verified_at) ORDER BY fact.fact_type) FROM public.airport_facts fact WHERE fact.airport_id=airport.id AND fact.locale=v_locale AND fact.status='published'),'[]'::jsonb),
-      'nearby_airports',COALESCE((SELECT jsonb_agg(jsonb_build_object('iata',nearby.iata,'name',nearby.name,'distance_km',mapping.distance_km,'relevance',mapping.relevance) ORDER BY mapping.relevance DESC) FROM public.nearby_airports mapping JOIN public.airports nearby ON nearby.id=mapping.nearby_airport_id WHERE mapping.airport_id=airport.id),'[]'::jsonb),
-      'price_summary',jsonb_build_object('state',CASE WHEN EXISTS(SELECT 1 FROM public.route_price_estimates estimate JOIN admin.data_sources source ON source.id=estimate.source_id WHERE estimate.origin_airport_id=airport.id AND estimate.valid_until>now() AND estimate.status='published' AND source.production_display_allowed) THEN 'available' ELSE 'unavailable' END,'reason',CASE WHEN EXISTS(SELECT 1 FROM public.route_price_estimates estimate JOIN admin.data_sources source ON source.id=estimate.source_id WHERE estimate.origin_airport_id=airport.id AND estimate.valid_until>now() AND estimate.status='published' AND source.production_display_allowed) THEN NULL ELSE 'missing' END),
       'internal_link_groups', COALESCE((
         SELECT jsonb_agg(
-          jsonb_build_object(
-            'cluster', links.link_cluster,
-            'links', links.items
-          )
+          jsonb_build_object('cluster', links.link_cluster, 'links', links.items)
           ORDER BY links.link_cluster
         )
         FROM (
@@ -2904,7 +1904,14 @@ BEGIN
             AND target.status = 'published'
           GROUP BY link.link_cluster
         ) links
-      ), '[]'::JSONB)
+      ), '[]'::JSONB),
+      'provenance', jsonb_build_object(
+        'last_editorial_review', airport_page.content_reviewed_at,
+        'source_freshness_at', airport_page.source_freshness_at,
+        'routes_refreshed_at', airport_page.route_data_refreshed_at,
+        'data_version', airport_page.data_version,
+        'estimates_are_live', FALSE
+      )
     ),
     'meta', jsonb_build_object(
       'canonical_path', pseo_page.canonical_path,
@@ -2932,9 +1939,9 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_get_airport_page(JSONB)
+REVOKE ALL ON FUNCTION private.build_airport_page_payload(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_airport_page(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION private.build_airport_page_payload(JSONB) TO service_role;
 
 -- >>> supabase/sql_src/functions/pseo/shared/resolve_route_price_estimate.sql
 
@@ -3131,9 +2138,9 @@ REVOKE ALL ON FUNCTION public.rpc_resolve_homepage_origin(JSONB)
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_resolve_homepage_origin(JSONB) TO service_role;
 
--- >>> supabase/sql_src/functions/pseo/homepage/rpc_get_homepage_discovery.sql
+-- >>> supabase/sql_src/functions/pseo/homepage/build_homepage_discovery.sql
 
-CREATE OR REPLACE FUNCTION public.rpc_get_homepage_discovery(p_input JSONB)
+CREATE OR REPLACE FUNCTION private.build_homepage_discovery(p_input JSONB)
 RETURNS JSONB LANGUAGE plpgsql STABLE SET search_path='' AS $$
 DECLARE
   v_origin TEXT:=upper(btrim(COALESCE(p_input->>'origin','')));
@@ -3177,28 +2184,179 @@ BEGIN
       'connections',(SELECT COALESCE(jsonb_agg(to_jsonb(x) ORDER BY x.value),'[]') FROM(SELECT airport.iata value,count(*)::INTEGER count FROM public.route_options option CROSS JOIN LATERAL unnest(option.connection_airport_ids) connection_id(id) JOIN public.airports airport ON airport.id=connection_id.id WHERE (v_origin_airports IS NULL OR option.origin_airport_id=ANY(v_origin_airports)) GROUP BY airport.iata)x),
       'price',jsonb_build_object('currency',v_currency,'max',v_price_max,'missing_is_zero',FALSE))),'error',NULL);
 END;$$;
-REVOKE ALL ON FUNCTION public.rpc_get_homepage_discovery(JSONB) FROM public,anon,authenticated;GRANT EXECUTE ON FUNCTION public.rpc_get_homepage_discovery(JSONB) TO service_role;
+REVOKE ALL ON FUNCTION private.build_homepage_discovery(JSONB) FROM public,anon,authenticated;GRANT EXECUTE ON FUNCTION private.build_homepage_discovery(JSONB) TO service_role;
 
--- >>> supabase/sql_src/functions/pseo/route/rpc_search_route_options.sql
+-- >>> supabase/sql_src/functions/pseo/route/build_route_page_payload.sql
 
-CREATE OR REPLACE FUNCTION public.rpc_search_route_options(p_input JSONB) RETURNS JSONB LANGUAGE plpgsql STABLE SET search_path='' AS $$
-DECLARE v_page public.route_pages%ROWTYPE;v_max_stops INTEGER:=COALESCE((p_input->>'max_stops')::INTEGER,3);v_max_duration INTEGER:=NULLIF(p_input->>'max_duration_minutes','')::INTEGER;v_max_layover INTEGER:=NULLIF(p_input->>'max_layover_minutes','')::INTEGER;v_price_max NUMERIC:=NULLIF(p_input->>'price_max','')::NUMERIC;v_currency TEXT:=upper(NULLIF(btrim(COALESCE(p_input->>'currency','')),''));v_limit INTEGER:=COALESCE((p_input->>'limit')::INTEGER,20);v_offset INTEGER:=COALESCE((p_input->>'offset')::INTEGER,0);v_airlines TEXT[]:='{}';v_connections TEXT[]:='{}';
+-- ============================================================================
+-- Function: private.build_route_page_payload
+-- Purpose: Compose one reviewed route page during read-model publication.
+-- Responsibilities: Join canonical identities, route options, editorial modules and FAQs.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION private.build_route_page_payload(p_input JSONB)
+RETURNS JSONB
+LANGUAGE plpgsql
+STABLE
+SET search_path = ''
+AS $$
+DECLARE
+  v_locale TEXT := COALESCE(NULLIF(p_input->>'locale', ''), 'en-GB');
+  v_page public.route_pages%ROWTYPE;
+  v_pseo public.pseo_pages%ROWTYPE;
+  v_origin_slug TEXT;
+  v_destination_slug TEXT;
 BEGIN
-SELECT * INTO v_page FROM public.route_pages WHERE canonical_slug=p_input->>'route_slug' LIMIT 1;IF v_page.id IS NULL THEN RETURN private.build_rpc_error(NULL,'ERR_NOT_FOUND','Route page not found.');END IF;
-IF v_max_stops NOT BETWEEN 0 AND 3 OR v_limit NOT BETWEEN 1 AND 100 OR v_offset NOT BETWEEN 0 AND 10000 OR v_max_duration IS NOT NULL AND v_max_duration<1 OR v_max_layover IS NOT NULL AND v_max_layover<1 OR v_price_max IS NOT NULL AND v_price_max<0 OR v_currency IS NOT NULL AND v_currency!~'^[A-Z]{3}$' THEN RETURN private.build_rpc_error(NULL,'ERR_INVALID_REQUEST','Invalid route filters.');END IF;
-IF p_input?'airlines' THEN SELECT COALESCE(array_agg(upper(value)),'{}') INTO v_airlines FROM jsonb_array_elements_text(p_input->'airlines');END IF;IF p_input?'connection_airports' THEN SELECT COALESCE(array_agg(upper(value)),'{}') INTO v_connections FROM jsonb_array_elements_text(p_input->'connection_airports');END IF;
-RETURN jsonb_build_object('data',COALESCE((SELECT jsonb_agg(payload ORDER BY stops,total_duration_minutes) FROM(SELECT option.stop_count stops,option.total_duration_minutes,jsonb_build_object('id',option.id,'from',origin.iata,'to',destination.iata,'stops',option.stop_count,'connection_airports',(SELECT COALESCE(jsonb_agg(a.iata ORDER BY u.ordinality),'[]') FROM unnest(option.connection_airport_ids) WITH ORDINALITY u(id,ordinality) JOIN public.airports a ON a.id=u.id),'operating_airlines',(SELECT COALESCE(jsonb_agg(a.iata ORDER BY u.ordinality),'[]') FROM unnest(option.operating_airline_ids) WITH ORDINALITY u(id,ordinality) JOIN public.airlines a ON a.id=u.id),'total_flight_minutes',option.total_flight_minutes,'layover_minutes',option.layover_minutes,'total_duration_minutes',option.total_duration_minutes,'schedule',jsonb_build_object('departure_local_time',option.departure_local_time,'arrival_local_time',option.arrival_local_time,'arrival_day_offset',option.arrival_day_offset,'days_of_week',option.days_of_week,'valid_from',option.valid_from,'valid_to',option.valid_to),'self_transfer','unknown','through_baggage','unknown','fare_rules','unknown','live_availability','unknown','price',public.resolve_route_price_estimate(v_page.origin_city_id,v_page.destination_city_id,COALESCE(p_input->>'cabin','any'),CASE option.stop_count WHEN 0 THEN 'direct' WHEN 1 THEN 'one_stop' WHEN 2 THEN 'two_stops' ELSE 'three_stops' END)) payload FROM public.route_options option JOIN public.airports origin ON origin.id=option.origin_airport_id JOIN public.airports destination ON destination.id=option.destination_airport_id WHERE origin.city_id=v_page.origin_city_id AND destination.city_id=v_page.destination_city_id AND option.stop_count<=v_max_stops AND (v_max_duration IS NULL OR option.total_duration_minutes<=v_max_duration) AND (v_max_layover IS NULL OR COALESCE((SELECT max(x) FROM unnest(option.layover_minutes_by_connection)x),0)<=v_max_layover) AND (cardinality(v_airlines)=0 OR EXISTS(SELECT 1 FROM unnest(option.operating_airline_ids) leg_id(id) JOIN public.airlines airline ON airline.id=leg_id.id WHERE airline.iata=ANY(v_airlines))) AND (cardinality(v_connections)=0 OR EXISTS(SELECT 1 FROM unnest(option.connection_airport_ids) connection_id(id) JOIN public.airports airport ON airport.id=connection_id.id WHERE airport.iata=ANY(v_connections))) AND (v_price_max IS NULL OR EXISTS(SELECT 1 FROM public.route_price_estimates estimate JOIN admin.data_sources source ON source.id=estimate.source_id WHERE estimate.origin_city_id=v_page.origin_city_id AND estimate.destination_city_id=v_page.destination_city_id AND estimate.status='published' AND estimate.valid_until>now() AND source.production_display_allowed AND source.derived_data_allowed AND estimate.price_min<=v_price_max AND (v_currency IS NULL OR estimate.currency_code=v_currency))) ORDER BY option.stop_count,option.total_duration_minutes LIMIT v_limit OFFSET v_offset)filtered),'[]'),'meta',jsonb_build_object('total',(SELECT count(*) FROM public.route_options option JOIN public.airports origin ON origin.id=option.origin_airport_id JOIN public.airports destination ON destination.id=option.destination_airport_id WHERE origin.city_id=v_page.origin_city_id AND destination.city_id=v_page.destination_city_id AND option.stop_count<=v_max_stops),'limit',v_limit,'offset',v_offset,'max_supported_stops',3,'data_version',v_page.data_version,'facets',jsonb_build_object('price',jsonb_build_object('currency',v_currency,'max',v_price_max,'missing_is_zero',FALSE))),'error',NULL);
-END;$$;
-REVOKE ALL ON FUNCTION public.rpc_search_route_options(JSONB) FROM public,anon,authenticated;GRANT EXECUTE ON FUNCTION public.rpc_search_route_options(JSONB) TO service_role;
+  SELECT page.*
+  INTO v_page
+  FROM public.route_pages page
+  WHERE page.canonical_slug = lower(p_input->>'route_slug')
+    AND page.locale = v_locale;
 
--- >>> supabase/sql_src/functions/pseo/route/rpc_get_route_page.sql
+  IF v_page.id IS NULL THEN
+    RETURN private.build_rpc_error(NULL, 'ERR_NOT_FOUND', 'Route page not found.');
+  END IF;
 
-CREATE OR REPLACE FUNCTION public.rpc_get_route_page(p_input JSONB) RETURNS JSONB LANGUAGE plpgsql STABLE SET search_path='' AS $$
-DECLARE v_page public.route_pages%rowtype;v_pseo public.pseo_pages%rowtype;BEGIN
-SELECT * INTO v_page FROM public.route_pages WHERE canonical_slug=p_input->>'route_slug' AND locale=COALESCE(NULLIF(p_input->>'locale',''),'en-GB');IF v_page.id IS NULL THEN RETURN private.build_rpc_error(NULL,'ERR_NOT_FOUND','Route page not found.');END IF;SELECT * INTO v_pseo FROM public.pseo_pages WHERE id=v_page.pseo_page_id;
-RETURN jsonb_build_object('data',jsonb_build_object('route',jsonb_build_object('origin',(SELECT jsonb_build_object('name',name,'slug',slug) FROM public.cities WHERE id=v_page.origin_city_id),'destination',(SELECT jsonb_build_object('name',name,'slug',slug) FROM public.cities WHERE id=v_page.destination_city_id)),'seo',jsonb_build_object('h1',v_page.h1,'subheadline',v_page.subheadline,'title',v_page.seo_title,'meta_description',v_page.meta_description,'intro',v_page.intro),'summary',jsonb_build_object('direct_options',v_page.direct_option_count,'indirect_options',v_page.indirect_option_count,'fastest_direct_minutes',v_page.fastest_direct_minutes,'fastest_indirect_minutes',v_page.fastest_indirect_minutes),'options',public.rpc_search_route_options(jsonb_build_object('route_slug',v_page.canonical_slug,'max_stops',3))#>'{data}','price',public.resolve_route_price_estimate(v_page.origin_city_id,v_page.destination_city_id,'any','any'),'airport_comparison',COALESCE((SELECT jsonb_agg(jsonb_build_object('endpoint_role',comparison.endpoint_role,'airport_iata',airport.iata,'summary',comparison.transfer_summary,'duration_min_minutes',comparison.duration_min_minutes,'duration_max_minutes',comparison.duration_max_minutes,'price_min',comparison.price_min,'price_max',comparison.price_max,'currency_code',comparison.currency_code,'source_url',comparison.primary_source_url)) FROM public.route_page_airport_comparisons comparison JOIN public.airports airport ON airport.id=comparison.airport_id WHERE comparison.route_page_id=v_page.id AND comparison.status='published'),'[]'::jsonb),'travel_facts',COALESCE((SELECT jsonb_agg(to_jsonb(fact)-'route_page_id' ORDER BY fact.display_order) FROM public.route_page_travel_facts fact WHERE fact.route_page_id=v_page.id AND fact.status='published'),'[]'::jsonb),'editorial_sections',COALESCE((SELECT jsonb_agg(to_jsonb(section)-'route_page_id' ORDER BY section.display_order) FROM public.route_page_editorial_sections section WHERE section.route_page_id=v_page.id AND section.status='published'),'[]'::jsonb),'faqs',COALESCE((SELECT jsonb_agg(jsonb_build_object('question',faq.question,'answer',faq.answer,'answer_type',faq.answer_type) ORDER BY faq.display_order) FROM public.route_page_faqs faq WHERE faq.route_page_id=v_page.id AND faq.status='published'),'[]'::jsonb),'unknowns',jsonb_build_object('self_transfer','unknown','through_baggage','unknown','fare_rules','unknown','live_availability','unknown'),'affiliate',jsonb_build_object('offers',jsonb_build_array(),'disclosure','Some outbound links may become affiliate links when approved partners are configured. No booking or live fare is currently claimed.')),'meta',jsonb_build_object('canonical_path',v_pseo.canonical_path,'is_indexable',v_page.is_indexable,'noindex_reason',v_page.noindex_reason,'data_version',v_page.data_version,'source_freshness_at',v_page.source_freshness_at),'error',NULL);
-END;$$;
-REVOKE ALL ON FUNCTION public.rpc_get_route_page(JSONB) FROM public,anon,authenticated;GRANT EXECUTE ON FUNCTION public.rpc_get_route_page(JSONB) TO service_role;
+  SELECT page.*
+  INTO v_pseo
+  FROM public.pseo_pages page
+  WHERE page.id = v_page.pseo_page_id;
+
+  SELECT city.slug
+  INTO v_origin_slug
+  FROM public.cities city
+  WHERE city.id = v_page.origin_city_id;
+
+  SELECT city.slug
+  INTO v_destination_slug
+  FROM public.cities city
+  WHERE city.id = v_page.destination_city_id;
+
+  RETURN jsonb_build_object(
+    'data', jsonb_build_object(
+      'route', jsonb_build_object(
+        'origin', (
+          SELECT jsonb_build_object('name', city.name, 'slug', city.slug)
+          FROM public.cities city
+          WHERE city.id = v_page.origin_city_id
+        ),
+        'destination', (
+          SELECT jsonb_build_object('name', city.name, 'slug', city.slug)
+          FROM public.cities city
+          WHERE city.id = v_page.destination_city_id
+        )
+      ),
+      'seo', jsonb_build_object(
+        'h1', v_page.h1,
+        'subheadline', v_page.subheadline,
+        'title', v_page.seo_title,
+        'meta_description', v_page.meta_description,
+        'intro', v_page.intro
+      ),
+      'summary', jsonb_build_object(
+        'direct_options', v_page.direct_option_count,
+        'indirect_options', v_page.indirect_option_count,
+        'fastest_direct_minutes', v_page.fastest_direct_minutes,
+        'fastest_indirect_minutes', v_page.fastest_indirect_minutes
+      ),
+      'options', public.rpc_search_routes(jsonb_build_object(
+        'scope', jsonb_build_object(
+          'type', 'city_pair',
+          'from', v_origin_slug,
+          'to', v_destination_slug
+        ),
+        'filters', jsonb_build_object('max_stops', 3),
+        'page_size', 20
+      ))->'data',
+      'price', public.resolve_route_price_estimate(
+        v_page.origin_city_id,
+        v_page.destination_city_id,
+        'any',
+        'any'
+      ),
+      'airport_comparison', COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'endpoint_role', comparison.endpoint_role,
+            'airport_iata', airport.iata,
+            'summary', comparison.transfer_summary,
+            'duration_min_minutes', comparison.duration_min_minutes,
+            'duration_max_minutes', comparison.duration_max_minutes,
+            'price_min', comparison.price_min,
+            'price_max', comparison.price_max,
+            'currency_code', comparison.currency_code,
+            'source_url', comparison.primary_source_url
+          )
+          ORDER BY comparison.display_order
+        )
+        FROM public.route_page_airport_comparisons comparison
+        JOIN public.airports airport
+          ON airport.id = comparison.airport_id
+        WHERE comparison.route_page_id = v_page.id
+          AND comparison.status = 'published'
+      ), '[]'::JSONB),
+      'travel_facts', COALESCE((
+        SELECT jsonb_agg(
+          to_jsonb(fact) - 'route_page_id'
+          ORDER BY fact.display_order
+        )
+        FROM public.route_page_travel_facts fact
+        WHERE fact.route_page_id = v_page.id
+          AND fact.locale = v_locale
+          AND fact.status = 'published'
+      ), '[]'::JSONB),
+      'editorial_sections', COALESCE((
+        SELECT jsonb_agg(
+          to_jsonb(section) - 'route_page_id'
+          ORDER BY section.display_order
+        )
+        FROM public.route_page_editorial_sections section
+        WHERE section.route_page_id = v_page.id
+          AND section.locale = v_locale
+          AND section.status = 'published'
+      ), '[]'::JSONB),
+      'faqs', COALESCE((
+        SELECT jsonb_agg(
+          jsonb_build_object(
+            'question', faq.question,
+            'answer', faq.answer,
+            'answer_type', faq.answer_type,
+            'source_url', faq.primary_source_url,
+            'last_verified_at', faq.last_verified_at
+          )
+          ORDER BY faq.display_order
+        )
+        FROM public.route_page_faqs faq
+        WHERE faq.route_page_id = v_page.id
+          AND faq.locale = v_locale
+          AND faq.status = 'published'
+      ), '[]'::JSONB),
+      'unknowns', jsonb_build_object(
+        'self_transfer', 'unknown',
+        'through_baggage', 'unknown',
+        'fare_rules', 'unknown',
+        'live_availability', 'unknown'
+      ),
+      'affiliate', jsonb_build_object(
+        'offers', jsonb_build_array(),
+        'disclosure', 'Some outbound links may become affiliate links when approved partners are configured. No booking or live fare is currently claimed.'
+      )
+    ),
+    'meta', jsonb_build_object(
+      'canonical_path', v_pseo.canonical_path,
+      'is_indexable', v_page.is_indexable,
+      'noindex_reason', v_page.noindex_reason,
+      'data_version', v_page.data_version,
+      'source_freshness_at', v_page.source_freshness_at
+    ),
+    'error', NULL
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION private.build_route_page_payload(JSONB)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION private.build_route_page_payload(JSONB) TO service_role;
 
 -- >>> supabase/sql_src/functions/pseo/shared/rpc_get_sitemap.sql
 
@@ -3214,7 +2372,7 @@ REVOKE ALL ON FUNCTION public.rpc_get_sitemap(JSONB) FROM public,anon,authentica
 -- Function: private.refresh_page_read_models
 -- Purpose: Materialize all page-specific single-load read models for one candidate version.
 -- Responsibilities: Compose bounded page payloads outside the public request path.
--- Notes: Existing page RPCs act as offline page composers until their source modules are split.
+-- Notes: Private builders compose bounded modules only during publication.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION private.refresh_page_read_models(p_publication_version_id UUID)
@@ -3244,11 +2402,60 @@ BEGIN
   DELETE FROM public.route_page_read_models WHERE publication_version_id = p_publication_version_id;
 
   INSERT INTO public.homepage_read_models (publication_version_id, locale, payload)
-  VALUES (
+  SELECT
     p_publication_version_id,
-    'en-GB',
-    public.rpc_get_homepage_discovery(jsonb_build_object('origin', 'GLOBAL', 'max_stops', 3, 'limit', 20))->'data'
-  );
+    homepage.locale,
+    jsonb_build_object(
+      'page', jsonb_build_object('type', 'homepage', 'locale', homepage.locale),
+      'seo', jsonb_build_object(
+        'h1', homepage.h1,
+        'subheadline', homepage.subheadline,
+        'intro', homepage.intro,
+        'title', homepage.seo_title,
+        'meta_description', homepage.meta_description
+      ),
+      'facts', jsonb_build_object(),
+      'discovery', private.build_homepage_discovery(jsonb_build_object(
+        'origin', 'GLOBAL',
+        'max_stops', 0,
+        'limit', 20
+      ))->'data',
+      'content', jsonb_build_object(
+        'sections', COALESCE((
+          SELECT jsonb_agg(to_jsonb(section) - 'homepage_page_id' ORDER BY section.display_order)
+          FROM public.homepage_content_sections section
+          WHERE section.homepage_page_id = homepage.id
+            AND section.locale = homepage.locale
+            AND section.status = 'published'
+        ), '[]'::JSONB),
+        'featured_origins', COALESCE((
+          SELECT jsonb_agg(to_jsonb(origin) - 'homepage_page_id' ORDER BY origin.display_order)
+          FROM public.homepage_featured_origins origin
+          WHERE origin.homepage_page_id = homepage.id
+            AND origin.status = 'published'
+        ), '[]'::JSONB),
+        'featured_routes', COALESCE((
+          SELECT jsonb_agg(to_jsonb(route) - 'homepage_page_id' ORDER BY route.display_order)
+          FROM public.homepage_featured_routes route
+          WHERE route.homepage_page_id = homepage.id
+            AND route.status = 'published'
+        ), '[]'::JSONB)
+      ),
+      'faqs', COALESCE((
+        SELECT jsonb_agg(to_jsonb(faq) - 'homepage_page_id' ORDER BY faq.display_order)
+        FROM public.homepage_faqs faq
+        WHERE faq.homepage_page_id = homepage.id
+          AND faq.locale = homepage.locale
+          AND faq.status = 'published'
+      ), '[]'::JSONB),
+      'internal_links', '[]'::JSONB,
+      'indexability', jsonb_build_object(
+        'is_indexable', homepage.is_indexable,
+        'noindex_reason', homepage.noindex_reason
+      )
+    )
+  FROM public.homepage_pages homepage
+  WHERE homepage.status <> 'archived';
   GET DIAGNOSTICS v_homepage_count = ROW_COUNT;
 
   INSERT INTO public.city_page_read_models (
@@ -3263,12 +2470,23 @@ BEGIN
     city_page.city_id,
     city_page.locale,
     city_page.canonical_slug,
-    public.rpc_get_city_page(jsonb_build_object(
+    jsonb_set(
+      private.build_city_page_payload(jsonb_build_object(
       'city_slug', city_page.canonical_slug,
       'locale', city_page.locale,
       'route_direction', city_page.route_direction,
       'destination_limit', 20
-    ))->'data'
+      ))->'data',
+      '{content_sections}',
+      COALESCE((
+        SELECT jsonb_agg(to_jsonb(section) - 'city_page_id' ORDER BY section.display_order)
+        FROM public.city_content_sections section
+        WHERE section.city_page_id = city_page.id
+          AND section.locale = city_page.locale
+          AND section.status = 'published'
+      ), '[]'::JSONB),
+      TRUE
+    )
   FROM public.city_pages city_page
   WHERE city_page.route_direction = 'outbound'
     AND city_page.status <> 'archived';
@@ -3286,11 +2504,21 @@ BEGIN
     airport_page.airport_id,
     airport_page.locale,
     airport.iata,
-    public.rpc_get_airport_page(jsonb_build_object(
+    jsonb_set(
+      private.build_airport_page_payload(jsonb_build_object(
       'airport_iata', airport.iata,
-      'locale', airport_page.locale,
-      'route_limit', 20
-    ))->'data'
+      'locale', airport_page.locale
+      ))->'data',
+      '{content_sections}',
+      COALESCE((
+        SELECT jsonb_agg(to_jsonb(section) - 'airport_page_id' ORDER BY section.display_order)
+        FROM public.airport_content_sections section
+        WHERE section.airport_page_id = airport_page.id
+          AND section.locale = airport_page.locale
+          AND section.status = 'published'
+      ), '[]'::JSONB),
+      TRUE
+    )
   FROM public.airport_pages airport_page
   JOIN public.airports airport
     ON airport.id = airport_page.airport_id
@@ -3309,7 +2537,7 @@ BEGIN
     route_page.id,
     route_page.locale,
     route_page.canonical_slug,
-    public.rpc_get_route_page(jsonb_build_object(
+    private.build_route_page_payload(jsonb_build_object(
       'route_slug', route_page.canonical_slug,
       'locale', route_page.locale
     ))->'data'
@@ -3423,15 +2651,15 @@ REVOKE ALL ON FUNCTION public.publish_read_model_version(TEXT)
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.publish_read_model_version(TEXT) TO service_role;
 
--- >>> supabase/sql_src/functions/pseo/shared/rpc_get_page_v2.sql
+-- >>> supabase/sql_src/functions/pseo/shared/rpc_get_page.sql
 
 -- ============================================================================
--- Function: public.rpc_get_page_v2
+-- Function: public.rpc_get_page
 -- Purpose: Load one complete page from its dedicated current read model.
 -- Responsibilities: Normalize identity and perform exactly one page-model lookup.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_get_page_v2(p_input JSONB)
+CREATE OR REPLACE FUNCTION public.rpc_get_page(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
@@ -3445,7 +2673,9 @@ DECLARE
   v_payload JSONB;
   v_generated_at TIMESTAMPTZ;
 BEGIN
-  IF v_page_type NOT IN ('homepage', 'city', 'airport', 'route')
+  IF jsonb_typeof(p_input) IS DISTINCT FROM 'object'
+    OR p_input - ARRAY['page_type', 'entity_key', 'locale'] <> '{}'::JSONB
+    OR v_page_type NOT IN ('homepage', 'city', 'airport', 'route')
     OR v_entity_key IS NULL
     OR v_locale !~ '^[a-z]{2}(?:-[A-Z]{2})?$'
   THEN
@@ -3508,6 +2738,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_get_page_v2(JSONB)
+REVOKE ALL ON FUNCTION public.rpc_get_page(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_page_v2(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_get_page(JSONB) TO service_role;

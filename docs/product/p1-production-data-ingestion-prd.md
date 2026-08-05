@@ -1,7 +1,7 @@
 # PRD P1: Nhập dữ liệu production
 
 **Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P1
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Chủ sở hữu:** Tripways
 **Kho mã chính:** `tripways-backend`
 
@@ -182,8 +182,13 @@ matrix để P2 có thể nhập route/schedule. AirLabs route, seasonality, pri
 
 - P1 nhập và xuất bản taxonomy country/region/city/airport/timezone cùng city-airport grouping làm
   nền cho filter và internal links.
-- Airport guidance gồm transportation, parking, lounge và operational notice phải có source URL,
-  quyền hiển thị production, `last_verified_at`, trạng thái review và locale.
+- Airport guidance gồm orientation, ordered arrival/departure steps theo audience, transportation
+  hai chiều, parking, terminal, facility, lounge và operational notice phải có source URL, quyền
+  hiển thị production, `last_verified_at`, trạng thái review và locale.
+- Giá transportation ở P1 chỉ là khoảng ước tính có currency và nguồn/thời điểm kiểm chứng; không
+  được diễn đạt như quote hoặc availability trực tiếp.
+- Content ingestion không tạo route, lịch bay hoặc verified-flight row từ airport identity hay
+  editorial copy. Verified direct flights chỉ có thể được bật sau publication route/schedule P2.
 - Editorial content, FAQ, UX copy và CTA được quản lý như dữ liệu có version; không chép vào frontend.
 - Mỗi page type có completeness score và danh sách required modules. Page thiếu required content,
   rights hoặc freshness phải `noindex`.

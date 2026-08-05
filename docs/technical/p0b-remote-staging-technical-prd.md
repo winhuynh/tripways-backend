@@ -3,7 +3,7 @@
 **PRD sản phẩm liên quan:** `docs/product/p0-staging-readiness-prd.md`  
 **Phụ thuộc:** P0A đã nghiệm thu
 **Trạng thái:** Chưa bắt đầu — P0A chưa nghiệm thu
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Kết quả:** Release candidate P0A chạy ổn định trên staging riêng tư.
 
 ## 1. Nguyên tắc
@@ -96,7 +96,9 @@ Kiểm tra tối thiểu:
 
 - Homepage 200 và không có link hỏng đã biết.
 - City page 200, dữ liệu hợp đồng đúng.
-- Airport page 200, không lỗi setup key.
+- Airport page 200, có orientation/arrival/departure/transport/provenance và không lỗi setup key.
+- Verified direct flights trả được cả `From airport` và `To airport`; mọi row có `stops = 0` và đúng
+  airport ở đầu tương ứng.
 - Filter request trả kết quả hoặc empty state đúng.
 - Route map hoặc fallback hoạt động.
 - Trang không tồn tại trả 404.

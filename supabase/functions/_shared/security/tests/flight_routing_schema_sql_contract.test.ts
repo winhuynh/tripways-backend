@@ -107,13 +107,9 @@ Deno.test('local Supabase enables Storage before applying the media bucket migra
   assert.match(config, /\[storage\]\s+enabled\s*=\s*true/);
 });
 
-Deno.test('pSEO RPCs expose airport image and airline logo object paths', async () => {
-  const cityAirports = await readSource('functions/pseo/city/rpc_get_city_airports.sql');
-  const cityAirlines = await readSource('functions/pseo/city/rpc_get_city_airlines.sql');
-  const airportPage = await readSource('functions/pseo/airport/rpc_get_airport_page.sql');
+Deno.test('airport page builder exposes airport image and airline logo object paths', async () => {
+  const airportPage = await readSource('functions/pseo/airport/build_airport_page_payload.sql');
 
-  assert.ok(includesSql(cityAirports, "'image_path', airport.image_path"));
-  assert.ok(includesSql(cityAirlines, "'logo_path', summary.logo_path"));
   assert.ok(includesSql(airportPage, "'image_path', airport.image_path"));
   assert.ok(includesSql(airportPage, 'airline.logo_path'));
 });

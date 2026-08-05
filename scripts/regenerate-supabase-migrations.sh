@@ -110,11 +110,18 @@ emit_migration \
   "supabase/sql_src/schema/pseo/city/city_destination_summaries.sql" \
   "supabase/sql_src/schema/pseo/shared/route_price_estimates.sql" \
   "supabase/sql_src/schema/pseo/shared/pseo_pages.sql" \
+  "supabase/sql_src/schema/pseo/homepage/homepage_pages.sql" \
+  "supabase/sql_src/schema/pseo/homepage/homepage_featured_origins.sql" \
+  "supabase/sql_src/schema/pseo/homepage/homepage_featured_routes.sql" \
+  "supabase/sql_src/schema/pseo/homepage/homepage_content_sections.sql" \
+  "supabase/sql_src/schema/pseo/homepage/homepage_faqs.sql" \
   "supabase/sql_src/schema/pseo/city/city_pages.sql" \
   "supabase/sql_src/schema/pseo/city/city_facts.sql" \
   "supabase/sql_src/schema/pseo/city/city_page_airport_content.sql" \
   "supabase/sql_src/schema/pseo/city/city_page_faqs.sql" \
+  "supabase/sql_src/schema/pseo/city/city_content_sections.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_pages.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_journey_steps.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_access_options.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_lounges.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_parking_information.sql" \
@@ -122,6 +129,7 @@ emit_migration \
   "supabase/sql_src/schema/pseo/airport/airport_page_faqs.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_facilities.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_facts.sql" \
+  "supabase/sql_src/schema/pseo/airport/airport_content_sections.sql" \
   "supabase/sql_src/schema/pseo/route/route_pages.sql" \
   "supabase/sql_src/schema/pseo/route/route_page_faqs.sql" \
   "supabase/sql_src/schema/pseo/route/route_page_airport_comparisons.sql" \
@@ -164,13 +172,12 @@ emit_migration \
   "supabase/sql_src/functions/route_discovery/calculate_layover_minutes.sql" \
   "supabase/sql_src/functions/route_discovery/refresh_route_options.sql" \
   "supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql" \
-  "supabase/sql_src/functions/route_discovery/rpc_search_route_options_v2.sql"
+  "supabase/sql_src/functions/route_discovery/rpc_search_routes.sql"
 
 emit_migration \
   "20260714080900_pseo_functions.sql" \
   "pSEO functions" \
   "supabase/sql_src/functions/pseo/shared/refresh_pseo_read_models.sql" \
-  "supabase/sql_src/functions/pseo/city/refresh_city_pseo_read_models.sql" \
   "supabase/sql_src/functions/pseo/city/parse_city_page_identity.sql" \
   "supabase/sql_src/functions/pseo/city/resolve_city_page_context.sql" \
   "supabase/sql_src/functions/pseo/airport/parse_airport_page_identity.sql" \
@@ -178,26 +185,17 @@ emit_migration \
   "supabase/sql_src/functions/pseo/city/get_city_airport_route_stats.sql" \
   "supabase/sql_src/functions/pseo/city/get_city_quick_facts.sql" \
   "supabase/sql_src/functions/pseo/city/get_city_route_map.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_overview.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_airports.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_quick_facts.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_route_map.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_airlines.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_insights.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_internal_links.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_faqs.sql" \
-  "supabase/sql_src/functions/pseo/city/rpc_get_city_page.sql" \
-  "supabase/sql_src/functions/pseo/airport/rpc_get_airport_page.sql" \
+  "supabase/sql_src/functions/pseo/city/build_city_page_payload.sql" \
+  "supabase/sql_src/functions/pseo/airport/build_airport_page_payload.sql" \
   "supabase/sql_src/functions/pseo/shared/resolve_route_price_estimate.sql" \
   "supabase/sql_src/functions/pseo/homepage/rpc_search_places.sql" \
   "supabase/sql_src/functions/pseo/homepage/rpc_resolve_homepage_origin.sql" \
-  "supabase/sql_src/functions/pseo/homepage/rpc_get_homepage_discovery.sql" \
-  "supabase/sql_src/functions/pseo/route/rpc_search_route_options.sql" \
-  "supabase/sql_src/functions/pseo/route/rpc_get_route_page.sql" \
+  "supabase/sql_src/functions/pseo/homepage/build_homepage_discovery.sql" \
+  "supabase/sql_src/functions/pseo/route/build_route_page_payload.sql" \
   "supabase/sql_src/functions/pseo/shared/rpc_get_sitemap.sql" \
   "supabase/sql_src/functions/pseo/shared/refresh_page_read_models.sql" \
   "supabase/sql_src/functions/pseo/shared/publish_read_model_version.sql" \
-  "supabase/sql_src/functions/pseo/shared/rpc_get_page_v2.sql"
+  "supabase/sql_src/functions/pseo/shared/rpc_get_page.sql"
 
 emit_migration \
   "20260714081000_ingestion_functions.sql" \

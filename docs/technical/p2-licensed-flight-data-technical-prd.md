@@ -3,7 +3,7 @@
 **PRD sản phẩm liên quan:** `docs/product/p2-licensed-flight-data-prd.md`  
 **Phụ thuộc:** P1 hoàn tất và provider rights được phê duyệt
 **Trạng thái:** Chưa bắt đầu — canonical graph/read-model foundation không phải P2 acceptance
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 
 Canonical route/service tables, 0–3-stop graph search, page read models và estimated-price schema
 được chuẩn bị sớm trong P0A. P2 chỉ bắt đầu sau P1 và chỉ được nghiệm thu bằng licensed provider,
@@ -123,8 +123,12 @@ Nếu bước nào fail, rollback toàn bộ version mới.
 - Hỗ trợ từ không đến ba connection; `stop_count` là số sân bay nối chuyến trung gian.
 - Database sở hữu minimum/maximum layover, compatibility, ranking và facets.
 - Ranking ổn định: stops, duration, confidence, frequency, connection quality, stable tie-breaker.
-- Shared input gồm scope toàn cục, origin city, origin airport hoặc city pair; filters gồm airlines,
-  connection airports, stops, duration, layover, cabin và price/currency khi có quyền hiển thị.
+- Shared input gồm scope toàn cục, origin city, airport hai chiều hoặc city pair. Generic discovery
+  có thể dùng airlines, connection airports, stops, duration, layover, cabin và price/currency khi
+  có quyền hiển thị.
+- Airport Page dùng scope `{ type: "airport", key, direction: "from" | "to" }`; SQL ép direct-only
+  và public parser chỉ nhận counterpart query/country/region, domestic/international và operating
+  airline. Không alias scope này thành `origin_airport`, vì inbound cần destination airport cố định.
 - Pagination dùng bounded page size và deterministic keyset cursor. Operating-day/departure-window
   chỉ thêm khi licensed schedule contract và UX tương ứng được phê duyệt.
 - Missing schedule data không bị chuyển thành zero/year-round.
@@ -138,6 +142,11 @@ P2 hoàn thiện:
 - Airport pages.
 - Route detail read model tối thiểu.
 - Sitemap/indexability source.
+
+Airport read model là journey-led và không nhúng route arrays: orientation, quick answers, arrival,
+departure, transport, curated airport modules, FAQ, internal links và provenance. Verified direct
+flights được đọc riêng từ current `route_search_options`; chỉ row `stop_count = 0` tạo từ published
+licensed schedule mới đủ điều kiện. `route_options` nhiều leg không được đưa vào Airport Page.
 
 Country và airline page chỉ thêm nếu initial inventory và search intent được phê duyệt; không bắt
 buộc để nghiệm thu core P2.
@@ -176,7 +185,8 @@ Page chỉ index khi:
 - Source production/SEO/derived rights hợp lệ.
 - Freshness trong ngưỡng.
 - Confidence trong ngưỡng.
-- Có route depth tối thiểu.
+- Có capability gate theo page type. Airport yêu cầu reviewed arrival/departure/transport và ít nhất
+  một verified direct route; City/Route Page dùng route-depth gate riêng.
 - Metadata/editorial đã review.
 - Canonical identity duy nhất.
 - Không chứa fixture.
@@ -250,7 +260,9 @@ Tham chiếu `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
   `rpc_search_route_options` và `rpc_search_route_options_v2` sau compatibility window.
 - Projection bổ sung destination country/region, domestic flag và facet; scope origin-city phải lọc
   được departure airport.
-- Price join chọn đúng `trip_type = one_way` cho City/Airport discovery, đúng stop bucket/cabin,
-  production rights, currency và validity. Missing/expired/unlicensed là state riêng.
-- Contract test bao phủ global, origin-city, origin-airport, city-pair, keyset pagination và facet
-  count sau khi áp dụng toàn bộ filter.
+- Price join chọn đúng `trip_type = one_way` cho City/Route discovery, đúng stop bucket/cabin,
+  production rights, currency và validity. Missing/expired/unlicensed là state riêng; Airport
+  verified-flight response không dùng price làm filter hoặc content claim.
+- Contract test bao phủ global, origin-city, airport-from, airport-to, city-pair, keyset pagination
+  và facet count sau khi áp dụng filter hợp lệ. Hai airport direction phải chứng minh mọi result là
+  direct và có airport cố định ở đúng endpoint.

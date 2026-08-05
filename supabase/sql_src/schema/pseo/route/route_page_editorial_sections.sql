@@ -12,6 +12,9 @@ CREATE TABLE public.route_page_editorial_sections (
   display_order  SMALLINT     NOT NULL,
   status         TEXT         NOT NULL DEFAULT 'draft',
   reviewed_at    TIMESTAMPTZ  NULL,
+  primary_source_url TEXT     NULL,
+  last_verified_at TIMESTAMPTZ NULL,
+  data_version   UUID         NULL,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
 

@@ -1,7 +1,7 @@
 # P0A Local Release Candidate Acceptance
 
 **Trạng thái:** Đang thực hiện — chưa nghiệm thu
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Phạm vi:** `tripways-backend`, `tripways-web`
 **Indexing:** Tắt cho toàn bộ dữ liệu fixture và P0A
 
@@ -20,7 +20,7 @@ state. Không tái sử dụng test count, endpoint name hoặc commit SHA từ 
 | 5   | Smoke approved real API với dữ liệu giới hạn           | Blocked external         | Approved HTTPS source, quyền sử dụng và credential khi cần         |
 | 6   | Homepage chỉ link tới inventory tồn tại                | Cần verify backend + web | Inventory contract và browser smoke                                |
 | 7   | City page load end-to-end                              | Cần verify backend + web | Unified page gateway, SSR và bounded error states                  |
-| 8   | Airport page load end-to-end                           | Cần verify backend + web | Unified page gateway, SSR và bounded error states                  |
+| 8   | Airport journey + verified flights end-to-end          | Cần verify backend + web | Journey payload, SSR, from/to direct-only search và bounded states |
 | 9   | Route Page và shared filters hoạt động                 | Cần verify backend + web | Page-shell, 0–3-stop search, filters, cursor và empty state        |
 | 10  | Interactive map load hoặc fallback có chủ đích         | Cần verify web           | Desktop/mobile browser smoke                                       |
 | 11  | Loading, 404 và dependency errors kết thúc             | Cần verify backend + web | DTO, component và browser failure tests                            |
@@ -37,7 +37,10 @@ state. Không tái sử dụng test count, endpoint name hoặc commit SHA từ 
   least-privilege grants.
 - Base-data ingestion giữ atomicity, idempotency và development-only rights.
 - Initial page load dùng `page-query` và một page-specific read model.
-- Route interaction dùng `route-search-query` với 0–3 stops.
+- Generic route interaction dùng `route-search-query` với 0–3 stops. Airport scope chỉ cho direct
+  route, hỗ trợ from/to và không nhận connection/duration/price filters.
+- Airport page payload có orientation, arrival, departure, transport và provenance; không nhúng
+  featured inbound/outbound routes hoặc price summary cũ.
 - Publication candidate lỗi giữ nguyên current read-model version.
 - Fixture, unlicensed và unreviewed content không vào production sitemap.
 

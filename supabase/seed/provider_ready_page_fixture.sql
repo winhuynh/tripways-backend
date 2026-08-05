@@ -18,6 +18,166 @@ INSERT INTO public.airport_facts(id,airport_id,locale,fact_type,title,body,struc
 INSERT INTO public.airport_facilities(id,airport_id,terminal_id,locale,category,name,summary,operating_hours,primary_source_url,last_verified_at,status,display_order,data_version) VALUES
 ('46000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000003','43000000-0000-4000-8000-000000000001','en-GB','wifi','Airport Wi-Fi','Wi-Fi is available in the terminal.',NULL,'https://www.bangkokairportonline.com/','2026-08-03','published',1,(SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1));
 
+INSERT INTO public.pseo_pages (
+  id,
+  page_type,
+  entity_key,
+  locale,
+  canonical_path,
+  display_title,
+  status,
+  is_indexable,
+  noindex_reason,
+  data_version,
+  source_freshness_at
+)
+VALUES (
+  '89100000-0000-4000-8000-000000000001',
+  'homepage',
+  'homepage',
+  'en-GB',
+  '/',
+  'Explore direct flights worldwide',
+  'review',
+  FALSE,
+  'development_fixture',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1),
+  '2026-08-03'
+);
+
+INSERT INTO public.homepage_pages (
+  id,
+  pseo_page_id,
+  locale,
+  h1,
+  subheadline,
+  intro,
+  seo_title,
+  meta_description,
+  status,
+  is_indexable,
+  noindex_reason,
+  content_reviewed_at,
+  source_freshness_at,
+  data_version
+)
+VALUES (
+  '89200000-0000-4000-8000-000000000001',
+  '89100000-0000-4000-8000-000000000001',
+  'en-GB',
+  'Find direct flights from airports worldwide',
+  'Choose an origin to compare nonstop destinations, route duration and estimated one-way fares.',
+  'Explore stored direct-flight schedules by city or airport. Prices are estimates rather than live availability.',
+  'Direct flight routes worldwide | Tripways',
+  'Discover direct flights by origin, compare route duration and review estimated one-way fares.',
+  'review',
+  FALSE,
+  'development_fixture',
+  '2026-08-03',
+  '2026-08-03',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1)
+);
+
+INSERT INTO public.homepage_content_sections (
+  homepage_page_id,
+  locale,
+  section_type,
+  heading,
+  body,
+  display_order,
+  status,
+  reviewed_at,
+  data_version
+)
+VALUES (
+  '89200000-0000-4000-8000-000000000001',
+  'en-GB',
+  'methodology',
+  'How direct routes are shown',
+  'Routes are generated from stored schedule data and may change. Confirm operation dates with the airline before booking.',
+  1,
+  'published',
+  '2026-08-03',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1)
+);
+
+INSERT INTO public.homepage_featured_origins (
+  homepage_page_id,
+  city_id,
+  title,
+  summary,
+  direct_destination_count,
+  display_order,
+  status,
+  reviewed_at,
+  data_version
+)
+VALUES (
+  '89200000-0000-4000-8000-000000000001',
+  '30000000-0000-4000-8000-000000000003',
+  'Bangkok',
+  'Browse direct destinations served from Bangkok airports.',
+  4,
+  1,
+  'published',
+  '2026-08-03',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1)
+);
+
+INSERT INTO public.homepage_featured_routes (
+  homepage_page_id,
+  origin_city_id,
+  destination_city_id,
+  origin_airport_id,
+  destination_airport_id,
+  stop_bucket,
+  duration_min_minutes,
+  duration_max_minutes,
+  route_path,
+  display_order,
+  status,
+  reviewed_at,
+  data_version
+)
+VALUES (
+  '89200000-0000-4000-8000-000000000001',
+  '30000000-0000-4000-8000-000000000003',
+  '30000000-0000-4000-8000-000000000002',
+  '40000000-0000-4000-8000-000000000003',
+  '40000000-0000-4000-8000-000000000002',
+  'direct',
+  140,
+  180,
+  '/flights/bangkok-to-singapore',
+  1,
+  'published',
+  '2026-08-03',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1)
+);
+
+INSERT INTO public.homepage_faqs (
+  homepage_page_id,
+  locale,
+  question,
+  answer,
+  answer_type,
+  display_order,
+  status,
+  reviewed_at,
+  data_version
+)
+VALUES (
+  '89200000-0000-4000-8000-000000000001',
+  'en-GB',
+  'Are the displayed fares live booking prices?',
+  'No. Any displayed fare is an estimated one-way price and should be checked with a booking provider.',
+  'hybrid',
+  1,
+  'published',
+  '2026-08-03',
+  (SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1)
+);
+
 INSERT INTO public.pseo_pages(id,page_type,entity_key,locale,canonical_path,display_title,status,is_indexable,noindex_reason,data_version,source_freshness_at) VALUES
 ('81200000-0000-4000-8000-000000000001','city_route','ho-chi-minh-city-to-london','en-GB','/flights/ho-chi-minh-city-to-london','Flights from Ho Chi Minh City to London','review',FALSE,'development_fixture',(SELECT data_version FROM public.route_options ORDER BY generated_at DESC LIMIT 1),'2026-08-03');
 INSERT INTO public.route_pages(id,pseo_page_id,origin_city_id,destination_city_id,locale,canonical_slug,h1,subheadline,seo_title,meta_description,intro,direct_option_count,indirect_option_count,fastest_direct_minutes,fastest_indirect_minutes,status,is_indexable,noindex_reason,content_reviewed_at,source_freshness_at,data_version) VALUES

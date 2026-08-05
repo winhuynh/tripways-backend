@@ -3,7 +3,7 @@
 **PRD sản phẩm liên quan:** `docs/product/p3-commercial-mvp-prd.md`  
 **Phụ thuộc:** P2 hoàn tất, live-search và affiliate agreements được phê duyệt
 **Trạng thái:** Chưa bắt đầu
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 
 `route_price_estimates` và price ingestion foundation hiện tại không phải offer search, search state,
 affiliate handoff hoặc P3 acceptance. Live offer luôn là short-lived provider result với expiry và
@@ -185,6 +185,11 @@ limit và sampling policy nếu cần.
   chuyến” và hướng người dùng kiểm tra điều kiện trên trang đối tác.
 - Không dùng màu sắc, icon hoặc copy ngầm truyền đạt connection an toàn khi trạng thái là `unknown`.
 - Legal, privacy, affiliate disclosure và attribution có route thật, không dùng anchor placeholder.
+- Trên Airport Page, live-search request chỉ được prefill từ verified direct row đã chọn và direction
+  xác định; không prefill từ route option nối chuyến hoặc graph inference.
+- Commercial transport/parking/car-rental module nhận airport identity và journey direction từ
+  server-owned page contract. Module lỗi hoặc bị kill-switch phải co lại mà không làm mất
+  arrival/transport/departure content hữu cơ.
 
 ## 12. Observability
 
@@ -248,3 +253,6 @@ limit và sampling policy nếu cần.
 - Affiliate redirect nhận signed offer/partner identifier, resolve server-side và chặn open redirect.
 - Organic ranking/read model được tính độc lập; sponsored module không được chen vào organic array
   hoặc làm thay đổi structured data SEO.
+- Airport placement khai báo adjacency với `arrival`, `transport`, `departure`, `verified_flights`,
+  `parking` hoặc `facilities`; composer từ chối placement làm gián đoạn journey step hoặc thay đổi
+  direct-flight ordering.

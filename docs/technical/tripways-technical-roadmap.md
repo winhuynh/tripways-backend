@@ -1,7 +1,7 @@
 # Lộ trình kỹ thuật MVP Tripways
 
 **Trạng thái:** Đang thực hiện — phase hiện tại P0A
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Phạm vi:** `tripways-backend`, `tripways-web`
 
 ## 1. Mục đích
@@ -165,26 +165,36 @@ Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-comme
 
 ### P0A/P0B
 
-- Hợp nhất `rpc_get_page_v2` và các `rpc_get_*_page` thành một chiến lược canonical, versionless;
-  tương tự chỉ giữ một route-search contract production.
+- **Đã triển khai foundation local:** chỉ giữ `rpc_get_page` và `rpc_search_routes` làm contract
+  canonical versionless; public page/route RPC legacy đã được xoá khỏi source, Edge và SQL e2e đang
+  hoạt động.
+- **Đã triển khai foundation local:** typed Homepage/City/Airport/Route content và FAQ tables,
+  publication version, immutable read models, locale/source/review/freshness fields và route projection
+  dùng chung.
 - Page payload dùng discriminated page type và chứa `identity`, `seo`, `modules`, `internal_links`,
   `commercial`, `freshness`, `provenance` và `indexability`.
 - `modules` có type, stable key, display order, localized copy, data payload và explicit empty-state
   policy. Frontend chỉ ánh xạ module type sang component.
 - Publication build phải fail khi JSON payload sai schema; request path chỉ đọc snapshot đã publish.
+- Airport payload dùng journey contract riêng và không nhúng route array. Verified flights gọi
+  `rpc_search_routes` bằng airport scope from/to, luôn direct-only.
 
 ### P1
 
 - Thêm content workflow, source rights, verification timestamp và completeness scoring cho các module
   editorial/airport guidance.
+- Airport completeness yêu cầu reviewed arrival/departure/transport; airport identity hợp lệ không
+  tự tạo verified-flight inventory hoặc indexability.
 - Không cho fixture, draft, unreviewed content hoặc source thiếu production rights đi vào current
   publication version.
 
 ### P2
 
-- `route_search_options` là projection duy nhất cho global, origin-city, origin-airport và city-pair.
-- Bổ sung filter/facet cho destination country/region, departure airport, domestic/international,
-  duration và estimated one-way price.
+- `route_search_options` là projection duy nhất cho global, origin-city, airport-from, airport-to và
+  city-pair.
+- Generic discovery bổ sung geography, departure-airport, duration và estimated-price facets.
+  Airport scope chỉ nhận counterpart query/country/region, domestic/international và operating
+  airline; SQL ép `stop_count = 0` và airport đúng endpoint theo direction.
 - Price projection giữ state `available|missing|expired|unlicensed`; không dùng zero để thay dữ liệu
   thiếu và không trộn với live offer.
 
@@ -194,6 +204,8 @@ Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-comme
   capability và kill switch.
 - Redirect dùng allowlist/signed identifier; frontend không nhận arbitrary destination URL.
 - Ad/affiliate analytics không được thay đổi organic module payload hoặc indexability truth.
+- Airport live-search prefill chỉ nhận verified direct row đã chọn; commercial placement không được
+  chen vào ordered journey steps hoặc thay đổi direct-flight ranking.
 
 ### P4
 

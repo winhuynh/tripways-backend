@@ -3,7 +3,7 @@
 **PRD sản phẩm liên quan:** `docs/product/p1-production-data-ingestion-prd.md`  
 **Phụ thuộc:** P0 hoàn tất
 **Trạng thái:** Chưa bắt đầu — foundation P0A không phải P1 acceptance
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Kho mã chính:** `tripways-backend`
 
 Các bảng source rights, raw batch, ingestion run/issue và atomic development publication hiện có là
@@ -177,7 +177,14 @@ identity, idempotency, authorization và rate limit.
 
 - Tách provider facts, reviewed editorial copy và localized UX copy nhưng cùng tham gia publication
   version và provenance graph.
-- Airport access/parking/lounge/notice có validator type-specific, source rights và expiry policy.
+- Airport orientation, arrival/departure journey step, directional access, parking, terminal,
+  facility, lounge và notice có validator type-specific, locale, source rights, review state và
+  freshness policy.
+- Journey step lưu rõ `arrival | departure` và audience `all | domestic | international`; access
+  option lưu direction `from_airport | to_airport | both`. Giá transport là estimated range nullable,
+  không phải live quote.
+- Publication P1 không tạo verified-flight inventory. Airport page thiếu journey content bắt buộc
+  giữ `noindex`, kể cả khi airport identity đã hợp lệ.
 - Materialize completeness result theo page type với required/optional module, reason codes và
   indexability outcome.
 - Internal links chỉ trỏ đến page tồn tại trong cùng current publication hoặc URL static allowlist.

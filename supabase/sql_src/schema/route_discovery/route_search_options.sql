@@ -7,8 +7,13 @@ CREATE TABLE public.route_search_options (
   publication_version_id   UUID           NOT NULL REFERENCES public.publication_versions (id) ON DELETE CASCADE,
   origin_city_id           UUID           NOT NULL REFERENCES public.cities (id),
   origin_city_slug         TEXT           NOT NULL,
+  origin_country_code      TEXT           NOT NULL,
+  origin_region_code       TEXT           NULL,
   destination_city_id      UUID           NOT NULL REFERENCES public.cities (id),
   destination_city_slug    TEXT           NOT NULL,
+  destination_country_code TEXT           NOT NULL,
+  destination_region_code  TEXT           NULL,
+  is_international         BOOLEAN        NOT NULL,
   origin_airport_id        UUID           NOT NULL REFERENCES public.airports (id),
   origin_airport_iata      TEXT           NOT NULL,
   destination_airport_id   UUID           NOT NULL REFERENCES public.airports (id),
@@ -19,6 +24,7 @@ CREATE TABLE public.route_search_options (
   operating_airline_ids    UUID[]         NOT NULL,
   operating_airline_iatas  TEXT[]         NOT NULL,
   departure_local_time     TIME           NOT NULL,
+  departure_time_bucket    TEXT           NOT NULL,
   arrival_local_time       TIME           NOT NULL,
   arrival_day_offset       SMALLINT       NOT NULL,
   days_of_week             SMALLINT[]     NOT NULL,
@@ -31,6 +37,7 @@ CREATE TABLE public.route_search_options (
   confidence_score         NUMERIC(4,3)   NOT NULL,
   route_path               TEXT           NOT NULL,
   price_state              TEXT           NOT NULL,
+  price_trip_type          TEXT           NULL,
   price_min                NUMERIC(14,2)  NULL,
   price_max                NUMERIC(14,2)  NULL,
   currency_code            TEXT           NULL,
@@ -50,11 +57,20 @@ CREATE TABLE public.route_search_options (
       AND cardinality(operating_airline_iatas) = stop_count + 1
     ),
 
+  CONSTRAINT route_search_options_country_code_check
+    CHECK (
+      origin_country_code ~ '^[A-Z]{2}$'
+      AND destination_country_code ~ '^[A-Z]{2}$'
+    ),
+
+  CONSTRAINT route_search_options_departure_bucket_check
+    CHECK (departure_time_bucket IN ('early_morning', 'morning', 'afternoon', 'evening')),
+
   CONSTRAINT route_search_options_price_check
     CHECK (
-      (price_state = 'available' AND price_min IS NOT NULL AND price_max >= price_min AND currency_code ~ '^[A-Z]{3}$' AND price_valid_until IS NOT NULL)
+      (price_state = 'available' AND price_trip_type = 'one_way' AND price_min IS NOT NULL AND price_max >= price_min AND currency_code ~ '^[A-Z]{3}$' AND price_valid_until IS NOT NULL)
       OR
-      (price_state IN ('missing', 'expired', 'unlicensed') AND price_min IS NULL AND price_max IS NULL AND currency_code IS NULL AND price_valid_until IS NULL)
+      (price_state IN ('missing', 'expired', 'unlicensed') AND price_trip_type IS NULL AND price_min IS NULL AND price_max IS NULL AND currency_code IS NULL AND price_valid_until IS NULL)
     )
 );
 
@@ -103,6 +119,22 @@ ON public.route_search_options USING gin (operating_airline_iatas);
 
 CREATE INDEX route_search_options_connections_idx
 ON public.route_search_options USING gin (connection_airport_iatas);
+
+CREATE INDEX route_search_options_destination_geography_idx
+ON public.route_search_options USING btree (
+  publication_version_id,
+  destination_country_code,
+  destination_region_code,
+  is_international
+);
+
+CREATE INDEX route_search_options_origin_geography_idx
+ON public.route_search_options USING btree (
+  publication_version_id,
+  origin_country_code,
+  origin_region_code,
+  is_international
+);
 
 ALTER TABLE public.route_search_options ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.route_search_options FROM anon, authenticated;

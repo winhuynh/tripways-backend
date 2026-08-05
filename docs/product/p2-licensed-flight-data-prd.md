@@ -1,7 +1,7 @@
 # PRD P2: Dữ liệu chuyến bay có bản quyền
 
 **Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P2
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
@@ -107,13 +107,28 @@ Credentials và payload thô của provider luôn nằm phía máy chủ và tro
 ### 6.4 Xuất bản pSEO
 
 - Phạm vi production ban đầu là một tập thành phố và sân bay giới hạn đã review.
-- Trang chỉ được index khi đạt quyền nguồn, độ sâu tuyến, độ mới, độ tin cậy, metadata đã review,
-  định danh canonical và yêu cầu internal link.
+- Airport Page chỉ được index khi có journey utility đã review (arrival, departure và transport),
+  route direct đã xác minh, quyền nguồn, độ mới, metadata, định danh canonical và internal links.
+- City/Route Page áp dụng route-depth gate riêng; không dùng độ sâu graph nối chuyến để thay thế
+  journey-content gate của Airport Page.
 - Trang trống, cũ, lịch sử, độ tin cậy thấp, chỉ dùng fixture hoặc chưa review không được index.
 - Sitemap đọc trạng thái indexability tính sẵn thay vì chạy graph query toàn cục.
 - Tổ hợp bộ lọc canonical về trang gốc và không được index trừ khi được tuyển chọn riêng.
 
-### 6.5 Cache và làm mới
+### 6.5 Airport Page capability
+
+- Airport Page là practical journey guide cho một sân bay, không phải bản sao flight-discovery của
+  City Hub. Thứ tự chính là orientation/quick answers, arrival, transport, departure, sau đó mới đến
+  `Verified direct flights`, parking, terminals/facilities và FAQ/provenance.
+- `Verified direct flights` hỗ trợ `From airport` và `To airport`, chỉ dùng direct scheduled service
+  đã publish từ provider licensed. Không hiển thị route option nhiều chặng do Tripways tính.
+- Filter chỉ gồm direction, counterpart query, domestic/international, operating airline và
+  counterpart country/region. Price, duration, layover, cabin, connection-airport và max-stops không
+  thuộc Airport Page filter UX.
+- Seasonality/frequency chỉ hiển thị khi provider contract và freshness evidence đủ tin cậy; thiếu
+  dữ liệu giữ `unknown`.
+
+### 6.6 Cache và làm mới
 
 - Phản hồi tuyến và pSEO cache theo định danh chuẩn, bộ lọc, locale và phiên bản dữ liệu.
 - Xuất bản thành công phải vô hiệu hóa cache bị ảnh hưởng hoặc chuyển sang phiên bản mới.
@@ -210,11 +225,13 @@ City Hub P2 phải render đúng khi toàn bộ price và commercial module vắ
 
 ## 13. Page capability sau khi có dữ liệu licensed
 
-- City Hub và Airport Page tập trung direct routes; Route Page hỗ trợ cả direct và hành trình có tối
-  đa ba điểm dừng.
-- City/Airport discovery phải có departure-airport, destination country/region,
-  domestic/international, duration và price facet khi capability tương ứng có dữ liệu.
-- Estimated fare trên City/Airport là giá một chiều theo mặc định và phải ghi rõ range, currency,
-  method, confidence, sample window, expiry và trạng thái unavailable khi thiếu dữ liệu.
+- City Hub tập trung khám phá direct destinations theo city; Route Page hỗ trợ direct và hành trình
+  có tối đa ba điểm dừng. Airport Page tập trung arrive/depart logistics, với verified direct routes
+  hai chiều là utility phụ.
+- City discovery có thể dùng departure-airport, destination geography, duration và price facet khi
+  capability tương ứng được phê duyệt. Không áp các facet đó mặc định cho Airport Page.
+- Estimated fare trên City/Route discovery phải ghi rõ range, currency, method, confidence, sample
+  window, expiry và trạng thái unavailable. Airport Page không đưa estimated airfare vào verified
+  flights block; estimated transport cost vẫn được phép khi có source và freshness.
 - Read model không duy trì standalone airline section chỉ vì provider có airline data; airline chỉ
   xuất hiện khi giúp so sánh route hoặc làm filter.

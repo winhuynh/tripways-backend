@@ -991,4 +991,4 @@ VALUES
     FALSE
   );
 
-SELECT public.refresh_city_pseo_read_models();
+SELECT public.refresh_pseo_read_models();

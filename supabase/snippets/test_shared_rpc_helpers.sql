@@ -68,13 +68,13 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_search_route_options_v2('{}'::JSONB)
+  public.rpc_search_routes('{}'::JSONB)
     #>> '{error,code}' = 'ERR_INVALID_REQUEST',
   'shared route search preserves its invalid identity contract'
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_city_page('{}'::JSONB)
+  public.rpc_get_page('{}'::JSONB)
     #>> '{error,code}' = 'ERR_INVALID_REQUEST',
   'city page preserves its invalid identity contract'
 );

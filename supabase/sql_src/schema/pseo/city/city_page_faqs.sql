@@ -6,20 +6,27 @@
 CREATE TABLE public.city_page_faqs (
   id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   city_page_id   UUID         NOT NULL REFERENCES public.city_pages (id) ON DELETE CASCADE,
+  locale         TEXT         NOT NULL DEFAULT 'en-GB',
   question       TEXT         NOT NULL,
   answer         TEXT         NOT NULL,
   answer_type    TEXT         NOT NULL,
   display_order  SMALLINT     NOT NULL,
   status         TEXT         NOT NULL DEFAULT 'draft',
   reviewed_at    TIMESTAMPTZ  NULL,
+  primary_source_url TEXT     NULL,
+  last_verified_at TIMESTAMPTZ NULL,
+  data_version   UUID         NULL,
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
   CONSTRAINT city_page_faqs_page_order_key
-    UNIQUE (city_page_id, display_order),
+    UNIQUE (city_page_id, locale, display_order),
 
   CONSTRAINT city_page_faqs_page_question_key
-    UNIQUE (city_page_id, question),
+    UNIQUE (city_page_id, locale, question),
+
+  CONSTRAINT city_page_faqs_locale_check
+    CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT city_page_faqs_question_check
     CHECK (

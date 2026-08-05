@@ -305,45 +305,10 @@ BEGIN
   FROM page_eligibility
   WHERE city_page.id = page_eligibility.city_page_id;
 
-  -- STEP 05: Refresh airport facts from the same eligible route version.
+  -- STEP 05: Refresh airport route provenance without embedding flight-led page facts.
   WITH airport_facts AS (
     SELECT
       airport_page.id AS airport_page_id,
-      count(DISTINCT outbound_route.destination_city_id)::INTEGER
-        AS outbound_destination_count,
-      count(DISTINCT outbound_route.destination_country_id)::INTEGER
-        AS outbound_country_count,
-      count(DISTINCT inbound_route.origin_city_id)::INTEGER
-        AS inbound_origin_count,
-      count(DISTINCT inbound_route.origin_country_id)::INTEGER
-        AS inbound_country_count,
-      (
-        SELECT count(DISTINCT route.operating_airline_id)::INTEGER
-        FROM public.pseo_direct_routes route
-        WHERE route.data_version = v_data_version
-          AND (
-            route.origin_airport_id = airport_page.airport_id
-            OR route.destination_airport_id = airport_page.airport_id
-          )
-      ) AS airline_count,
-      (
-        SELECT min(route.shortest_duration_minutes)
-        FROM public.pseo_direct_routes route
-        WHERE route.data_version = v_data_version
-          AND (
-            route.origin_airport_id = airport_page.airport_id
-            OR route.destination_airport_id = airport_page.airport_id
-          )
-      ) AS shortest_route_minutes,
-      (
-        SELECT max(route.longest_duration_minutes)
-        FROM public.pseo_direct_routes route
-        WHERE route.data_version = v_data_version
-          AND (
-            route.origin_airport_id = airport_page.airport_id
-            OR route.destination_airport_id = airport_page.airport_id
-          )
-      ) AS longest_route_minutes,
       (
         SELECT min(route.source_freshness_at)
         FROM public.pseo_direct_routes route
@@ -354,24 +319,11 @@ BEGIN
           )
       ) AS source_freshness_at
     FROM public.airport_pages airport_page
-    LEFT JOIN public.pseo_direct_routes outbound_route
-      ON outbound_route.origin_airport_id = airport_page.airport_id
-      AND outbound_route.data_version = v_data_version
-    LEFT JOIN public.pseo_direct_routes inbound_route
-      ON inbound_route.destination_airport_id = airport_page.airport_id
-      AND inbound_route.data_version = v_data_version
-    GROUP BY airport_page.id
   )
   UPDATE public.airport_pages airport_page
   SET
-    outbound_destination_count = airport_facts.outbound_destination_count,
-    outbound_country_count = airport_facts.outbound_country_count,
-    inbound_origin_count = airport_facts.inbound_origin_count,
-    inbound_country_count = airport_facts.inbound_country_count,
-    airline_count = airport_facts.airline_count,
-    shortest_route_minutes = airport_facts.shortest_route_minutes,
-    longest_route_minutes = airport_facts.longest_route_minutes,
     source_freshness_at = airport_facts.source_freshness_at,
+    route_data_refreshed_at = airport_facts.source_freshness_at,
     data_version = v_data_version,
     generated_at = now(),
     updated_at = now()
@@ -392,6 +344,31 @@ BEGIN
           AND access.status = 'published'
           AND access.last_verified_at IS NOT NULL
       ) AS has_access,
+      EXISTS (
+        SELECT 1
+        FROM public.airport_journey_steps step
+        WHERE step.airport_page_id = airport_page.id
+          AND step.journey_type = 'arrival'
+          AND step.status = 'published'
+          AND step.last_verified_at IS NOT NULL
+      ) AS has_arrival_guide,
+      EXISTS (
+        SELECT 1
+        FROM public.airport_journey_steps step
+        WHERE step.airport_page_id = airport_page.id
+          AND step.journey_type = 'departure'
+          AND step.status = 'published'
+          AND step.last_verified_at IS NOT NULL
+      ) AS has_departure_guide,
+      EXISTS (
+        SELECT 1
+        FROM public.pseo_direct_routes route
+        WHERE route.data_version = v_data_version
+          AND (
+            route.origin_airport_id = airport_page.airport_id
+            OR route.destination_airport_id = airport_page.airport_id
+          )
+      ) AS has_verified_direct_route,
       EXISTS (
         SELECT 1
         FROM public.pseo_direct_routes route
@@ -435,9 +412,11 @@ BEGIN
       WHEN airport_page.status <> 'published' THEN FALSE
       WHEN airport_eligibility.airport_status <> 'active' THEN FALSE
       WHEN airport_eligibility.iata IS NULL THEN FALSE
-      WHEN airport_page.outbound_destination_count + airport_page.inbound_origin_count = 0 THEN FALSE
+      WHEN airport_eligibility.has_verified_direct_route = FALSE THEN FALSE
       WHEN airport_page.content_reviewed_at IS NULL THEN FALSE
       WHEN airport_eligibility.has_access = FALSE THEN FALSE
+      WHEN airport_eligibility.has_arrival_guide = FALSE THEN FALSE
+      WHEN airport_eligibility.has_departure_guide = FALSE THEN FALSE
       WHEN airport_eligibility.has_disallowed_source THEN FALSE
       ELSE TRUE
     END,
@@ -446,10 +425,11 @@ BEGIN
       WHEN airport_page.status <> 'published' THEN 'not_published'
       WHEN airport_eligibility.airport_status <> 'active' THEN 'airport_inactive'
       WHEN airport_eligibility.iata IS NULL THEN 'missing_iata'
-      WHEN airport_page.outbound_destination_count + airport_page.inbound_origin_count = 0
-        THEN 'no_direct_routes'
+      WHEN airport_eligibility.has_verified_direct_route = FALSE THEN 'no_verified_direct_routes'
       WHEN airport_page.content_reviewed_at IS NULL THEN 'content_not_reviewed'
       WHEN airport_eligibility.has_access = FALSE THEN 'missing_access_information'
+      WHEN airport_eligibility.has_arrival_guide = FALSE THEN 'missing_arrival_guide'
+      WHEN airport_eligibility.has_departure_guide = FALSE THEN 'missing_departure_guide'
       WHEN airport_eligibility.has_disallowed_source THEN 'source_not_seo_eligible'
       ELSE NULL
     END,

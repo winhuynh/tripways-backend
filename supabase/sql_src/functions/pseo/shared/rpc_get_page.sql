@@ -1,10 +1,10 @@
 -- ============================================================================
--- Function: public.rpc_get_page_v2
+-- Function: public.rpc_get_page
 -- Purpose: Load one complete page from its dedicated current read model.
 -- Responsibilities: Normalize identity and perform exactly one page-model lookup.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_get_page_v2(p_input JSONB)
+CREATE OR REPLACE FUNCTION public.rpc_get_page(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
 STABLE
@@ -18,7 +18,9 @@ DECLARE
   v_payload JSONB;
   v_generated_at TIMESTAMPTZ;
 BEGIN
-  IF v_page_type NOT IN ('homepage', 'city', 'airport', 'route')
+  IF jsonb_typeof(p_input) IS DISTINCT FROM 'object'
+    OR p_input - ARRAY['page_type', 'entity_key', 'locale'] <> '{}'::JSONB
+    OR v_page_type NOT IN ('homepage', 'city', 'airport', 'route')
     OR v_entity_key IS NULL
     OR v_locale !~ '^[a-z]{2}(?:-[A-Z]{2})?$'
   THEN
@@ -81,6 +83,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_get_page_v2(JSONB)
+REVOKE ALL ON FUNCTION public.rpc_get_page(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_get_page_v2(JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_get_page(JSONB) TO service_role;

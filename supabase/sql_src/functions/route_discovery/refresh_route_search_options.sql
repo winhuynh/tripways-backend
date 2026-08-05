@@ -30,8 +30,13 @@ BEGIN
     publication_version_id,
     origin_city_id,
     origin_city_slug,
+    origin_country_code,
+    origin_region_code,
     destination_city_id,
     destination_city_slug,
+    destination_country_code,
+    destination_region_code,
+    is_international,
     origin_airport_id,
     origin_airport_iata,
     destination_airport_id,
@@ -42,6 +47,7 @@ BEGIN
     operating_airline_ids,
     operating_airline_iatas,
     departure_local_time,
+    departure_time_bucket,
     arrival_local_time,
     arrival_day_offset,
     days_of_week,
@@ -54,6 +60,7 @@ BEGIN
     confidence_score,
     route_path,
     price_state,
+    price_trip_type,
     price_min,
     price_max,
     currency_code,
@@ -64,8 +71,13 @@ BEGIN
     p_publication_version_id,
     origin_city.id,
     origin_city.slug,
+    origin_country.iso2,
+    origin_country.region,
     destination_city.id,
     destination_city.slug,
+    destination_country.iso2,
+    destination_country.region,
+    origin_country.id <> destination_country.id,
     origin_airport.id,
     origin_airport.iata,
     destination_airport.id,
@@ -88,6 +100,12 @@ BEGIN
       ORDER BY item.position
     ),
     option.departure_local_time,
+    CASE
+      WHEN option.departure_local_time < TIME '06:00' THEN 'early_morning'
+      WHEN option.departure_local_time < TIME '12:00' THEN 'morning'
+      WHEN option.departure_local_time < TIME '18:00' THEN 'afternoon'
+      ELSE 'evening'
+    END,
     option.arrival_local_time,
     option.arrival_day_offset,
     option.days_of_week,
@@ -100,6 +118,7 @@ BEGIN
     option.confidence_score,
     format('/flights/%s-to-%s', origin_city.slug, destination_city.slug),
     COALESCE(price.state, 'missing'),
+    CASE WHEN price.state = 'available' THEN 'one_way' ELSE NULL END,
     price.price_min,
     price.price_max,
     price.currency_code,
@@ -109,10 +128,14 @@ BEGIN
     ON origin_airport.id = option.origin_airport_id
   JOIN public.cities origin_city
     ON origin_city.id = origin_airport.city_id
+  JOIN public.countries origin_country
+    ON origin_country.id = origin_city.country_id
   JOIN public.airports destination_airport
     ON destination_airport.id = option.destination_airport_id
   JOIN public.cities destination_city
     ON destination_city.id = destination_airport.city_id
+  JOIN public.countries destination_country
+    ON destination_country.id = destination_city.country_id
   LEFT JOIN LATERAL (
     SELECT
       'available'::TEXT AS state,
@@ -125,6 +148,7 @@ BEGIN
       ON source.id = estimate.source_id
     WHERE estimate.origin_city_id = origin_city.id
       AND estimate.destination_city_id = destination_city.id
+      AND estimate.trip_type = 'one_way'
       AND estimate.status = 'published'
       AND estimate.valid_until > now()
       AND source.production_display_allowed = TRUE

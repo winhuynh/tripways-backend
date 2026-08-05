@@ -1,7 +1,7 @@
 # Lộ trình sản phẩm MVP Tripways
 
 **Trạng thái:** Đang thực hiện — phase hiện tại P0A
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Phạm vi:** `tripways-backend` và `tripways-web`
 
 ## 1. Định hướng sản phẩm
@@ -21,7 +21,9 @@ Nguyên mẫu cục bộ hiện có:
 - Các bảng quốc gia, thành phố, sân bay, hãng bay, tuyến bay và dịch vụ bay định kỳ đã được chuẩn
   hóa.
 - Khám phá tuyến bay từ không đến ba điểm dừng bằng dữ liệu mẫu phát triển có tính xác định.
-- Các mô hình đọc pSEO cho thành phố và sân bay.
+- Typed content/FAQ schema và mô hình đọc pSEO đã materialize cho Homepage, City, Airport và Route.
+- Hai contract versionless `rpc_get_page` và `rpc_search_routes`; các public RPC pSEO trùng lặp/legacy
+  đã được xoá khỏi source đang hoạt động.
 - Contract và primitive Next.js từ nguyên mẫu cũ được giữ lại để phục vụ rebuild; các page cũ đã
   được dọn khỏi frontend.
 - RLS, phân quyền tối thiểu, sử dụng khóa `service-role` phía máy chủ và kiểm thử hợp đồng.
@@ -131,19 +133,24 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Chọn một public page contract và một route-search contract không có hậu tố `_v2`.
 - Định nghĩa page read model cho Homepage, City Hub, Airport và Route gồm module order, UX copy,
   CTA, empty state, metadata, freshness, provenance và indexability.
+- Khoá Airport Page theo intent journey-first: orientation, arrival, transport, departure rồi mới
+  đến verified direct flights hai chiều; không tái sử dụng featured-route payload cũ.
 - Fixture chỉ chứng minh contract và luôn `noindex`; không được xem là content coverage production.
 
 ### P1 — Content foundation và dữ liệu tham chiếu production
 
 - Nhập country, region, city, airport, timezone và city-airport grouping có quyền sử dụng rõ ràng.
-- Xây workflow biên tập/kiểm duyệt cho airport access, parking, lounge, notice, FAQ và internal link.
+- Xây workflow biên tập/kiểm duyệt cho airport orientation, arrival/departure steps, directional
+  transport, parking, terminal/facility, lounge, notice, FAQ và internal link.
 - Tính content completeness theo page type; page thiếu dữ liệu không được tự động index.
 
 ### P2 — Route, schedule và estimated fare có bản quyền
 
-- Xuất bản direct route cho City/Airport và cả direct lẫn connecting options cho Route Page.
-- City/Airport hỗ trợ filter theo departure airport, country/region, domestic/international,
-  duration và estimated one-way price.
+- Xuất bản direct route cho City Hub và verified direct flights from/to cho Airport Page; Route Page
+  hỗ trợ cả direct lẫn connecting options.
+- City Hub có thể hỗ trợ departure airport, geography, duration và estimated-price filters. Airport
+  chỉ hỗ trợ counterpart query/geography, domestic/international và operating airline; không có
+  connection, duration hoặc price filter.
 - Estimated fare là observation/range có trip type, source, confidence, sample window và expiry; không
   được mô tả như live offer.
 
@@ -152,6 +159,8 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Advertisement slot, sponsored module, affiliate offer, CTA và disclosure được cấu hình từ backend.
 - Commercial module optional, có capability gate và kill switch; thiếu partner không làm hỏng page.
 - Tách rõ estimated fare của pSEO khỏi live offer theo ngày và affiliate handoff.
+- Airport commercial module không thay thế arrival/transport/departure; live-search chỉ prefill từ
+  verified direct row người dùng đã chọn.
 
 ### P4 — Mở rộng pSEO có kiểm soát
 

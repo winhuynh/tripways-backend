@@ -98,7 +98,7 @@ for (
   const functionName of [
     'calculate_layover_minutes',
     'refresh_route_options',
-    'rpc_search_route_options_v2',
+    'rpc_search_routes',
   ]
 ) {
   Deno.test(`${functionName} has an isolated source file and explicit search path`, async () => {
@@ -114,7 +114,7 @@ for (
 
 Deno.test('route search RPC owns validation, filters, facets, and stable errors', async () => {
   const sql = await readSource(
-    'functions/route_discovery/rpc_search_route_options_v2.sql',
+    'functions/route_discovery/rpc_search_routes.sql',
   );
 
   assert.ok(includesSql(sql, "'ERR_INVALID_REQUEST'"));
@@ -128,7 +128,7 @@ Deno.test('route search RPC owns validation, filters, facets, and stable errors'
   assert.ok(
     includesSql(
       sql,
-      'grant execute on function public.rpc_search_route_options_v2(jsonb) to service_role',
+      'grant execute on function public.rpc_search_routes(jsonb) to service_role',
     ),
   );
 });

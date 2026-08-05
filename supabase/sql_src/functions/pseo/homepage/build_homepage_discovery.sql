@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION public.rpc_get_homepage_discovery(p_input JSONB)
+CREATE OR REPLACE FUNCTION private.build_homepage_discovery(p_input JSONB)
 RETURNS JSONB LANGUAGE plpgsql STABLE SET search_path='' AS $$
 DECLARE
   v_origin TEXT:=upper(btrim(COALESCE(p_input->>'origin','')));
@@ -42,4 +42,4 @@ BEGIN
       'connections',(SELECT COALESCE(jsonb_agg(to_jsonb(x) ORDER BY x.value),'[]') FROM(SELECT airport.iata value,count(*)::INTEGER count FROM public.route_options option CROSS JOIN LATERAL unnest(option.connection_airport_ids) connection_id(id) JOIN public.airports airport ON airport.id=connection_id.id WHERE (v_origin_airports IS NULL OR option.origin_airport_id=ANY(v_origin_airports)) GROUP BY airport.iata)x),
       'price',jsonb_build_object('currency',v_currency,'max',v_price_max,'missing_is_zero',FALSE))),'error',NULL);
 END;$$;
-REVOKE ALL ON FUNCTION public.rpc_get_homepage_discovery(JSONB) FROM public,anon,authenticated;GRANT EXECUTE ON FUNCTION public.rpc_get_homepage_discovery(JSONB) TO service_role;
+REVOKE ALL ON FUNCTION private.build_homepage_discovery(JSONB) FROM public,anon,authenticated;GRANT EXECUTE ON FUNCTION private.build_homepage_discovery(JSONB) TO service_role;

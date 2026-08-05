@@ -1,7 +1,7 @@
 # PRD P3: MVP thương mại
 
 **Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P3
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
@@ -20,7 +20,8 @@ toàn, trong khi Tripways đo được kết quả sản phẩm và vận hành.
 
 ## 3. Người dùng mục tiêu
 
-- Người dùng nghiên cứu tuyến từ trang thành phố hoặc sân bay.
+- Người dùng nghiên cứu tuyến từ City Hub/Route Page hoặc đang chuẩn bị arrive/depart tại một Airport
+  Page.
 - Người dùng đã có ngày đi, số hành khách và hạng ghế mong muốn.
 - Chủ sản phẩm đo mức hữu ích của tìm kiếm và lượt rời qua liên kết.
 - Người vận hành theo dõi độ trễ, lỗi và chi phí provider.
@@ -44,7 +45,8 @@ P3. P3 chỉ bắt đầu sau khi P2 hoàn tất và live-search/affiliate agree
 
 ### Hành trình A: Bắt đầu tìm kiếm theo ngày
 
-1. Người dùng bắt đầu từ trang tuyến, thành phố, sân bay hoặc ô tìm kiếm trang chủ.
+1. Người dùng bắt đầu từ trang tuyến, City Hub, verified direct-flight row trên Airport Page hoặc ô
+   tìm kiếm trang chủ.
 2. Người dùng nhập điểm đi, điểm đến, ngày, số hành khách và hạng ghế.
 3. Tripways validation yêu cầu và bắt đầu tìm kiếm trung lập provider.
 4. Người dùng thấy tiến trình, kết quả hoàn tất, không có kết quả hoặc trạng thái lỗi có giới hạn.
@@ -241,3 +243,15 @@ analytics hoặc kill switch.
 - Sponsored module phải được gắn nhãn rõ, tách khỏi organic ranking và không thay đổi indexability.
 - Mọi commercial capability có kill switch; khi tắt, layout co lại mà không tạo empty ad container
   hoặc làm mất nội dung hữu ích chính.
+
+## 14. Ranh giới thương mại của Airport Page
+
+- Live flight search chỉ bắt đầu sau khi người dùng chọn một verified direct route hoặc chủ động mở
+  flight-search CTA; không thay hero hoặc các module arrival/transport/departure.
+- Car rental, parking và ground-transfer offer có thể gắn với journey direction và airport cụ thể,
+  nhưng phải đứng cạnh module liên quan, có disclosure và không được trình bày estimated cost như
+  live quote.
+- Hotel/eSIM hoặc destination offer chỉ xuất hiện khi destination đã rõ. Airport Page không tự suy
+  ra destination từ vị trí hiện tại, cookie hoặc route graph.
+- Tắt commercial capability không làm thay đổi organic journey content, verified-direct ranking,
+  structured data hoặc indexability.

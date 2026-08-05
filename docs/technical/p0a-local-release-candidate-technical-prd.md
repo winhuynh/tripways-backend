@@ -3,7 +3,7 @@
 **PRD sản phẩm liên quan:** `docs/product/p0-staging-readiness-prd.md`  
 **Kho mã:** `tripways-backend`, `tripways-web`  
 **Trạng thái:** Đang thực hiện
-**Cập nhật:** 2026-08-04
+**Cập nhật:** 2026-08-05
 **Kết quả:** Một release candidate chạy end-to-end ở local, đạt ít nhất 11/12 năng lực P0A và hoàn
 tất approved-API smoke trước formal acceptance.
 
@@ -28,6 +28,12 @@ load dùng unified page contract và một page-specific read-model lookup; mọ
 dùng shared route-search contract. Web không gọi RPC bằng `SUPABASE_SERVICE_ROLE_KEY` trực tiếp từ
 từng feature. Service-role chỉ tồn tại trong backend gateway hoặc server transport duy nhất được
 phê duyệt.
+
+Airport initial payload gồm identity/SEO, orientation, quick answers, arrival, departure, transport,
+parking, terminals, facilities, notices, FAQ, internal links và provenance. Verified flights không
+nằm trong payload editorial bất biến; web gọi shared route-search bằng scope
+`{ type: "airport", key, direction: "from" | "to" }`. Scope này luôn ép `stop_count = 0` và chỉ cho
+phép counterpart query/country/region, route type và operating airline ở public boundary.
 
 ## 2. Thay đổi backend bắt buộc
 
@@ -164,6 +170,8 @@ Mã lỗi tối thiểu:
 - Adapter unit test cho mock và sanitized real fixture.
 - Edge handler test cho auth, idempotency, input và normalized error.
 - Web tests cho unified Homepage/City/Airport/Route transport, 404, error UI, metadata và noindex.
+- Airport contract tests xác nhận journey payload không chứa featured inbound/outbound route hoặc
+  price summary cũ; route search from/to chỉ trả verified direct service đúng direction.
 - Browser smoke test desktop/mobile cho Homepage, City, Airport, Route Page, filters và map fallback.
 - Full local command chạy format, lint, typecheck, Deno test, SQL E2E và production build.
 

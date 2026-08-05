@@ -27,6 +27,7 @@ CREATE TABLE public.pseo_pages (
   CONSTRAINT pseo_pages_type_check
     CHECK (
       page_type IN (
+        'homepage',
         'city',
         'airport',
         'city_route',
@@ -43,7 +44,7 @@ CREATE TABLE public.pseo_pages (
     CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT pseo_pages_canonical_path_check
-    CHECK (canonical_path ~ '^/[a-z0-9]+(?:[-/][a-z0-9]+)*$'),
+    CHECK (canonical_path = '/' OR canonical_path ~ '^/[a-z0-9]+(?:[-/][a-z0-9]+)*$'),
 
   CONSTRAINT pseo_pages_title_check
     CHECK (
