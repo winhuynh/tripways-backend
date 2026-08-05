@@ -150,6 +150,15 @@ Deno.test('airport page source uses a journey-led payload instead of legacy feat
   }
 });
 
+Deno.test('route page read model excludes interactive route-search results', async () => {
+  const sql = normalize(
+    await readSource('functions/pseo/route/build_route_page_payload.sql'),
+  );
+
+  assert.equal(sql.includes("'options', public.rpc_search_routes"), false);
+  assert.ok(sql.includes("'summary', jsonb_build_object"));
+});
+
 Deno.test('canonical route search supports direct-only airport scope in both directions', async () => {
   const sql = normalize(await readSource('functions/route_discovery/rpc_search_routes.sql'));
 

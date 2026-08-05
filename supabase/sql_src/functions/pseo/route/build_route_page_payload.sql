@@ -14,8 +14,6 @@ DECLARE
   v_locale TEXT := COALESCE(NULLIF(p_input->>'locale', ''), 'en-GB');
   v_page public.route_pages%ROWTYPE;
   v_pseo public.pseo_pages%ROWTYPE;
-  v_origin_slug TEXT;
-  v_destination_slug TEXT;
 BEGIN
   SELECT page.*
   INTO v_page
@@ -31,16 +29,6 @@ BEGIN
   INTO v_pseo
   FROM public.pseo_pages page
   WHERE page.id = v_page.pseo_page_id;
-
-  SELECT city.slug
-  INTO v_origin_slug
-  FROM public.cities city
-  WHERE city.id = v_page.origin_city_id;
-
-  SELECT city.slug
-  INTO v_destination_slug
-  FROM public.cities city
-  WHERE city.id = v_page.destination_city_id;
 
   RETURN jsonb_build_object(
     'data', jsonb_build_object(
@@ -69,15 +57,6 @@ BEGIN
         'fastest_direct_minutes', v_page.fastest_direct_minutes,
         'fastest_indirect_minutes', v_page.fastest_indirect_minutes
       ),
-      'options', public.rpc_search_routes(jsonb_build_object(
-        'scope', jsonb_build_object(
-          'type', 'city_pair',
-          'from', v_origin_slug,
-          'to', v_destination_slug
-        ),
-        'filters', jsonb_build_object('max_stops', 3),
-        'page_size', 20
-      ))->'data',
       'price', public.resolve_route_price_estimate(
         v_page.origin_city_id,
         v_page.destination_city_id,
