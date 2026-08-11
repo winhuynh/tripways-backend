@@ -14,6 +14,19 @@ Deno.test('ingestion request requires a bounded idempotency key and allowed mode
   });
 });
 
+Deno.test('ingestion request accepts the bounded OurAirports provider mode', () => {
+  const parsed = parseBaseDataIngestionRequest(
+    { sourceCode: 'ourairports', providerMode: 'ourairports' },
+    'ourairports-2026-08-11',
+  );
+
+  assert.deepEqual(parsed, {
+    sourceCode: 'ourairports',
+    providerMode: 'ourairports',
+    idempotencyKey: 'ourairports-2026-08-11',
+  });
+});
+
 Deno.test('ingestion request rejects arbitrary provider modes and source codes', () => {
   assert.throws(
     () =>

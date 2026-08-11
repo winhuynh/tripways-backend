@@ -28,7 +28,7 @@ DECLARE
   v_city_id UUID;
   v_city_page_id UUID;
   v_pseo_page_id UUID;
-  v_data_version UUID;
+  v_publication_version_id UUID;
   v_identity JSONB;
   v_context JSONB;
   v_result JSONB;
@@ -47,6 +47,16 @@ BEGIN
   v_city_slug := v_identity #>> '{data,city_slug}';
   v_locale := v_identity #>> '{data,locale}';
   v_route_direction := v_identity #>> '{data,route_direction}';
+
+  BEGIN
+    v_publication_version_id := (p_input->>'publication_version_id')::UUID;
+  EXCEPTION WHEN invalid_text_representation THEN
+    RETURN private.build_rpc_error('null'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid publication version.');
+  END;
+
+  IF v_publication_version_id IS NULL THEN
+    RETURN private.build_rpc_error('null'::JSONB, 'ERR_INVALID_REQUEST', 'Publication version is required.');
+  END IF;
 
   IF p_input ? 'destination_limit' THEN
     IF jsonb_typeof(p_input->'destination_limit') <> 'number' THEN
@@ -85,7 +95,6 @@ BEGIN
   v_city_id := (v_context #>> '{data,city_id}')::UUID;
   v_city_page_id := (v_context #>> '{data,city_page_id}')::UUID;
   v_pseo_page_id := (v_context #>> '{data,pseo_page_id}')::UUID;
-  v_data_version := (v_context #>> '{data,data_version}')::UUID;
 
   -- STEP 03: Assemble a bounded page payload from one published data version.
   SELECT jsonb_build_object(
@@ -116,7 +125,7 @@ BEGIN
         'og_image_path', city_page.og_image_path,
         'intro', city_page.intro,
         'airport_summary', city_page.airport_summary,
-        'status', city_page.status
+        'status', pseo_page.status
       ),
       'airports', COALESCE((
         SELECT jsonb_agg(
@@ -131,16 +140,19 @@ BEGIN
             'timezone', airport.timezone,
             'is_primary', airport.id = city_page.primary_airport_id,
             'direct_destinations', (
-              SELECT count(DISTINCT city_route.destination_city_id)
-              FROM public.pseo_direct_routes city_route
-              WHERE city_route.origin_airport_id = airport.id
-                AND city_route.data_version = v_data_version
+              SELECT count(DISTINCT route.destination_city_id)
+              FROM public.route_search_options AS route
+              WHERE route.publication_version_id = v_publication_version_id
+                AND route.origin_airport_id = airport.id
+                AND route.stop_count = 0
             ),
             'airlines', (
-              SELECT count(DISTINCT city_route.operating_airline_id)
-              FROM public.pseo_direct_routes city_route
-              WHERE city_route.origin_airport_id = airport.id
-                AND city_route.data_version = v_data_version
+              SELECT count(DISTINCT airline_iata)
+              FROM public.route_search_options AS route
+              CROSS JOIN LATERAL unnest(route.operating_airline_iatas) AS airline_iata
+              WHERE route.publication_version_id = v_publication_version_id
+                AND route.origin_airport_id = airport.id
+                AND route.stop_count = 0
             )
           )
           ORDER BY
@@ -151,84 +163,84 @@ BEGIN
         WHERE airport.city_id = city.id
           AND airport.status = 'active'
       ), '[]'::JSONB),
-      'quick_facts', jsonb_build_object(
-        'airports', city_page.airport_count,
-        'direct_destinations', city_page.direct_counterpart_city_count,
-        'direct_countries', city_page.direct_counterpart_country_count,
-        'airlines', city_page.airline_count,
-        'shortest_route_minutes', city_page.shortest_route_minutes,
-        'longest_route_minutes', city_page.longest_route_minutes
+      'quick_facts', (
+        SELECT jsonb_build_object(
+          'airports', count(DISTINCT route.origin_airport_id),
+          'direct_destinations', count(DISTINCT route.destination_city_id),
+          'direct_countries', count(DISTINCT route.destination_country_code),
+          'airlines', count(DISTINCT airline_iata),
+          'shortest_route_minutes', min(route.total_duration_minutes),
+          'longest_route_minutes', max(route.total_duration_minutes)
+        )
+        FROM public.route_search_options AS route
+        CROSS JOIN LATERAL unnest(route.operating_airline_iatas) AS airline_iata
+        WHERE route.publication_version_id = v_publication_version_id
+          AND route.origin_city_id = city.id
+          AND route.stop_count = 0
       ),
       'featured_destinations', COALESCE((
-        SELECT jsonb_agg(destination_payload.payload ORDER BY destination_payload.position)
+        SELECT jsonb_agg(destination.payload ORDER BY destination.direct_route_count DESC, destination.shortest_duration_minutes, destination.city_name)
         FROM (
-          SELECT
-            row_number() OVER (
-              ORDER BY
-                destination.ranking_score DESC,
-                destination_city.name
-            ) AS position,
-            jsonb_build_object(
+          SELECT jsonb_build_object(
               'city', jsonb_build_object(
                 'name', destination_city.name,
-                'slug', destination_city.slug
+                'slug', route.destination_city_slug
               ),
               'country', jsonb_build_object(
                 'iso2', destination_country.iso2,
                 'name', destination_country.name,
                 'slug', destination_country.slug
               ),
-              'origin_airports', COALESCE((
-                SELECT jsonb_agg(DISTINCT origin_airport.iata ORDER BY origin_airport.iata)
-                FROM public.pseo_direct_routes city_route
-                JOIN public.airports origin_airport
-                  ON origin_airport.id = city_route.origin_airport_id
-                WHERE city_route.origin_city_id = destination.origin_city_id
-                  AND city_route.destination_city_id = destination.destination_city_id
-                  AND city_route.data_version = destination.data_version
-              ), '[]'::JSONB),
-              'destination_airports', COALESCE((
-                SELECT jsonb_agg(DISTINCT destination_airport.iata ORDER BY destination_airport.iata)
-                FROM public.pseo_direct_routes city_route
-                JOIN public.airports destination_airport
-                  ON destination_airport.id = city_route.destination_airport_id
-                WHERE city_route.origin_city_id = destination.origin_city_id
-                  AND city_route.destination_city_id = destination.destination_city_id
-                  AND city_route.data_version = destination.data_version
-              ), '[]'::JSONB),
-              'airlines', COALESCE((
-                SELECT jsonb_agg(DISTINCT airline.iata ORDER BY airline.iata)
-                FROM public.pseo_direct_routes city_route
-                JOIN public.airlines airline
-                  ON airline.id = city_route.operating_airline_id
-                WHERE city_route.origin_city_id = destination.origin_city_id
-                  AND city_route.destination_city_id = destination.destination_city_id
-                  AND city_route.data_version = destination.data_version
-              ), '[]'::JSONB),
-              'direct_route_count', destination.direct_route_count,
-              'frequency_per_week', destination.frequency_per_week,
-              'shortest_duration_minutes', destination.shortest_duration_minutes,
-              'longest_duration_minutes', destination.longest_duration_minutes,
-              'seasonality', destination.seasonality,
-              'confidence_score', destination.confidence_score,
-              'route_path', format(
-                '/flights/%s-to-%s',
-                city.slug,
-                destination_city.slug
-              )
-            ) AS payload
-          FROM public.city_destination_summaries destination
-          JOIN public.cities destination_city
-            ON destination_city.id = destination.destination_city_id
-          JOIN public.countries destination_country
-            ON destination_country.id = destination.destination_country_id
-          WHERE destination.origin_city_id = city.id
-            AND destination.data_version = v_data_version
-          ORDER BY
-            destination.ranking_score DESC,
-            destination_city.name
+              'origin_airports', to_jsonb(array_agg(DISTINCT route.origin_airport_iata ORDER BY route.origin_airport_iata)),
+              'destination_airports', to_jsonb(array_agg(DISTINCT route.destination_airport_iata ORDER BY route.destination_airport_iata)),
+              'airlines', to_jsonb(ARRAY(
+                SELECT DISTINCT airline_iata
+                FROM public.route_search_options AS airline_route
+                CROSS JOIN LATERAL unnest(airline_route.operating_airline_iatas) AS airline_iata
+                WHERE airline_route.publication_version_id = v_publication_version_id
+                  AND airline_route.origin_city_id = city.id
+                  AND airline_route.destination_city_id = route.destination_city_id
+                  AND airline_route.stop_count = 0
+                ORDER BY airline_iata
+              )),
+              'direct_route_count', count(*),
+              'frequency_per_week', NULL,
+              'shortest_duration_minutes', min(route.total_duration_minutes),
+              'longest_duration_minutes', max(route.total_duration_minutes),
+              'seasonality', NULL,
+              'confidence_score', min(route.confidence_score),
+              'route_path', min(route.route_path)
+            ) AS payload,
+            destination_city.name AS city_name,
+            count(*)::INTEGER AS direct_route_count,
+            min(route.total_duration_minutes) AS shortest_duration_minutes,
+            max(route.total_duration_minutes) AS longest_duration_minutes,
+            min(route.confidence_score) AS confidence_score,
+            array_agg(DISTINCT route.origin_airport_iata ORDER BY route.origin_airport_iata) AS origin_airports,
+            array_agg(DISTINCT route.destination_airport_iata ORDER BY route.destination_airport_iata) AS destination_airports,
+            ARRAY(
+              SELECT DISTINCT airline_iata
+              FROM public.route_search_options AS airline_route
+              CROSS JOIN LATERAL unnest(airline_route.operating_airline_iatas) AS airline_iata
+              WHERE airline_route.publication_version_id = v_publication_version_id
+                AND airline_route.origin_city_id = city.id
+                AND airline_route.destination_city_id = route.destination_city_id
+                AND airline_route.stop_count = 0
+              ORDER BY airline_iata
+            ) AS airlines,
+            route.destination_city_slug,
+            min(route.route_path) AS route_path
+          FROM public.route_search_options AS route
+          JOIN public.cities AS destination_city ON destination_city.id = route.destination_city_id
+          JOIN public.countries AS destination_country ON destination_country.id = destination_city.country_id
+          WHERE route.publication_version_id = v_publication_version_id
+            AND route.origin_city_id = city.id
+            AND route.stop_count = 0
+            AND route.route_path IS NOT NULL
+          GROUP BY route.destination_city_id, route.destination_city_slug, destination_city.name, destination_country.id
+          ORDER BY count(*) DESC, min(route.total_duration_minutes), destination_city.name
           LIMIT v_destination_limit
-        ) destination_payload
+        ) AS destination
       ), '[]'::JSONB),
       'direct_countries', COALESCE((
         SELECT jsonb_agg(
@@ -247,12 +259,13 @@ BEGIN
             destination_country.iso2,
             destination_country.name,
             destination_country.slug,
-            count(DISTINCT city_route.destination_city_id) AS direct_destinations
-          FROM public.pseo_direct_routes city_route
-          JOIN public.countries destination_country
-            ON destination_country.id = city_route.destination_country_id
-          WHERE city_route.origin_city_id = city.id
-            AND city_route.data_version = v_data_version
+            count(DISTINCT route.destination_city_id) AS direct_destinations
+          FROM public.route_search_options AS route
+          JOIN public.countries AS destination_country
+            ON destination_country.iso2 = route.destination_country_code
+          WHERE route.publication_version_id = v_publication_version_id
+            AND route.origin_city_id = city.id
+            AND route.stop_count = 0
           GROUP BY destination_country.id
         ) country_summary
       ), '[]'::JSONB),
@@ -315,11 +328,11 @@ BEGIN
     ),
     'meta', jsonb_build_object(
       'canonical_path', pseo_page.canonical_path,
-      'is_indexable', city_page.is_indexable,
-      'noindex_reason', city_page.noindex_reason,
-      'data_version', city_page.data_version,
-      'generated_at', city_page.generated_at,
-      'source_freshness_at', city_page.source_freshness_at
+      'is_indexable', pseo_page.is_indexable,
+      'noindex_reason', pseo_page.noindex_reason,
+      'data_version', v_publication_version_id,
+      'generated_at', pseo_page.generated_at,
+      'source_freshness_at', pseo_page.source_freshness_at
     ),
     'error', NULL
   )

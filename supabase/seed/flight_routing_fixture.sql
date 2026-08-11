@@ -579,5 +579,3 @@ VALUES
     'service-vn19-inactive',
     '2026-07-16T00:00:00Z'
   );
-
-SELECT public.refresh_route_options();

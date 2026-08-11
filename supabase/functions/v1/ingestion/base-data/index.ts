@@ -2,6 +2,7 @@ import { getServiceRoleClient } from '@shared/supabase.ts';
 import { handleBaseDataIngestionRequest } from './handler.ts';
 import { loadApprovedApiProvider } from './providers/approved-api-provider.ts';
 import { loadFixtureProvider } from './providers/fixture-provider.ts';
+import { loadOurAirportsProvider } from './providers/ourairports-provider.ts';
 import { executeBaseDataIngestion, type PublicationResult } from './service.ts';
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -20,6 +21,18 @@ Deno.serve((request) =>
             baseUrl: readRequiredEnv('APPROVED_BASE_DATA_API_URL'),
             maxRecords: readBoundedRecordLimit(),
           }),
+        loadOurAirports: async () => {
+          const client = getServiceRoleClient();
+          const { data, error } = await client.rpc('rpc_get_ourairports_denylist');
+          if (error || !Array.isArray(data) || data.some((value) => typeof value !== 'string')) {
+            throw new Error('ERR_SERVER_CONFIGURATION');
+          }
+          return await loadOurAirportsProvider({
+            airportsUrl: 'https://davidmegginson.github.io/ourairports-data/airports.csv',
+            denylist: new Set(data),
+            maxDownloadBytes: 25_000_000,
+          });
+        },
         publish: async (arguments_) => {
           const { data, error } = await getServiceRoleClient().rpc(
             'rpc_publish_base_data_batch',

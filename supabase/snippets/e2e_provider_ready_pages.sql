@@ -19,13 +19,13 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"homepage","entity_key":"homepage","locale":"en-GB"}'::JSONB) #> '{data,discovery}' IS NOT NULL,
-  'homepage is served by the canonical page RPC'
+  (public.rpc_get_homepage_statistics() #>> '{data,direct_route_count}')::INTEGER > 0,
+  'homepage statistics use the current published route projection'
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"homepage","entity_key":"homepage","locale":"en-GB","unexpected":true}'::JSONB) #>> '{error,code}' = 'ERR_INVALID_REQUEST',
-  'canonical page boundary rejects unknown fields'
+  public.rpc_get_page('{"page_type":"homepage","entity_key":"homepage","locale":"en-GB"}'::JSONB) #>> '{error,code}' = 'ERR_INVALID_REQUEST',
+  'homepage is not a pSEO page contract'
 );
 
 SELECT pg_temp.test_assert(

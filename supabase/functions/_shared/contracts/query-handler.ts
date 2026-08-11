@@ -1,10 +1,18 @@
-import { assertMethod, errorResponse, jsonResponse, readJson } from '@shared/edge.ts';
+import {
+  assertMethod,
+  cacheableJsonResponse,
+  errorResponse,
+  jsonResponse,
+  readJson,
+} from '@shared/edge.ts';
 import { mapRpcEnvelope } from './rpc-envelope.ts';
 
 export type QueryHandlerDependencies<TInput> = {
   parse(value: unknown): TInput;
   query(input: TInput): Promise<unknown>;
   contractErrorCode: string;
+  /** Set to true for public, anonymous, read-only endpoints to enable CDN and browser caching. */
+  cacheable?: boolean;
 };
 
 export function createQueryHandler<TInput>(
@@ -16,7 +24,8 @@ export function createQueryHandler<TInput>(
     try {
       const input = dependencies.parse(await readJson(request));
       const result = await dependencies.query(input);
-      return jsonResponse(mapRpcEnvelope(result, dependencies.contractErrorCode));
+      const envelope = mapRpcEnvelope(result, dependencies.contractErrorCode);
+      return dependencies.cacheable ? cacheableJsonResponse(envelope) : jsonResponse(envelope);
     } catch (error) {
       return errorResponse(error);
     }

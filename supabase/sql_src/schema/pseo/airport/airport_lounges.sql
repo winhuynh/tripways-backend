@@ -9,7 +9,12 @@ CREATE TABLE public.airport_lounges (
   location_summary    TEXT         NOT NULL,
   location_type       TEXT         NOT NULL DEFAULT 'unknown',
   access_summary      TEXT         NOT NULL,
+  operating_hours_summary TEXT     NULL,
   amenities           TEXT[]       NOT NULL DEFAULT '{}'::TEXT[],
+  estimated_price_min NUMERIC(12,2) NULL,
+  estimated_price_max NUMERIC(12,2) NULL,
+  currency_code       TEXT         NULL,
+  affiliate_url       TEXT         NULL,
   official_url        TEXT         NULL,
   primary_source_url  TEXT         NOT NULL,
   last_verified_at    TIMESTAMPTZ  NOT NULL,
@@ -29,6 +34,16 @@ CREATE TABLE public.airport_lounges (
 
   CONSTRAINT airport_lounges_amenities_check
     CHECK (amenities <@ ARRAY['wifi', 'food', 'drinks', 'showers', 'rest_area', 'work_area']::TEXT[]),
+
+  CONSTRAINT airport_lounges_price_check
+    CHECK (
+      (estimated_price_min IS NULL AND estimated_price_max IS NULL AND currency_code IS NULL)
+      OR (
+        estimated_price_min >= 0
+        AND estimated_price_max >= estimated_price_min
+        AND currency_code ~ '^[A-Z]{3}$'
+      )
+    ),
 
   CONSTRAINT airport_lounges_order_check
     CHECK (display_order > 0),

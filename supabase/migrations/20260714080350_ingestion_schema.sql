@@ -20,6 +20,14 @@ CREATE TABLE private.raw_import_batches (
   idempotency_key   TEXT         NOT NULL,
   received_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
   source_time       TIMESTAMPTZ  NULL,
+  source_url        TEXT         NULL,
+  source_etag       TEXT         NULL,
+  downloaded_bytes  INTEGER      NULL,
+  raw_record_count  INTEGER      NULL,
+  eligible_record_count INTEGER  NULL,
+  filtered_record_count INTEGER  NULL,
+  invalid_record_count INTEGER   NULL,
+  filter_version    TEXT         NULL,
   status            TEXT         NOT NULL DEFAULT 'received',
   created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
@@ -46,7 +54,37 @@ CREATE TABLE private.raw_import_batches (
     ),
 
   CONSTRAINT raw_import_batches_status_check
-    CHECK (status IN ('received', 'validated', 'published', 'rejected'))
+    CHECK (
+      status IN (
+        'received',
+        'validated',
+        'awaiting_review',
+        'published',
+        'rejected',
+        'unchanged'
+      )
+    ),
+
+  CONSTRAINT raw_import_batches_download_metrics_check
+    CHECK (
+      (downloaded_bytes IS NULL OR downloaded_bytes >= 0)
+      AND (raw_record_count IS NULL OR raw_record_count >= 0)
+      AND (eligible_record_count IS NULL OR eligible_record_count >= 0)
+      AND (filtered_record_count IS NULL OR filtered_record_count >= 0)
+      AND (invalid_record_count IS NULL OR invalid_record_count >= 0)
+    ),
+
+  CONSTRAINT raw_import_batches_source_url_check
+    CHECK (source_url IS NULL OR source_url ~ '^https://'),
+
+  CONSTRAINT raw_import_batches_filter_version_check
+    CHECK (
+      filter_version IS NULL
+      OR (
+        filter_version = btrim(filter_version)
+        AND char_length(filter_version) BETWEEN 1 AND 80
+      )
+    )
 );
 
 CREATE INDEX raw_import_batches_source_received_idx
@@ -194,3 +232,26 @@ ON admin.ingestion_issues USING btree (run_id);
 
 REVOKE ALL ON TABLE admin.ingestion_issues FROM public, anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.ingestion_issues TO service_role;
+
+-- >>> supabase/sql_src/schema/ingestion/ourairports_denylist.sql
+
+-- Table: admin.ourairports_denylist
+-- Feature: OurAirports Ingestion
+-- Purpose: Exclude IATA airports that do not fit Tripways commercial coverage.
+-- Responsibilities: Keep reviewed exclusions auditable and outside provider adapter code.
+
+CREATE TABLE admin.ourairports_denylist (
+  iata        TEXT         PRIMARY KEY,
+  reason      TEXT         NOT NULL,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+
+  CONSTRAINT ourairports_denylist_iata_check
+    CHECK (iata ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT ourairports_denylist_reason_check
+    CHECK (reason = btrim(reason) AND char_length(reason) BETWEEN 1 AND 240)
+);
+
+REVOKE ALL ON TABLE admin.ourairports_denylist FROM public, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.ourairports_denylist TO service_role;

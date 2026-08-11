@@ -13,6 +13,7 @@ AS $$
 DECLARE
   v_version_id UUID;
   v_route_count INTEGER;
+  v_homepage_statistics_count INTEGER;
   v_page_counts JSONB;
 BEGIN
   IF p_source_type NOT IN ('production', 'development_fixture') THEN
@@ -32,11 +33,63 @@ BEGIN
   -- STEP 02: Keep candidate failures in a subtransaction and preserve the current version.
   BEGIN
     v_route_count := private.refresh_route_search_options(v_version_id);
+    v_homepage_statistics_count := private.refresh_homepage_statistics(v_version_id);
+
+    -- STEP 02A: Derive lifecycle only on the canonical page registry.
+    UPDATE public.pseo_pages AS registry
+    SET
+      is_indexable = FALSE,
+      noindex_reason = CASE
+        WHEN p_source_type = 'development_fixture' THEN 'development_fixture'
+        WHEN registry.status <> 'published' THEN 'not_published'
+        WHEN registry.page_type IN ('city', 'airport', 'city_route') THEN 'source_not_seo_eligible'
+        ELSE COALESCE(registry.noindex_reason, 'unsupported_page_type')
+      END,
+      data_version = v_version_id,
+      generated_at = now();
+
+    -- Set both constrained lifecycle fields together after the safe noindex baseline.
+    UPDATE public.pseo_pages AS registry
+    SET is_indexable = TRUE, noindex_reason = NULL
+    WHERE p_source_type = 'production'
+      AND registry.status = 'published'
+      AND CASE
+        WHEN registry.page_type = 'city' THEN EXISTS (
+          SELECT 1
+          FROM public.city_pages AS content
+          JOIN public.route_search_options AS route
+            ON route.publication_version_id = v_version_id
+           AND route.origin_city_id = content.city_id
+           AND route.stop_count = 0
+          WHERE content.pseo_page_id = registry.id
+            AND content.content_reviewed_at IS NOT NULL
+        )
+        WHEN registry.page_type = 'airport' THEN EXISTS (
+          SELECT 1
+          FROM public.airport_pages AS content
+          JOIN public.route_search_options AS route
+            ON route.publication_version_id = v_version_id
+           AND route.origin_airport_id = content.airport_id
+           AND route.stop_count = 0
+          WHERE content.pseo_page_id = registry.id
+            AND content.content_reviewed_at IS NOT NULL
+        )
+        WHEN registry.page_type = 'city_route' THEN EXISTS (
+          SELECT 1
+          FROM public.route_pages AS content
+          JOIN public.route_search_options AS route
+            ON route.publication_version_id = v_version_id
+           AND route.origin_city_id = content.origin_city_id
+           AND route.destination_city_id = content.destination_city_id
+          WHERE content.pseo_page_id = registry.id
+            AND content.content_reviewed_at IS NOT NULL
+        )
+        ELSE FALSE
+      END;
+
     v_page_counts := private.refresh_page_read_models(v_version_id);
 
-    IF v_route_count = 0
-      OR COALESCE((v_page_counts->>'homepage')::INTEGER, 0) = 0
-    THEN
+    IF v_route_count = 0 OR v_homepage_statistics_count <> 1 THEN
       RAISE EXCEPTION USING
         ERRCODE = '23514',
         MESSAGE = 'ERR_PUBLICATION_INCOMPLETE';

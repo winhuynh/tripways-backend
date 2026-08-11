@@ -12,5 +12,7 @@ export function createRouteSearchHandler(
     parse: parseRouteSearchRequest,
     query: (input) => query(toRouteSearchRpcInput(input)),
     contractErrorCode: 'ERR_ROUTE_SEARCH_CONTRACT',
+    // Public, anonymous, read-only endpoint — allow CDN and browser caching.
+    cacheable: true,
   });
 }

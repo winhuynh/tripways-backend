@@ -27,13 +27,7 @@ async function collectFiles(directory: URL): Promise<URL[]> {
 }
 
 const typedTables = [
-  ['schema/pseo/homepage/homepage_pages.sql', 'homepage_pages'],
-  ['schema/pseo/homepage/homepage_featured_origins.sql', 'homepage_featured_origins'],
-  ['schema/pseo/homepage/homepage_featured_routes.sql', 'homepage_featured_routes'],
-  ['schema/pseo/homepage/homepage_content_sections.sql', 'homepage_content_sections'],
-  ['schema/pseo/homepage/homepage_faqs.sql', 'homepage_faqs'],
   ['schema/pseo/city/city_content_sections.sql', 'city_content_sections'],
-  ['schema/pseo/airport/airport_content_sections.sql', 'airport_content_sections'],
 ] as const;
 
 Deno.test('each required page content table has one definition and closed client access', async () => {
@@ -45,6 +39,64 @@ Deno.test('each required page content table has one definition and closed client
     assert.ok(sql.includes(`revoke all on table public.${table} from anon, authenticated`), path);
     assert.ok(sql.includes(`to service_role`), path);
   }
+});
+
+Deno.test('homepage is a landing page backed only by canonical search and statistics', async () => {
+  for (
+    const path of [
+      'schema/pseo/homepage/homepage_pages.sql',
+      'schema/pseo/homepage/homepage_featured_origins.sql',
+      'schema/pseo/homepage/homepage_featured_routes.sql',
+      'schema/pseo/homepage/homepage_content_sections.sql',
+      'schema/pseo/homepage/homepage_faqs.sql',
+      'schema/pseo/homepage/homepage_read_models.sql',
+      'functions/pseo/homepage/build_homepage_discovery.sql',
+    ]
+  ) {
+    assert.equal(await readSource(path), '', path);
+  }
+
+  const statsSql = normalize(
+    await readSource('functions/pseo/homepage/rpc_get_homepage_statistics.sql'),
+  );
+  const statsTableSql = normalize(
+    await readSource('schema/pseo/homepage/homepage_statistics.sql'),
+  );
+  const refreshStatsSql = normalize(
+    await readSource('functions/pseo/homepage/refresh_homepage_statistics.sql'),
+  );
+  assert.ok(statsTableSql.includes('create table public.homepage_statistics'));
+  assert.ok(
+    statsTableSql.includes('alter table public.homepage_statistics enable row level security'),
+  );
+  assert.ok(statsTableSql.includes('create policy homepage_statistics_public_read'));
+  assert.ok(
+    statsTableSql.includes(
+      'grant select on table public.homepage_statistics to anon, authenticated',
+    ),
+  );
+  assert.ok(refreshStatsSql.includes('function private.refresh_homepage_statistics'));
+  assert.ok(refreshStatsSql.includes('count(distinct option.origin_city_id)'));
+  assert.ok(refreshStatsSql.includes('count(distinct option.origin_airport_id)'));
+  assert.ok(refreshStatsSql.includes('count(distinct option.route_path)'));
+  assert.ok(statsSql.includes('function public.rpc_get_homepage_statistics()'));
+  assert.ok(statsSql.includes('from public.homepage_statistics statistics'));
+  assert.ok(statsSql.includes("set search_path = ''"));
+  assert.ok(
+    statsSql.includes(
+      'revoke all on function public.rpc_get_homepage_statistics() from public',
+    ),
+  );
+  assert.ok(
+    statsSql.includes(
+      'grant execute on function public.rpc_get_homepage_statistics() to anon, authenticated, service_role',
+    ),
+  );
+
+  const config = normalize(
+    await Deno.readTextFile(new URL('supabase/config.toml', repositoryRoot)),
+  );
+  assert.equal(config.includes('[functions.homepage-statistics]'), false);
 });
 
 Deno.test('canonical page and route RPCs are service-role-only functions', async () => {
@@ -150,13 +202,141 @@ Deno.test('airport page source uses a journey-led payload instead of legacy feat
   }
 });
 
+Deno.test('pSEO pages and route search share one canonical publication projection', async () => {
+  const [cityPageSql, airportPageSql, routePageSql, publisherSql] = await Promise.all([
+    readSource('functions/pseo/city/build_city_page_payload.sql'),
+    readSource('functions/pseo/airport/build_airport_page_payload.sql'),
+    readSource('functions/pseo/route/build_route_page_payload.sql'),
+    readSource('functions/pseo/shared/publish_read_model_version.sql'),
+  ]);
+
+  for (const source of [cityPageSql, airportPageSql, routePageSql]) {
+    const sql = normalize(source);
+    assert.ok(sql.includes('public.route_search_options'));
+    assert.equal(sql.includes('public.pseo_direct_routes'), false);
+    assert.equal(sql.includes('public.route_options'), false);
+  }
+
+  const publisher = normalize(publisherSql);
+  assert.ok(publisher.includes('private.refresh_route_search_options'));
+  assert.ok(publisher.includes('private.refresh_page_read_models'));
+  assert.equal(publisher.includes('refresh_pseo_read_models'), false);
+});
+
+Deno.test('homepage place and origin search read only the current canonical projection', async () => {
+  for (const path of [
+    'functions/pseo/homepage/rpc_search_places.sql',
+    'functions/pseo/homepage/rpc_resolve_homepage_origin.sql',
+  ]) {
+    const sql = normalize(await readSource(path));
+    assert.ok(sql.includes('public.publication_versions'), path);
+    assert.ok(sql.includes('public.route_search_options'), path);
+    assert.equal(sql.includes('public.route_options'), false, path);
+    assert.equal(sql.includes('city.slug'), false, path);
+  }
+});
+
+Deno.test('city page identity resolves canonical page slug before normalized city', async () => {
+  const sql = normalize(
+    await readSource('functions/pseo/city/resolve_city_page_context.sql'),
+  );
+  const pageLookup = sql.indexOf('from public.city_pages');
+  const cityLookup = sql.indexOf('from public.cities');
+  assert.ok(pageLookup >= 0);
+  assert.ok(cityLookup < 0 || pageLookup < cityLookup);
+  assert.ok(sql.includes('registry.entity_key = p_city_slug'));
+});
+
+Deno.test('city slug rename E2E restores the production canonical slug after verification', async () => {
+  const sql = normalize(
+    await Deno.readTextFile(new URL('supabase/snippets/e2e_city_slug_rename.sql', repositoryRoot)),
+  );
+  assert.ok(sql.includes("private.rename_city_slug('bangkok', 'bangkok-thailand')"));
+  assert.ok(sql.includes("private.rename_city_slug('bangkok-thailand', 'bangkok')"));
+  assert.ok(sql.includes("entity_key', 'bangkok'"));
+  assert.ok(sql.includes("entity_key', 'bangkok-thailand'"));
+});
+
+Deno.test('legacy route and city projection sources are removed from migration inputs', async () => {
+  const legacySources = [
+    'schema/pseo/shared/pseo_direct_routes.sql',
+    'schema/pseo/city/city_destination_summaries.sql',
+    'schema/route_discovery/route_options.sql',
+    'functions/pseo/shared/refresh_pseo_read_models.sql',
+    'functions/route_discovery/refresh_route_options.sql',
+    'functions/pseo/city/get_city_airport_route_stats.sql',
+    'functions/pseo/city/get_city_quick_facts.sql',
+    'functions/pseo/city/get_city_route_map.sql',
+  ];
+  for (const source of legacySources) {
+    assert.equal(await readSource(source), '', source);
+  }
+});
+
+Deno.test('page subtype tables contain editorial content but no canonical lifecycle copies', async () => {
+  for (const source of [
+    'schema/pseo/city/city_pages.sql',
+    'schema/pseo/airport/airport_pages.sql',
+    'schema/pseo/route/route_pages.sql',
+  ]) {
+    const sql = normalize(await readSource(source));
+    for (const duplicate of [
+      'canonical_slug',
+      'is_indexable',
+      'noindex_reason',
+      'data_version',
+      'source_freshness_at',
+      'generated_at',
+    ]) {
+      assert.equal(sql.includes(duplicate), false, `${source}: ${duplicate}`);
+    }
+  }
+});
+
+Deno.test('airport journey schema removes legacy content stores and keeps directional utility fields', async () => {
+  const airportFactsSql = await readSource('schema/pseo/airport/airport_facts.sql');
+  const airportSectionsSql = await readSource(
+    'schema/pseo/airport/airport_content_sections.sql',
+  );
+  const accessSql = normalize(
+    await readSource('schema/pseo/airport/airport_access_options.sql'),
+  );
+  const loungeSql = normalize(await readSource('schema/pseo/airport/airport_lounges.sql'));
+
+  assert.equal(airportFactsSql, '');
+  assert.equal(airportSectionsSql, '');
+  for (
+    const field of [
+      'journey_direction',
+      'pickup_location_summary',
+      'best_for_label',
+      'luggage_summary',
+      'accessibility_summary',
+    ]
+  ) {
+    assert.ok(accessSql.includes(field), field);
+  }
+  for (
+    const field of [
+      'operating_hours_summary',
+      'estimated_price_min',
+      'estimated_price_max',
+      'currency_code',
+      'affiliate_url',
+    ]
+  ) {
+    assert.ok(loungeSql.includes(field), field);
+  }
+});
+
 Deno.test('route page read model excludes interactive route-search results', async () => {
   const sql = normalize(
     await readSource('functions/pseo/route/build_route_page_payload.sql'),
   );
 
   assert.equal(sql.includes("'options', public.rpc_search_routes"), false);
-  assert.ok(sql.includes("'summary', jsonb_build_object"));
+  assert.ok(sql.includes("'summary', ("));
+  assert.ok(sql.includes('public.route_search_options'));
 });
 
 Deno.test('canonical route search supports direct-only airport scope in both directions', async () => {
@@ -176,4 +356,15 @@ Deno.test('canonical route search supports direct-only airport scope in both dir
     ),
   );
   assert.ok(sql.includes("'counterpart_query'"));
+});
+
+Deno.test('route search exposes a route guide link only for the current published read model', async () => {
+  const sql = normalize(await readSource('functions/route_discovery/rpc_search_routes.sql'));
+
+  assert.ok(sql.includes('from public.route_page_read_models route_page'));
+  assert.ok(sql.includes('route_page.publication_version_id = v_version_id'));
+  assert.ok(
+    sql.includes("route_page.canonical_slug = regexp_replace(page.route_path, '^/flights/', '')"),
+  );
+  assert.ok(sql.includes('then page.route_path else null end'));
 });

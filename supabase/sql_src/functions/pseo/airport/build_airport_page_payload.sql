@@ -21,6 +21,7 @@ DECLARE
   v_airport_id UUID;
   v_airport_page_id UUID;
   v_pseo_page_id UUID;
+  v_publication_version_id UUID := (p_input->>'publication_version_id')::UUID;
   v_result JSONB;
 BEGIN
   v_identity := private.parse_airport_page_identity(p_input);
@@ -116,6 +117,19 @@ BEGIN
           WHERE terminal.airport_id = v_airport_id
             AND terminal.status = 'active'
         )
+      ),
+      'route_summary', (
+        SELECT jsonb_build_object(
+          'direct_destinations', count(DISTINCT route.destination_city_id),
+          'direct_airlines', count(DISTINCT airline_iata),
+          'shortest_route_minutes', min(route.total_duration_minutes),
+          'longest_route_minutes', max(route.total_duration_minutes)
+        )
+        FROM public.route_search_options AS route
+        CROSS JOIN LATERAL unnest(route.operating_airline_iatas) AS airline_iata
+        WHERE route.publication_version_id = v_publication_version_id
+          AND route.origin_airport_id = v_airport_id
+          AND route.stop_count = 0
       ),
       'arrival', jsonb_build_object(
         'summary', airport_page.arrival_summary,
@@ -236,7 +250,17 @@ BEGIN
             'location_summary', lounge.location_summary,
             'location_type', lounge.location_type,
             'access_summary', lounge.access_summary,
+            'operating_hours_summary', lounge.operating_hours_summary,
             'amenities', to_jsonb(lounge.amenities),
+            'estimated_price', CASE
+              WHEN lounge.estimated_price_min IS NULL THEN NULL
+              ELSE jsonb_build_object(
+                'min', lounge.estimated_price_min,
+                'max', lounge.estimated_price_max,
+                'currency', lounge.currency_code
+              )
+            END,
+            'affiliate_url', lounge.affiliate_url,
             'official_url', lounge.official_url,
             'source_url', lounge.primary_source_url,
             'last_verified_at', lounge.last_verified_at
@@ -293,19 +317,19 @@ BEGIN
       ), '[]'::JSONB),
       'provenance', jsonb_build_object(
         'last_editorial_review', airport_page.content_reviewed_at,
-        'source_freshness_at', airport_page.source_freshness_at,
-        'routes_refreshed_at', airport_page.route_data_refreshed_at,
-        'data_version', airport_page.data_version,
+        'source_freshness_at', pseo_page.source_freshness_at,
+        'route_data_refreshed_at', pseo_page.source_freshness_at,
+        'data_version', v_publication_version_id,
         'estimates_are_live', FALSE
       )
     ),
     'meta', jsonb_build_object(
       'canonical_path', pseo_page.canonical_path,
-      'is_indexable', airport_page.is_indexable,
-      'noindex_reason', airport_page.noindex_reason,
-      'data_version', airport_page.data_version,
-      'source_freshness_at', airport_page.source_freshness_at,
-      'generated_at', airport_page.generated_at
+      'is_indexable', pseo_page.is_indexable,
+      'noindex_reason', pseo_page.noindex_reason,
+      'data_version', v_publication_version_id,
+      'source_freshness_at', pseo_page.source_freshness_at,
+      'generated_at', pseo_page.generated_at
     ),
     'error', NULL
   )

@@ -35,7 +35,7 @@ CREATE TABLE public.route_search_options (
   maximum_layover_minutes  INTEGER        NOT NULL,
   total_duration_minutes   INTEGER        NOT NULL,
   confidence_score         NUMERIC(4,3)   NOT NULL,
-  route_path               TEXT           NOT NULL,
+  route_path               TEXT           NULL,
   price_state              TEXT           NOT NULL,
   price_trip_type          TEXT           NULL,
   price_min                NUMERIC(14,2)  NULL,

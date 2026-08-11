@@ -16,7 +16,8 @@ CREATE OR REPLACE FUNCTION private.publish_base_data_batch(
   p_checksum          TEXT,
   p_provider_version  TEXT,
   p_source_time       TIMESTAMPTZ,
-  p_records           JSONB
+  p_records           JSONB,
+  p_import_metadata   JSONB DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -33,6 +34,10 @@ DECLARE
   v_run_id          UUID;
   v_record_count    INTEGER;
   v_invalid_count   INTEGER;
+  v_previous_eligible_count INTEGER;
+  v_eligible_count  INTEGER;
+  v_deactivation_count INTEGER;
+  v_is_production_source BOOLEAN;
 
   -- Publication
   v_country         JSONB;
@@ -41,6 +46,8 @@ DECLARE
   v_country_id      UUID;
   v_city_id         UUID;
   v_slug            TEXT;
+  v_city_record     JSONB;
+  v_read_publication JSONB;
 BEGIN
   -- STEP 01: Validate bounded invocation fields and source rights.
   IF p_source_code IS NULL
@@ -53,6 +60,7 @@ BEGIN
     OR jsonb_typeof(p_records -> 'countries') <> 'array'
     OR jsonb_typeof(p_records -> 'cities') <> 'array'
     OR jsonb_typeof(p_records -> 'airports') <> 'array'
+    OR (p_import_metadata IS NOT NULL AND jsonb_typeof(p_import_metadata) <> 'object')
   THEN
     RETURN jsonb_build_object(
       'status', 'failed',
@@ -64,9 +72,6 @@ BEGIN
   INTO v_source_id
   FROM admin.data_sources AS source
   WHERE source.code = p_source_code
-    AND source.environment_scope = 'development'
-    AND source.production_allowed = FALSE
-    AND source.seo_allowed = FALSE
     AND source.source_type IN ('base_data', 'development_fixture');
 
   IF v_source_id IS NULL THEN
@@ -75,6 +80,29 @@ BEGIN
       'errorCode', 'ERR_INGESTION_SOURCE_NOT_ALLOWED'
     );
   END IF;
+
+  SELECT source.environment_scope = 'production'
+  INTO v_is_production_source
+  FROM admin.data_sources AS source
+  WHERE source.id = v_source_id;
+
+  IF v_is_production_source AND NOT EXISTS (
+    SELECT 1
+    FROM admin.data_sources AS source
+    WHERE source.id = v_source_id
+      AND source.production_allowed
+      AND source.storage_allowed
+      AND source.production_display_allowed
+      AND (source.rights_effective_at IS NULL OR source.rights_effective_at <= now())
+      AND (source.rights_expires_at IS NULL OR source.rights_expires_at > now())
+  ) THEN
+    RETURN jsonb_build_object(
+      'status', 'failed',
+      'errorCode', 'ERR_INGESTION_SOURCE_NOT_ALLOWED'
+    );
+  END IF;
+
+  PERFORM pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_source_code));
 
   -- STEP 02: Return the stable result for checksum or idempotency replays.
   SELECT batch.*
@@ -104,6 +132,14 @@ BEGIN
     checksum,
     idempotency_key,
     source_time,
+    source_url,
+    source_etag,
+    downloaded_bytes,
+    raw_record_count,
+    eligible_record_count,
+    filtered_record_count,
+    invalid_record_count,
+    filter_version,
     status
   )
   VALUES (
@@ -112,6 +148,14 @@ BEGIN
     p_checksum,
     p_idempotency_key,
     p_source_time,
+    p_import_metadata ->> 'sourceUrl',
+    p_import_metadata ->> 'sourceEtag',
+    (p_import_metadata ->> 'downloadedBytes')::INTEGER,
+    (p_import_metadata ->> 'rawRecordCount')::INTEGER,
+    (p_import_metadata ->> 'eligibleRecordCount')::INTEGER,
+    (p_import_metadata ->> 'filteredRecordCount')::INTEGER,
+    (p_import_metadata ->> 'invalidRecordCount')::INTEGER,
+    p_import_metadata ->> 'filterVersion',
     'received'
   )
   RETURNING id INTO v_batch_id;
@@ -167,7 +211,64 @@ BEGIN
   )
   RETURNING id INTO v_run_id;
 
-  -- STEP 04: Validate all required fields, coordinates, duplicates, and references.
+  -- STEP 04: Hold anomalous production snapshots for review before canonical mutation.
+  v_eligible_count := jsonb_array_length(p_records -> 'airports');
+
+  SELECT batch.eligible_record_count
+  INTO v_previous_eligible_count
+  FROM private.raw_import_batches AS batch
+  WHERE batch.source_id = v_source_id
+    AND batch.status = 'published'
+    AND batch.id <> v_batch_id
+    AND batch.eligible_record_count IS NOT NULL
+  ORDER BY batch.received_at DESC
+  LIMIT 1;
+
+  SELECT count(*)::INTEGER
+  INTO v_deactivation_count
+  FROM public.airports AS airport
+  WHERE airport.source_id = v_source_id
+    AND airport.status = 'active'
+    AND NOT EXISTS (
+      SELECT 1
+      FROM jsonb_array_elements(p_records -> 'airports') AS candidate
+      WHERE candidate ->> 'sourceId' = airport.source_record_id
+    );
+
+  IF v_is_production_source
+    AND v_previous_eligible_count > 0
+    AND (
+      v_eligible_count < v_previous_eligible_count * 0.95
+      OR abs(v_eligible_count - v_previous_eligible_count) > v_previous_eligible_count * 0.15
+      OR v_deactivation_count > greatest(1, ceil(v_previous_eligible_count * 0.02))
+    )
+  THEN
+    UPDATE private.raw_import_batches
+    SET status = 'awaiting_review', updated_at = now()
+    WHERE id = v_batch_id;
+
+    UPDATE admin.ingestion_runs
+    SET
+      rejected_count = v_record_count,
+      status = 'failed',
+      stable_error_code = 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED',
+      completed_at = now()
+    WHERE id = v_run_id;
+
+    INSERT INTO admin.ingestion_issues (run_id, issue_code, severity)
+    VALUES (v_run_id, 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED', 'error');
+
+    RETURN jsonb_build_object(
+      'status', 'awaiting_review',
+      'batchId', v_batch_id,
+      'runId', v_run_id,
+      'acceptedCount', 0,
+      'rejectedCount', v_record_count,
+      'errorCode', 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED'
+    );
+  END IF;
+
+  -- STEP 05: Validate all required fields, coordinates, duplicates, and references.
   SELECT count(*)
   INTO v_invalid_count
   FROM private.raw_base_data_records AS record
@@ -239,6 +340,11 @@ BEGIN
           AND country.record_type = 'country'
           AND country.payload ->> 'iso2' = record.payload ->> 'countryIso2'
       )
+      AND NOT EXISTS (
+        SELECT 1
+        FROM public.countries AS country
+        WHERE country.iso2 = record.payload ->> 'countryIso2'
+      )
   );
 
   v_invalid_count := v_invalid_count + (
@@ -300,7 +406,7 @@ BEGIN
   SET validation_state = 'valid'
   WHERE batch_id = v_batch_id;
 
-  -- STEP 05: Publish countries, then cities, then airports.
+  -- STEP 06: Publish countries, then cities, then airports.
   FOR v_country IN
     SELECT value
     FROM jsonb_array_elements(p_records -> 'countries')
@@ -323,13 +429,16 @@ BEGIN
       v_source_id,
       v_country ->> 'iso2'
     )
-    ON CONFLICT (source_id, source_record_id)
-    DO UPDATE SET
-      iso2 = EXCLUDED.iso2,
-      iso3 = EXCLUDED.iso3,
-      name = EXCLUDED.name,
-      slug = EXCLUDED.slug,
-      updated_at = now();
+    ON CONFLICT (iso2) DO NOTHING;
+
+    UPDATE public.countries AS country
+    SET
+      iso3 = v_country ->> 'iso3',
+      name = btrim(v_country ->> 'name'),
+      slug = v_slug,
+      updated_at = now()
+    WHERE country.source_id = v_source_id
+      AND country.source_record_id = v_country ->> 'iso2';
   END LOOP;
 
   FOR v_city IN
@@ -339,8 +448,9 @@ BEGIN
     SELECT country.id
     INTO v_country_id
     FROM public.countries AS country
-    WHERE country.source_id = v_source_id
-      AND country.source_record_id = v_city ->> 'countryIso2';
+    WHERE country.iso2 = v_city ->> 'countryIso2'
+    ORDER BY (country.source_id = v_source_id) DESC
+    LIMIT 1;
 
     v_slug := trim(BOTH '-' FROM regexp_replace(lower(v_city ->> 'name'), '[^a-z0-9]+', '-', 'g'));
 
@@ -364,15 +474,19 @@ BEGIN
       v_source_id,
       v_city ->> 'sourceId'
     )
-    ON CONFLICT (source_id, source_record_id)
-    DO UPDATE SET
-      country_id = EXCLUDED.country_id,
-      name = EXCLUDED.name,
-      slug = EXCLUDED.slug,
-      latitude = EXCLUDED.latitude,
-      longitude = EXCLUDED.longitude,
+    ON CONFLICT (country_id, slug) DO NOTHING;
+
+    UPDATE public.cities AS city
+    SET
+      country_id = v_country_id,
+      name = btrim(v_city ->> 'name'),
+      slug = v_slug,
+      latitude = (v_city ->> 'latitude')::DOUBLE PRECISION,
+      longitude = (v_city ->> 'longitude')::DOUBLE PRECISION,
       timezone = NULL,
-      updated_at = now();
+      updated_at = now()
+    WHERE city.source_id = v_source_id
+      AND city.source_record_id = v_city ->> 'sourceId';
   END LOOP;
 
   FOR v_airport IN
@@ -382,8 +496,9 @@ BEGIN
     SELECT country.id
     INTO v_country_id
     FROM public.countries AS country
-    WHERE country.source_id = v_source_id
-      AND country.source_record_id = v_airport ->> 'countryIso2';
+    WHERE country.iso2 = v_airport ->> 'countryIso2'
+    ORDER BY (country.source_id = v_source_id) DESC
+    LIMIT 1;
 
     v_city_id := NULL;
     IF NULLIF(v_airport ->> 'citySourceId', '') IS NOT NULL THEN
@@ -392,6 +507,31 @@ BEGIN
       FROM public.cities AS city
       WHERE city.source_id = v_source_id
         AND city.source_record_id = v_airport ->> 'citySourceId';
+
+      IF v_city_id IS NULL THEN
+        SELECT record.payload
+        INTO v_city_record
+        FROM private.raw_base_data_records AS record
+        WHERE record.batch_id = v_batch_id
+          AND record.record_type = 'city'
+          AND record.source_key = v_airport ->> 'citySourceId';
+
+        IF v_city_record IS NOT NULL THEN
+          v_slug := trim(
+            BOTH '-'
+            FROM regexp_replace(lower(v_city_record ->> 'name'), '[^a-z0-9]+', '-', 'g')
+          );
+
+          SELECT city.id
+          INTO v_city_id
+          FROM public.cities AS city
+          JOIN public.countries AS country
+            ON country.id = city.country_id
+          WHERE country.iso2 = v_city_record ->> 'countryIso2'
+            AND city.slug = v_slug
+          LIMIT 1;
+        END IF;
+      END IF;
     END IF;
 
     v_slug := trim(
@@ -436,7 +576,7 @@ BEGIN
       (v_airport ->> 'longitude')::DOUBLE PRECISION,
       NULL,
       v_airport ->> 'type',
-      'unknown',
+      CASE WHEN v_is_production_source THEN 'active' ELSE 'unknown' END,
       v_source_id,
       v_airport ->> 'sourceId',
       p_source_time
@@ -453,12 +593,26 @@ BEGIN
       longitude = EXCLUDED.longitude,
       timezone = NULL,
       airport_type = EXCLUDED.airport_type,
-      status = 'unknown',
+      status = CASE WHEN v_is_production_source THEN 'active' ELSE 'unknown' END,
       last_verified_at = EXCLUDED.last_verified_at,
       updated_at = now();
   END LOOP;
 
-  -- STEP 06: Complete the operational evidence after canonical publication.
+  IF v_is_production_source THEN
+    UPDATE public.airports AS airport
+    SET
+      status = 'inactive',
+      updated_at = now()
+    WHERE airport.source_id = v_source_id
+      AND airport.status = 'active'
+      AND NOT EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements(p_records -> 'airports') AS candidate
+        WHERE candidate ->> 'sourceId' = airport.source_record_id
+      );
+  END IF;
+
+  -- STEP 07: Complete the operational evidence after canonical publication.
   UPDATE private.raw_import_batches
   SET
     status = 'published',
@@ -472,13 +626,25 @@ BEGIN
     completed_at = now()
   WHERE id = v_run_id;
 
+  -- STEP 08: Publish every public page and search consumer from one canonical snapshot.
+  v_read_publication := public.publish_read_model_version(
+    CASE WHEN v_is_production_source THEN 'production' ELSE 'development_fixture' END
+  );
+
+  IF v_read_publication #>> '{error,code}' IS NOT NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = 'P0001',
+      MESSAGE = 'ERR_INGESTION_PUBLISH_FAILED';
+  END IF;
+
   RETURN jsonb_build_object(
     'status', 'published',
     'batchId', v_batch_id,
     'runId', v_run_id,
     'acceptedCount', v_record_count,
     'rejectedCount', 0,
-    'errorCode', NULL
+    'errorCode', NULL,
+    'dataVersion', v_read_publication #>> '{data,data_version}'
   );
 EXCEPTION
   WHEN unique_violation OR check_violation OR foreign_key_violation THEN
@@ -494,6 +660,7 @@ REVOKE ALL ON FUNCTION private.publish_base_data_batch(
   TEXT,
   TEXT,
   TIMESTAMPTZ,
+  JSONB,
   JSONB
 ) FROM public, anon, authenticated;
 
@@ -503,5 +670,6 @@ GRANT EXECUTE ON FUNCTION private.publish_base_data_batch(
   TEXT,
   TEXT,
   TIMESTAMPTZ,
+  JSONB,
   JSONB
 ) TO service_role;

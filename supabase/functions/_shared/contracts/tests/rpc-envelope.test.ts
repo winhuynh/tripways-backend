@@ -12,7 +12,11 @@ Deno.test('shared envelope rejects malformed and failed responses', () => {
     /ERR_PAGE_CONTRACT/,
   );
   assert.throws(
-    () => mapRpcEnvelope({ data: null, meta: null, error: { code: 'ERR' } }, 'ERR_PAGE_CONTRACT'),
-    /ERR_PAGE_CONTRACT/,
+    () =>
+      mapRpcEnvelope(
+        { data: null, meta: null, error: { code: 'ERR_PAGE_NOT_FOUND' } },
+        'ERR_PAGE_CONTRACT',
+      ),
+    /ERR_PAGE_NOT_FOUND/,
   );
 });

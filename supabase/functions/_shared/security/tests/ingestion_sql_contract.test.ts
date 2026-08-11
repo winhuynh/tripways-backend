@@ -21,6 +21,7 @@ const expectedTables = [
   ['schema/ingestion/raw_base_data_records.sql', 'private.raw_base_data_records'],
   ['schema/ingestion/ingestion_runs.sql', 'admin.ingestion_runs'],
   ['schema/ingestion/ingestion_issues.sql', 'admin.ingestion_issues'],
+  ['schema/ingestion/ourairports_denylist.sql', 'admin.ourairports_denylist'],
 ] as const;
 
 Deno.test('ingestion stores one private or admin table per source file', async () => {
@@ -39,7 +40,13 @@ Deno.test('raw batches enforce source checksum idempotency and bounded status', 
 
   assert.ok(includesSql(sql, 'unique (source_id, checksum)'));
   assert.ok(includesSql(sql, 'idempotency_key text not null'));
-  assert.ok(includesSql(sql, "status in ('received', 'validated', 'published', 'rejected')"));
+  assert.ok(sql.includes('source_url'));
+  assert.ok(sql.includes('filter_version'));
+  assert.ok(sql.includes('raw_record_count'));
+  assert.ok(sql.includes('eligible_record_count'));
+  assert.ok(sql.includes('filtered_record_count'));
+  assert.ok(includesSql(sql, "'awaiting_review'"));
+  assert.ok(includesSql(sql, "'unchanged'"));
   assert.ok(
     includesSql(
       sql,
@@ -148,6 +155,53 @@ Deno.test('publication is private, atomic, idempotent, and unknown-safe', async 
   assert.ok(includesSql(sql, 'insert into public.countries'));
   assert.ok(includesSql(sql, 'insert into public.cities'));
   assert.ok(includesSql(sql, 'insert into public.airports'));
+  assert.ok(includesSql(sql, 'on conflict (iso2) do nothing'));
+  assert.ok(includesSql(sql, 'on conflict (country_id, slug) do nothing'));
+  assert.ok(includesSql(sql, "record.record_type = 'city'"));
+  assert.ok(includesSql(sql, 'err_ingestion_anomaly_review_required'));
+  assert.ok(includesSql(sql, "status = 'inactive'"));
+  assert.ok(includesSql(sql, "status = 'active'"));
+  assert.ok(includesSql(sql, 'pg_advisory_xact_lock'));
+  assert.ok(includesSql(sql, 'public.publish_read_model_version'));
+  assert.ok(includesSql(sql, 'err_ingestion_publish_failed'));
   assert.ok(includesSql(sql, 'revoke all on function private.publish_base_data_batch'));
   assert.ok(includesSql(sql, 'grant execute on function private.publish_base_data_batch'));
+});
+
+Deno.test('OurAirports denylist is private and readable only through a service-role RPC', async () => {
+  const tableSql = await readSource('schema/ingestion/ourairports_denylist.sql');
+  const rpcSql = await readSource('functions/ingestion/rpc_get_ourairports_denylist.sql');
+
+  assert.ok(includesSql(tableSql, 'create table admin.ourairports_denylist'));
+  assert.ok(includesSql(tableSql, "iata ~ '^[A-Z]{3}$'"));
+  assert.ok(includesSql(tableSql, 'revoke all on table admin.ourairports_denylist'));
+  assert.ok(includesSql(rpcSql, 'create or replace function public.rpc_get_ourairports_denylist'));
+  assert.ok(includesSql(rpcSql, 'to service_role'));
+  assert.equal(includesSql(rpcSql, 'to anon'), false);
+  assert.equal(includesSql(rpcSql, 'to authenticated'), false);
+});
+
+Deno.test('OurAirports cron setup calls only the fixed ingestion function with Vault secrets', async () => {
+  const sql = await readSource('operations/configure_ourairports_cron.sql');
+
+  assert.ok(includesSql(sql, 'create extension if not exists pg_cron'));
+  assert.ok(includesSql(sql, 'create extension if not exists pg_net'));
+  assert.ok(includesSql(sql, 'cron.schedule('));
+  assert.ok(sql.includes("'tripways-ourairports-daily'"));
+  assert.ok(sql.includes("'0 2 * * *'"));
+  assert.ok(sql.includes("'/functions/v1/ingestion-base-data'"));
+  assert.ok(sql.includes('vault.decrypted_secrets'));
+  assert.ok(sql.includes("'ourairports'"));
+});
+
+Deno.test('OurAirports source fixture records reviewed production and storage rights', async () => {
+  const sql = await Deno.readTextFile(
+    new URL('../../../../seed/ourairports_source.sql', import.meta.url),
+  );
+
+  assert.ok(sql.includes("'ourairports'"));
+  assert.ok(sql.includes("'https://ourairports.com'"));
+  assert.ok(includesSql(sql, "'production'"));
+  assert.ok(includesSql(sql, 'TRUE'));
+  assert.doesNotMatch(sql, /openflights/i);
 });

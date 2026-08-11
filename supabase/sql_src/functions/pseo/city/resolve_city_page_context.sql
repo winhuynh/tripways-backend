@@ -21,33 +21,20 @@ DECLARE
   v_city_id UUID;
   v_city_page_id UUID;
   v_pseo_page_id UUID;
-  v_data_version UUID;
 BEGIN
-  SELECT city.id
-  INTO v_city_id
-  FROM public.cities city
-  WHERE city.slug = p_city_slug;
-
-  IF v_city_id IS NULL THEN
-    RETURN jsonb_build_object(
-      'data', NULL,
-      'error', jsonb_build_object(
-        'code', 'ERR_CITY_NOT_FOUND',
-        'message', 'City was not found.'
-      )
-    );
-  END IF;
-
   SELECT
+    city_page.city_id,
     city_page.id,
-    city_page.pseo_page_id,
-    city_page.data_version
+    city_page.pseo_page_id
   INTO
+    v_city_id,
     v_city_page_id,
-    v_pseo_page_id,
-    v_data_version
-  FROM public.city_pages city_page
-  WHERE city_page.city_id = v_city_id
+    v_pseo_page_id
+  FROM public.city_pages AS city_page
+  JOIN public.pseo_pages AS registry
+    ON registry.id = city_page.pseo_page_id
+  WHERE registry.entity_key = p_city_slug
+    AND registry.page_type = 'city'
     AND city_page.locale = p_locale
     AND city_page.route_direction = p_route_direction;
 
@@ -66,7 +53,6 @@ BEGIN
       'city_id', v_city_id,
       'city_page_id', v_city_page_id,
       'pseo_page_id', v_pseo_page_id,
-      'data_version', v_data_version,
       'route_direction', p_route_direction
     ),
     'error', NULL

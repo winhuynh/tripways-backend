@@ -18,6 +18,8 @@
     "supabase:reset": "supabase db reset --local --yes",
     "supabase:migrations:regenerate": "bash scripts/regenerate-supabase-migrations.sh",
     "smoke:approved-api": "deno run --allow-env --allow-net scripts/smoke-approved-base-data-api.ts",
+    "ourairports:generate-local": "deno run --allow-net=davidmegginson.github.io,raw.githubusercontent.com --allow-read=supabase/seed/ourairports --allow-write=supabase/seed/ourairports scripts/generate-ourairports-local-data.ts",
+    "ourairports:import-local": "deno run --allow-env=LOCAL_DATABASE_URL --allow-read=supabase/seed/ourairports --allow-run=psql scripts/import-ourairports-local-data.ts",
     "verify:p0a": "bash scripts/verify-p0a-local.sh"
   },
   "devDependencies": {

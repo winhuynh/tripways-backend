@@ -20,7 +20,9 @@ const tables = [
   ['schema/flight_routing/airport_terminal_airlines.sql', 'public.airport_terminal_airlines'],
   ['schema/pseo/city/city_facts.sql', 'public.city_facts'],
   ['schema/pseo/airport/airport_facilities.sql', 'public.airport_facilities'],
-  ['schema/pseo/airport/airport_facts.sql', 'public.airport_facts'],
+  ['schema/pseo/airport/airport_journey_steps.sql', 'public.airport_journey_steps'],
+  ['schema/pseo/airport/airport_access_options.sql', 'public.airport_access_options'],
+  ['schema/pseo/airport/airport_lounges.sql', 'public.airport_lounges'],
   ['schema/pseo/shared/route_price_estimates.sql', 'public.route_price_estimates'],
   ['schema/pseo/route/route_pages.sql', 'public.route_pages'],
   ['schema/pseo/route/route_page_faqs.sql', 'public.route_page_faqs'],
@@ -77,7 +79,7 @@ Deno.test('structured facts require locale, citation, review, and freshness', as
   for (
     const path of [
       'schema/pseo/city/city_facts.sql',
-      'schema/pseo/airport/airport_facts.sql',
+      'schema/pseo/airport/airport_journey_steps.sql',
       'schema/pseo/airport/airport_facilities.sql',
     ]
   ) {

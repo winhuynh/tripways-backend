@@ -24,6 +24,7 @@ sql_paths = [
   "./seed/city_pseo_fixture.sql",
   "./seed/airport_pseo_fixture.sql",
   "./seed/provider_ready_page_fixture.sql",
+  "./seed/ourairports_source.sql",
 ]
 
 [realtime]

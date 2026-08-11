@@ -14,11 +14,13 @@ DECLARE
   v_locale TEXT := COALESCE(NULLIF(p_input->>'locale', ''), 'en-GB');
   v_page public.route_pages%ROWTYPE;
   v_pseo public.pseo_pages%ROWTYPE;
+  v_publication_version_id UUID := (p_input->>'publication_version_id')::UUID;
 BEGIN
   SELECT page.*
   INTO v_page
-  FROM public.route_pages page
-  WHERE page.canonical_slug = lower(p_input->>'route_slug')
+  FROM public.route_pages AS page
+  JOIN public.pseo_pages AS registry ON registry.id = page.pseo_page_id
+  WHERE registry.entity_key = lower(p_input->>'route_slug')
     AND page.locale = v_locale;
 
   IF v_page.id IS NULL THEN
@@ -51,11 +53,17 @@ BEGIN
         'meta_description', v_page.meta_description,
         'intro', v_page.intro
       ),
-      'summary', jsonb_build_object(
-        'direct_options', v_page.direct_option_count,
-        'indirect_options', v_page.indirect_option_count,
-        'fastest_direct_minutes', v_page.fastest_direct_minutes,
-        'fastest_indirect_minutes', v_page.fastest_indirect_minutes
+      'summary', (
+        SELECT jsonb_build_object(
+          'direct_options', count(*) FILTER (WHERE route.stop_count = 0),
+          'indirect_options', count(*) FILTER (WHERE route.stop_count > 0),
+          'fastest_direct_minutes', min(route.total_duration_minutes) FILTER (WHERE route.stop_count = 0),
+          'fastest_indirect_minutes', min(route.total_duration_minutes) FILTER (WHERE route.stop_count > 0)
+        )
+        FROM public.route_search_options AS route
+        WHERE route.publication_version_id = v_publication_version_id
+          AND route.origin_city_id = v_page.origin_city_id
+          AND route.destination_city_id = v_page.destination_city_id
       ),
       'price', public.resolve_route_price_estimate(
         v_page.origin_city_id,
@@ -133,10 +141,10 @@ BEGIN
     ),
     'meta', jsonb_build_object(
       'canonical_path', v_pseo.canonical_path,
-      'is_indexable', v_page.is_indexable,
-      'noindex_reason', v_page.noindex_reason,
-      'data_version', v_page.data_version,
-      'source_freshness_at', v_page.source_freshness_at
+      'is_indexable', v_pseo.is_indexable,
+      'noindex_reason', v_pseo.noindex_reason,
+      'data_version', v_publication_version_id,
+      'source_freshness_at', v_pseo.source_freshness_at
     ),
     'error', NULL
   );

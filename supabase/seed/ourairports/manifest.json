@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "ourairports-local.v1",
+  "generatedAt": "2026-08-11T09:06:42.386Z",
+  "filterVersion": "ourairports-commercial.v1",
+  "sources": {
+    "airports": {
+      "url": "https://davidmegginson.github.io/ourairports-data/airports.csv",
+      "downloadedBytes": 12694458,
+      "checksum": "1f26dce518724dde5cad3957ffb96386cfd73a18895d60746f6da44525f807b0",
+      "etag": "W/\"6a7a80b4-c1b3ba\"",
+      "lastModified": "Tue, 11 Aug 2026 01:53:56 GMT"
+    },
+    "countries": {
+      "url": "https://davidmegginson.github.io/ourairports-data/countries.csv",
+      "downloadedBytes": 24583,
+      "checksum": "2a9dbee691125b0cdb8ceb5fe227c48c903f99c488963b8e53e2ab366521c639",
+      "etag": "W/\"6a7a80b4-6007\"",
+      "lastModified": "Tue, 11 Aug 2026 01:53:56 GMT"
+    },
+    "countryCodes": {
+      "url": "https://raw.githubusercontent.com/datasets/country-codes/main/data/country-codes.csv",
+      "downloadedBytes": 134003,
+      "checksum": "67b009b529330b0a6043551189f43faa785c9c3cc0011ad2bdb4eac876356c43",
+      "etag": "W/\"44a0a2783a13394f56f04176cca625f33ffde81b82682f8b189c29e48e85b340\"",
+      "lastModified": null
+    }
+  },
+  "denylist": [],
+  "countryCodeOverrides": {
+    "XK": "XKX"
+  },
+  "generatedChecksum": "545bdcf875481161345c9e1eb357bebde205160e4674c9bd402947901fab9193",
+  "counts": {
+    "countries": 247,
+    "cities": 3166,
+    "airports": 3268,
+    "airportsWithoutCity": 50,
+    "unresolvedCountryCodes": 2
+  },
+  "unresolvedCountryIso2": ["XP", "ZZ"]
+}

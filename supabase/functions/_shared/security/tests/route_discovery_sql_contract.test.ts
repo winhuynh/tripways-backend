@@ -66,27 +66,23 @@ Deno.test('flight services are closed to public clients', async () => {
   );
 });
 
-Deno.test('route options keep one read model table with closed client access', async () => {
-  const sql = await readSource('schema/route_discovery/route_options.sql');
+Deno.test('route search options are the only versioned route projection', async () => {
+  const sql = await readSource('schema/route_discovery/route_search_options.sql');
 
-  assert.ok(includesSql(sql, 'create table public.route_options'));
+  assert.ok(includesSql(sql, 'create table public.route_search_options'));
   assert.equal((sql.match(/create table /gi) ?? []).length, 1);
   assert.ok(includesSql(sql, 'stop_count smallint not null'));
-  assert.ok(includesSql(sql, 'service_ids uuid[] not null'));
-  assert.ok(includesSql(sql, 'flight_route_ids uuid[] not null'));
-  assert.ok(includesSql(sql, 'origin_airport_ids uuid[] not null'));
-  assert.ok(includesSql(sql, 'destination_airport_ids uuid[] not null'));
   assert.ok(includesSql(sql, 'connection_airport_ids uuid[] not null'));
-  assert.ok(includesSql(sql, 'layover_minutes_by_connection integer[] not null'));
   assert.ok(includesSql(sql, 'stop_count between 0 and 3'));
   assert.ok(includesSql(sql, 'total_duration_minutes integer not null'));
-  assert.ok(includesSql(sql, 'data_version uuid not null'));
-  assert.ok(includesSql(sql, 'alter table public.route_options enable row level security'));
-  assert.ok(includesSql(sql, 'revoke all on table public.route_options from anon, authenticated'));
+  assert.ok(includesSql(sql, 'publication_version_id uuid not null references public.publication_versions'));
+  assert.ok(includesSql(sql, 'alter table public.route_search_options enable row level security'));
+  assert.ok(includesSql(sql, 'revoke all on table public.route_search_options from anon, authenticated'));
+  assert.equal(await readSource('schema/route_discovery/route_options.sql'), '');
 });
 
 Deno.test('route refresh uses bounded recursive expansion for up to three stops', async () => {
-  const sql = await readSource('functions/route_discovery/refresh_route_options.sql');
+  const sql = await readSource('functions/route_discovery/refresh_route_search_options.sql');
 
   assert.ok(includesSql(sql, 'with recursive route_paths'));
   assert.ok(includesSql(sql, 'cardinality(path.service_ids) < 4'));
@@ -97,7 +93,6 @@ Deno.test('route refresh uses bounded recursive expansion for up to three stops'
 for (
   const functionName of [
     'calculate_layover_minutes',
-    'refresh_route_options',
     'rpc_search_routes',
   ]
 ) {
@@ -111,6 +106,14 @@ for (
     assert.ok(includesSql(sql, "set search_path = ''"));
   });
 }
+
+Deno.test('canonical route projection refresh is private and version-bound', async () => {
+  const sql = await readSource('functions/route_discovery/refresh_route_search_options.sql');
+  assert.equal((sql.match(/create or replace function /gi) ?? []).length, 1);
+  assert.ok(includesSql(sql, 'function private.refresh_route_search_options'));
+  assert.ok(includesSql(sql, "set search_path = ''"));
+  assert.ok(includesSql(sql, 'p_publication_version_id'));
+});
 
 Deno.test('route search RPC owns validation, filters, facets, and stable errors', async () => {
   const sql = await readSource(

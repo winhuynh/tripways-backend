@@ -76,3 +76,18 @@ Deno.test('ingestion logs contain stable metadata but no secret, IP, or payload'
   assert.match(serialized, /ERR_INGESTION_PUBLISH_FAILED/);
   assert.doesNotMatch(serialized, /local-worker-secret|203\.0\.113\.9|sourceCode/);
 });
+
+Deno.test('ingestion handler returns a stable conflict for anomaly review', async () => {
+  const response = await handleBaseDataIngestionRequest(
+    request({ authorization: 'Bearer local-worker-secret' }),
+    {
+      workerSecret: 'local-worker-secret',
+      rateLimit: () => Promise.resolve(),
+      execute: () => Promise.reject(new Error('ERR_INGESTION_ANOMALY_REVIEW_REQUIRED')),
+      log: () => undefined,
+    },
+  );
+
+  assert.equal(response.status, 409);
+  assert.equal((await response.json()).error.code, 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED');
+});

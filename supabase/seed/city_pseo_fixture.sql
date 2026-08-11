@@ -639,7 +639,6 @@ INSERT INTO public.city_pages (
   pseo_page_id,
   city_id,
   locale,
-  canonical_slug,
   h1,
   subheadline,
   seo_title,
@@ -649,9 +648,6 @@ INSERT INTO public.city_pages (
   og_image_path,
   intro,
   airport_summary,
-  status,
-  is_indexable,
-  noindex_reason,
   primary_airport_id,
   content_reviewed_at
 )
@@ -661,7 +657,6 @@ VALUES
     '81000000-0000-4000-8000-000000000001',
     '30000000-0000-4000-8000-000000000003',
     'en-GB',
-    'bangkok',
     'Direct flights from Bangkok',
     'Explore nonstop routes from Bangkok across Suvarnabhumi (BKK) and Don Mueang (DMK). Compare destinations, airlines, flight times and operating airports.',
     'Direct Flights from Bangkok: Routes & Airlines | Tripways',
@@ -671,9 +666,6 @@ VALUES
     '/og/flights-from/bangkok.png',
     'Bangkok connects travellers with cities across Asia and Europe through two major airports. Use the route explorer to compare where you can fly nonstop and which airport and airline operate each route.',
     'Bangkok is served by Suvarnabhumi Airport (BKK) and Don Mueang International Airport (DMK). Routes shown on this preview use stored recurring schedules and are not live availability.',
-    'review',
-    FALSE,
-    'development_fixture',
     '40000000-0000-4000-8000-000000000003',
     '2026-07-24T00:00:00Z'
   ),
@@ -682,7 +674,6 @@ VALUES
     '81000000-0000-4000-8000-000000000007',
     '30000000-0000-4000-8000-000000000002',
     'en-GB',
-    'singapore',
     'Direct flights from Singapore',
     'Explore nonstop routes from Singapore Changi Airport (SIN). Compare destinations, airlines, flight times and recurring direct services.',
     'Direct Flights from Singapore: Routes & Airlines | Tripways',
@@ -692,9 +683,6 @@ VALUES
     '/og/flights-from/singapore.png',
     'Singapore connects travellers with cities across Southeast Asia and Europe through Changi Airport. Use the route explorer to compare where you can fly nonstop and which airline operates each route.',
     'Singapore''s development preview uses Changi Airport (SIN) as its departure hub. Routes are based on stored recurring fixture schedules rather than live availability.',
-    'review',
-    FALSE,
-    'development_fixture',
     '40000000-0000-4000-8000-000000000002',
     '2026-07-25T00:00:00Z'
   );
@@ -990,5 +978,3 @@ VALUES
     2,
     FALSE
   );
-
-SELECT public.refresh_pseo_read_models();

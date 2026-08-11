@@ -9,5 +9,7 @@ export function createPageHandler(
     parse: parsePageRequest,
     query: (input) => query(toPageRpcInput(input)),
     contractErrorCode: 'ERR_PAGE_CONTRACT',
+    // Public, anonymous, read-only endpoint — allow CDN and browser caching.
+    cacheable: true,
   });
 }

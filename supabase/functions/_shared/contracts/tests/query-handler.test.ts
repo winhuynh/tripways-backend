@@ -35,3 +35,25 @@ Deno.test('shared query handler keeps malformed requests behind stable errors', 
   );
   assert.equal(response.status, 400);
 });
+
+Deno.test('cacheable query handler preserves the RPC envelope shape', async () => {
+  const envelope = {
+    data: { city: { slug: 'bangkok' } },
+    meta: { data_version: crypto.randomUUID() },
+    error: null,
+  };
+  const handler = createQueryHandler({
+    parse: () => ({ key: 'bangkok' }),
+    query: () => Promise.resolve(envelope),
+    contractErrorCode: 'ERR_PAGE_CONTRACT',
+    cacheable: true,
+  });
+
+  const response = await handler(
+    new Request('https://example.com', { method: 'POST', body: '{}' }),
+  );
+
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get('cache-control') ?? '', /s-maxage=86400/);
+  assert.deepEqual(await response.json(), envelope);
+});

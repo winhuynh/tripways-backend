@@ -45,6 +45,17 @@ export type CanonicalBaseDataBatch = {
   countries: CanonicalCountry[];
   cities: CanonicalCity[];
   airports: CanonicalAirport[];
+  importMetadata?: {
+    sourceUrl: string;
+    sourceEtag: string | null;
+    sourceChecksum: string;
+    downloadedBytes: number;
+    rawRecordCount: number;
+    eligibleRecordCount: number;
+    filteredRecordCount: number;
+    invalidRecordCount: number;
+    filterVersion: 'ourairports-commercial.v1';
+  };
 };
 
 export type ProviderResult =

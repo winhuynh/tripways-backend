@@ -21,6 +21,14 @@ Deno.test('shared page request normalizes every page identity', () => {
 
 Deno.test('shared page request rejects unsupported actions and fields', () => {
   assert.throws(
+    () =>
+      parsePageRequest({
+        action: 'get_page',
+        input: { page_type: 'homepage', entity_key: 'homepage' },
+      }),
+    /ERR_PAGE_INVALID_REQUEST/,
+  );
+  assert.throws(
     () => parsePageRequest({ action: 'get_city', input: {} }),
     /ERR_PAGE_INVALID_REQUEST/,
   );

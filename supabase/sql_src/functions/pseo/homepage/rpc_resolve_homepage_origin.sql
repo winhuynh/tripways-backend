@@ -26,7 +26,12 @@ DECLARE
   ------------------------------------------------------------------
   v_airport RECORD;
   v_resolution TEXT := 'fallback';
+  v_version_id UUID;
 BEGIN
+  SELECT id INTO v_version_id
+  FROM public.publication_versions
+  WHERE is_current = TRUE AND status = 'published';
+
   -- STEP 01: Accept only finite, bounded numeric coordinate pairs.
   IF jsonb_typeof(p_input) = 'object'
     AND jsonb_typeof(p_input -> 'latitude') = 'number'
@@ -46,7 +51,7 @@ BEGIN
       airport.latitude,
       airport.longitude,
       city.name AS city_name,
-      city.slug AS city_slug,
+      route_origin.origin_city_slug AS city_slug,
       6371 * acos(
         LEAST(
           1,
@@ -62,21 +67,31 @@ BEGIN
       ) AS distance_km,
       (
         SELECT count(*)::INTEGER
-        FROM public.route_options route_option
-        WHERE route_option.origin_airport_id = airport.id
+        FROM public.route_search_options route_option
+        WHERE route_option.publication_version_id = v_version_id
+          AND route_option.origin_airport_id = airport.id
       ) AS route_count
     INTO v_airport
     FROM public.airports airport
     JOIN public.cities city
       ON city.id = airport.city_id
+    JOIN LATERAL (
+      SELECT option.origin_city_slug
+      FROM public.route_search_options option
+      WHERE option.publication_version_id = v_version_id
+        AND option.origin_airport_id = airport.id
+      ORDER BY option.origin_city_slug
+      LIMIT 1
+    ) route_origin ON TRUE
     WHERE airport.status = 'active'
       AND airport.iata IS NOT NULL
       AND airport.latitude IS NOT NULL
       AND airport.longitude IS NOT NULL
       AND EXISTS (
         SELECT 1
-        FROM public.route_options route_option
-        WHERE route_option.origin_airport_id = airport.id
+        FROM public.route_search_options route_option
+        WHERE route_option.publication_version_id = v_version_id
+          AND route_option.origin_airport_id = airport.id
       )
     ORDER BY distance_km, airport.iata
     LIMIT 1;
@@ -94,17 +109,26 @@ BEGIN
       airport.latitude,
       airport.longitude,
       city.name AS city_name,
-      city.slug AS city_slug,
+      route_origin.origin_city_slug AS city_slug,
       NULL::DOUBLE PRECISION AS distance_km,
       (
         SELECT count(*)::INTEGER
-        FROM public.route_options route_option
-        WHERE route_option.origin_airport_id = airport.id
+        FROM public.route_search_options route_option
+        WHERE route_option.publication_version_id = v_version_id
+          AND route_option.origin_airport_id = airport.id
       ) AS route_count
     INTO v_airport
     FROM public.airports airport
     LEFT JOIN public.cities city
       ON city.id = airport.city_id
+    LEFT JOIN LATERAL (
+      SELECT option.origin_city_slug
+      FROM public.route_search_options option
+      WHERE option.publication_version_id = v_version_id
+        AND option.origin_airport_id = airport.id
+      ORDER BY option.origin_city_slug
+      LIMIT 1
+    ) route_origin ON TRUE
     WHERE airport.iata = 'JFK';
   END IF;
 

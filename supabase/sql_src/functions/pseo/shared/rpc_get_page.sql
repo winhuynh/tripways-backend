@@ -20,7 +20,7 @@ DECLARE
 BEGIN
   IF jsonb_typeof(p_input) IS DISTINCT FROM 'object'
     OR p_input - ARRAY['page_type', 'entity_key', 'locale'] <> '{}'::JSONB
-    OR v_page_type NOT IN ('homepage', 'city', 'airport', 'route')
+    OR v_page_type NOT IN ('city', 'airport', 'route')
     OR v_entity_key IS NULL
     OR v_locale !~ '^[a-z]{2}(?:-[A-Z]{2})?$'
   THEN
@@ -28,15 +28,7 @@ BEGIN
   END IF;
 
   -- STEP 01: Select the requested row and its current version in one indexed statement.
-  IF v_page_type = 'homepage' THEN
-    SELECT model.payload, model.generated_at, version.id
-    INTO v_payload, v_generated_at, v_version_id
-    FROM public.homepage_read_models model
-    INNER JOIN public.publication_versions version
-      ON version.id = model.publication_version_id
-      AND version.is_current = TRUE
-    WHERE model.locale = v_locale;
-  ELSIF v_page_type = 'city' THEN
+  IF v_page_type = 'city' THEN
     SELECT model.payload, model.generated_at, version.id
     INTO v_payload, v_generated_at, v_version_id
     FROM public.city_page_read_models model

@@ -1,6 +1,6 @@
 export type BaseDataIngestionRequest = {
   sourceCode: string;
-  providerMode: 'fixture' | 'approved_api';
+  providerMode: 'fixture' | 'approved_api' | 'ourairports';
   idempotencyKey: string;
 };
 
@@ -14,7 +14,8 @@ export function parseBaseDataIngestionRequest(
   if (
     typeof sourceCode !== 'string' ||
     !/^[a-z0-9]+(?:[_-][a-z0-9]+)*$/.test(sourceCode) ||
-    (providerMode !== 'fixture' && providerMode !== 'approved_api') ||
+    (providerMode !== 'fixture' && providerMode !== 'approved_api' &&
+      providerMode !== 'ourairports') ||
     typeof idempotencyKey !== 'string' ||
     idempotencyKey !== idempotencyKey.trim() ||
     idempotencyKey.length < 8 ||

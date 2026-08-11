@@ -21,7 +21,6 @@ DECLARE
   v_country_id UUID;
   v_airport_page_id UUID;
   v_pseo_page_id UUID;
-  v_data_version UUID;
 BEGIN
   SELECT
     airport.id,
@@ -46,12 +45,10 @@ BEGIN
 
   SELECT
     airport_page.id,
-    airport_page.pseo_page_id,
-    airport_page.data_version
+    airport_page.pseo_page_id
   INTO
     v_airport_page_id,
-    v_pseo_page_id,
-    v_data_version
+    v_pseo_page_id
   FROM public.airport_pages airport_page
   WHERE airport_page.airport_id = v_airport_id
     AND airport_page.locale = p_locale;
@@ -72,8 +69,7 @@ BEGIN
       'airport_page_id', v_airport_page_id,
       'pseo_page_id', v_pseo_page_id,
       'city_id', v_city_id,
-      'country_id', v_country_id,
-      'data_version', v_data_version
+      'country_id', v_country_id
     ),
     'error', NULL
   );

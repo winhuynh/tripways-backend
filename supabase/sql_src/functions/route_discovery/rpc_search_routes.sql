@@ -288,7 +288,15 @@ BEGIN
       'layover_minutes', page.layover_minutes,
       'total_duration_minutes', page.total_duration_minutes,
       'schedule', jsonb_build_object('departure_local_time', page.departure_local_time, 'departure_time_bucket', page.departure_time_bucket, 'arrival_local_time', page.arrival_local_time, 'arrival_day_offset', page.arrival_day_offset, 'days_of_week', page.days_of_week, 'valid_from', page.valid_from, 'valid_to', page.valid_to),
-      'route_path', page.route_path,
+      'route_path', CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM public.route_page_read_models route_page
+          WHERE route_page.publication_version_id = v_version_id
+            AND route_page.canonical_slug = regexp_replace(page.route_path, '^/flights/', '')
+        ) THEN page.route_path
+        ELSE NULL
+      END,
       'price', CASE WHEN page.price_state = 'available' THEN jsonb_build_object('state','available','price_min',page.price_min,'price_max',page.price_max,'currency_code',page.currency_code,'valid_until',page.price_valid_until) ELSE jsonb_build_object('state','unavailable','reason',page.price_state,'estimate',NULL) END,
       'self_transfer', 'unknown', 'through_baggage', 'unknown', 'fare_rules', 'unknown', 'live_availability', 'unknown'
     ) ORDER BY page.stop_count, page.total_duration_minutes, page.confidence_score DESC, page.id) FROM page), '[]'::JSONB),

@@ -3,6 +3,13 @@ const RESPONSE_HEADERS = {
   'cache-control': 'no-store',
 };
 
+const CACHEABLE_RESPONSE_HEADERS = {
+  'content-type': 'application/json; charset=utf-8',
+  // Allow CDN (Vercel Edge, Cloudflare) and browsers to cache public read-only responses.
+  // s-maxage: CDN caches for 24 h; stale-while-revalidate: serve stale while refreshing.
+  'cache-control': 'public, s-maxage=86400, stale-while-revalidate=60',
+};
+
 const ERROR_STATUS: Readonly<Record<string, number>> = {
   ERR_UNAUTHORIZED: 401,
   ERR_METHOD_NOT_ALLOWED: 405,
@@ -23,6 +30,7 @@ const ERROR_STATUS: Readonly<Record<string, number>> = {
   ERR_INGESTION_SOURCE_NOT_ALLOWED: 403,
   ERR_INGESTION_BATCH_DUPLICATE: 409,
   ERR_INGESTION_VALIDATION_FAILED: 422,
+  ERR_INGESTION_ANOMALY_REVIEW_REQUIRED: 409,
   ERR_INGESTION_PUBLISH_FAILED: 500,
   ERR_INVALID_REQUEST: 400,
   ERR_AUTH_EMAIL_REQUIRED: 400,
@@ -45,8 +53,20 @@ export function jsonResponse(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), { status, headers: RESPONSE_HEADERS });
 }
 
+export function cacheableJsonResponse(value: unknown, status = 200): Response {
+  return new Response(JSON.stringify(value), {
+    status,
+    headers: CACHEABLE_RESPONSE_HEADERS,
+  });
+}
+
 export function successResponse(data: unknown, status = 200): Response {
   return jsonResponse({ data, error: null }, status);
+}
+
+/** Use for public, anonymous, read-only endpoints that can be cached by CDN and browsers. */
+export function cacheableSuccessResponse(data: unknown, status = 200): Response {
+  return cacheableJsonResponse({ data, error: null }, status);
 }
 
 export function errorResponse(error: unknown): Response {
