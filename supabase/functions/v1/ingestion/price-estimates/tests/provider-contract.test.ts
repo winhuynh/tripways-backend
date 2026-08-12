@@ -1,63 +1,68 @@
 import assert from 'node:assert/strict';
-import { parseCanonicalPriceEstimateBatch } from '../provider-contract.ts';
+import { parseFlightContentObservationBatch } from '../provider-contract.ts';
 
 const validPayload = {
-  schemaVersion: 'route-price-estimates.v1',
-  sourceTime: '2026-08-03T00:00:00Z',
-  estimates: [{
-    sourceId: 'sgn-lhr-economy',
-    originCitySourceId: 'city-sgn',
-    destinationCitySourceId: 'city-lon',
+  schemaVersion: 'flight-content-observations.v1',
+  sourceTime: '2026-08-12T00:00:00Z',
+  observations: [{
+    sourceId: 'sgn-lhr-2026-09-12',
+    observationType: 'cached_fare',
+    originCode: 'SGN',
+    destinationCode: 'LON',
     originAirportIata: 'SGN',
     destinationAirportIata: 'LHR',
     airlineIata: 'VN',
     tripType: 'one_way',
-    cabin: 'economy',
-    stopBucket: 'direct',
-    baggageIncluded: null,
-    priceMin: 450,
-    priceMax: 720,
+    direct: true,
+    transferCount: 0,
+    amount: 450,
     currencyCode: 'USD',
-    estimateMethod: 'provider_observed_range',
-    sampleWindowStart: '2026-07-01',
-    sampleWindowEnd: '2026-07-31',
-    sampleCount: 42,
-    confidenceScore: 0.82,
-    lastVerifiedAt: '2026-08-03T00:00:00Z',
-    validUntil: '2026-08-10T00:00:00Z',
+    marketCode: 'vn',
+    locale: 'en-GB',
+    departureDate: '2026-09-12',
+    returnDate: null,
+    durationMinutes: 780,
+    foundAt: '2026-08-12T00:00:00Z',
+    providerExpiresAt: '2026-08-14T00:00:00Z',
+    validUntil: '2026-08-13T00:00:00Z',
+    affiliatePath: '/search/SGN1209LON1',
   }],
 };
 
-Deno.test('price estimate parser accepts normalized bounded estimates', () => {
-  const result = parseCanonicalPriceEstimateBatch(validPayload);
+Deno.test('content parser accepts one bounded cached-fare observation', () => {
+  const result = parseFlightContentObservationBatch(validPayload);
   assert.equal(result.ok, true);
   if (!result.ok) return;
-  assert.equal(result.batch.estimates[0]?.currencyCode, 'USD');
+  assert.equal(result.batch.observations[0]?.amount, 450);
+  assert.equal(result.batch.observations[0]?.direct, true);
 });
 
-Deno.test('price estimate parser rejects inverted bounds', () => {
+Deno.test('content parser keeps a missing fare as null', () => {
   const payload = structuredClone(validPayload);
-  payload.estimates[0]!.priceMin = 800;
-  const result = parseCanonicalPriceEstimateBatch(payload);
+  payload.observations[0]!.amount = null as unknown as number;
+  const result = parseFlightContentObservationBatch(payload);
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.batch.observations[0]?.amount, null);
+});
+
+Deno.test('content parser rejects validity beyond seven days', () => {
+  const payload = structuredClone(validPayload);
+  payload.observations[0]!.providerExpiresAt = null as unknown as string;
+  payload.observations[0]!.validUntil = '2026-08-19T00:00:01Z';
+  const result = parseFlightContentObservationBatch(payload);
   assert.equal(result.ok, false);
   if (result.ok) return;
-  assert.equal(result.issues[0]?.code, 'ERR_INVALID_PRICE_BOUNDS');
+  assert.equal(result.issues[0]?.code, 'ERR_INVALID_VALIDITY_WINDOW');
 });
 
-Deno.test('price estimate parser rejects invalid currency and expiry', () => {
+Deno.test('content parser rejects invalid currency and browser-controlled URLs', () => {
   const payload = structuredClone(validPayload);
-  payload.estimates[0]!.currencyCode = 'usd';
-  payload.estimates[0]!.validUntil = '2026-08-02T00:00:00Z';
-  const result = parseCanonicalPriceEstimateBatch(payload);
+  payload.observations[0]!.currencyCode = 'usd';
+  payload.observations[0]!.affiliatePath = 'https://evil.example/redirect';
+  const result = parseFlightContentObservationBatch(payload);
   assert.deepEqual(
     result.ok ? [] : result.issues.map((issue) => issue.code),
-    ['ERR_INVALID_CURRENCY', 'ERR_INVALID_VALIDITY_WINDOW'],
+    ['ERR_INVALID_CURRENCY', 'ERR_INVALID_AFFILIATE_REFERENCE'],
   );
-});
-
-Deno.test('price estimate parser rejects unsupported schema versions', () => {
-  const result = parseCanonicalPriceEstimateBatch({ ...validPayload, schemaVersion: 'v2' });
-  assert.equal(result.ok, false);
-  if (result.ok) return;
-  assert.equal(result.issues[0]?.code, 'ERR_UNSUPPORTED_SCHEMA_VERSION');
 });

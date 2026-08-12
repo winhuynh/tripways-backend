@@ -1,9 +1,13 @@
 # PRD P3: MVP thương mại
 
-**Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P3
-**Cập nhật:** 2026-08-05
+**Trạng thái:** Đang triển khai affiliate-first foundation; live shopping vẫn hoãn
+**Cập nhật:** 2026-08-12
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
+
+> Travelpayouts Data API hiện chỉ cung cấp cached content observations và affiliate handoff.
+> Những yêu cầu live-search/dated inventory bên dưới vẫn là phase nâng cấp riêng, không được suy ra
+> từ observation hoặc coi là điều kiện để pSEO có giá trị.
 
 ## 1. Vấn đề
 

@@ -31,7 +31,7 @@ BEGIN
             option.origin_city_slug AS code,
             option.origin_city_slug AS slug,
             CASE WHEN option.origin_city_slug = v_query THEN 2 ELSE 1 END::NUMERIC AS rank_score
-          FROM public.route_search_options AS option
+          FROM public.flight_route_options AS option
           JOIN public.cities AS city ON city.id = option.origin_city_id
           WHERE option.publication_version_id = v_version_id
             AND (lower(city.name) LIKE '%' || v_query || '%'
@@ -47,7 +47,7 @@ BEGIN
             airport.iata,
             lower(airport.iata),
             CASE WHEN lower(airport.iata) = v_query THEN 2 ELSE 1 END::NUMERIC
-          FROM public.route_search_options AS option
+          FROM public.flight_route_options AS option
           JOIN public.airports AS airport ON airport.id = option.origin_airport_id
           WHERE option.publication_version_id = v_version_id
             AND (lower(airport.name) LIKE '%' || v_query || '%'

@@ -5,6 +5,7 @@ import {
   type PriceEstimateAdapter,
   type PriceEstimatePublicationResult,
 } from './service.ts';
+import { createTravelpayoutsAdapter } from './providers/travelpayouts-provider.ts';
 
 Deno.serve((request) =>
   handlePriceEstimateIngestionRequest(request, {
@@ -22,17 +23,36 @@ Deno.serve((request) =>
 );
 
 function adapterRegistry(): ReadonlyMap<string, PriceEstimateAdapter> {
-  return new Map([['fixture', {
+  const adapters = new Map<string, PriceEstimateAdapter>([['fixture', {
     load: () =>
       Promise.resolve({
         ok: true as const,
         batch: {
-          schemaVersion: 'route-price-estimates.v1' as const,
+          schemaVersion: 'flight-content-observations.v1' as const,
           sourceTime: null,
-          estimates: [],
+          observations: [],
         },
       }),
   }]]);
+  const token = Deno.env.get('TRAVELPAYOUTS_TOKEN')?.trim();
+  if (token) {
+    const origins = (Deno.env.get('TRAVELPAYOUTS_ORIGINS') ?? '')
+      .split(',').map((value) => value.trim().toUpperCase())
+      .filter((value) => /^[A-Z]{3}$/.test(value));
+    if (origins.length > 0) {
+      adapters.set(
+        'travelpayouts',
+        createTravelpayoutsAdapter({
+          token,
+          origins,
+          currencyCode: (Deno.env.get('TRAVELPAYOUTS_CURRENCY') ?? 'USD').toUpperCase(),
+          marketCode: (Deno.env.get('TRAVELPAYOUTS_MARKET') ?? 'us').toLowerCase(),
+          locale: Deno.env.get('TRAVELPAYOUTS_LOCALE') ?? 'en-GB',
+        }),
+      );
+    }
+  }
+  return adapters;
 }
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name)?.trim();

@@ -112,17 +112,19 @@ Lộ trình MVP thành công khi:
   từ xa hoặc cấp bí mật đều cần chủ sở hữu phê duyệt rõ ràng.
 - Thay đổi phạm vi đáng kể phải cập nhật PRD tương ứng trước khi triển khai.
 
-## 8. Kế hoạch mở rộng City Hub đã ghi nhận
+## 8. Kế hoạch mở rộng City Hub và commercial content
 
-Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md` và đang
-ở trạng thái chưa triển khai.
+Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
-- P0A/P0B giữ provider-neutral contract, fixture và staging `noindex`; không tích hợp AirLabs thật.
-- P1 hoàn thiện dữ liệu nền, quyền nguồn và city-airport/region taxonomy; không nhập route/schedule.
-- P2 đánh giá AirLabs bằng POC và chỉ bật route/schedule pSEO sau khi quyền SEO, cache, snapshot và
-  derived data được phê duyệt.
-- P3 chọn price/live-search/affiliate provider; AirLabs không thay thế flight-shopping provider.
-- Module giá, tháng khởi hành và affiliate luôn optional; City Hub core không phụ thuộc chúng.
+- P0A/P0B giữ provider-neutral contract, fixture và staging `noindex`.
+- P1 dùng OurAirports cho reference data có provenance và quyền rõ ràng.
+- P2 dùng Travelpayouts/Aviasales Data API làm nguồn content observation ngắn hạn cho filter và
+  commercial CTA; không xem đây là schedule DB hoặc live booking API.
+- Cron kiểm tra hằng ngày, refresh từ ngày thứ 6; mỗi observation tự hết hạn tối đa sau 24 giờ và
+  batch mới thay thế batch cũ.
+- AeroDataBox/AirLabs không nằm trong implementation hiện tại. Schedule enrichment vẫn là adapter
+  optional trong tương lai nếu có business case và rights review riêng.
+- Module fare/affiliate luôn optional; City Hub và pSEO core vẫn render được khi provider bị tắt.
 
 ## 9. Bổ sung phạm vi pSEO theo phase
 
@@ -144,21 +146,22 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
   transport, parking, terminal/facility, lounge, notice, FAQ và internal link.
 - Tính content completeness theo page type; page thiếu dữ liệu không được tự động index.
 
-### P2 — Route, schedule và estimated fare có bản quyền
+### P2 — Route content và observed affiliate fare
 
-- Xuất bản direct route cho City Hub và verified direct flights from/to cho Airport Page; Route Page
-  hỗ trợ cả direct lẫn connecting options.
+- Xuất bản route discovery từ canonical/reference data; chỉ hiển thị direct/connection facts khi có
+  nguồn phù hợp, không suy luận schedule từ cached fare.
 - City Hub có thể hỗ trợ departure airport, geography, duration và estimated-price filters. Airport
   chỉ hỗ trợ counterpart query/geography, domestic/international và operating airline; không có
   connection, duration hoặc price filter.
-- Estimated fare là observation/range có trip type, source, confidence, sample window và expiry; không
-  được mô tả như live offer.
+- Fare là observation đơn có source, market, found-at và expiry; không tạo range, không gọi là giá
+  trực tiếp và không lưu lịch sử sâu.
 
-### P3 — Advertisement, affiliate và live search
+### P3 — Advertisement, affiliate handoff và live-search upgrade
 
 - Advertisement slot, sponsored module, affiliate offer, CTA và disclosure được cấu hình từ backend.
 - Commercial module optional, có capability gate và kill switch; thiếu partner không làm hỏng page.
-- Tách rõ estimated fare của pSEO khỏi live offer theo ngày và affiliate handoff.
+- Affiliate handoff dùng partner host allowlist, disclosure và expiry. Live offer theo ngày chỉ được
+  thêm bằng provider contract khác trong tương lai.
 - Airport commercial module không thay thế arrival/transport/departure; live-search chỉ prefill từ
   verified direct row người dùng đã chọn.
 

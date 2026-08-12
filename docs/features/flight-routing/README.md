@@ -2,44 +2,20 @@
 
 ## Current boundary
 
-This foundation owns the normalized reference graph used by Route Discovery. It stores geography,
-airports, airlines, directional route edges, source rights, and recurring flight services. Search
-behavior and its derived read model belong to the separate `route-discovery` feature.
+Flight Routing stores a compact provider-neutral reference graph plus replaceable route evidence.
+It does not store schedules, inventory, historical fares, or a provider response archive.
 
-## Table dependency order
+Dependency order:
 
 1. `admin.data_sources`
-2. `public.countries`
-3. `public.cities`
-4. `public.airports`
-5. `public.airlines`
-6. `public.flight_routes`
-7. `public.flight_services`
+2. `countries`, `cities`, `airports`, `airlines`, `place_aliases`
+3. `flight_routes`
+4. `flight_content_observations`
 
-The tables live in PostgreSQL schemas based on data exposure and responsibility. They remain part
-of one product feature: `flight-routing`.
+`cities.iata_code` owns metro identity; stable city facts live on `cities`. `flight_routes` only
+asserts a directional relationship and preserves provider airline IATA even when no canonical
+airline resolves. `flight_content_observations` stores the current normalized display snapshot for
+at most seven days and is replaced by the next provider publication.
 
-## SQL source ownership
-
-- `supabase/sql_src/schema/flight_routing/data_sources.sql`
-- `supabase/sql_src/schema/flight_routing/countries.sql`
-- `supabase/sql_src/schema/flight_routing/cities.sql`
-- `supabase/sql_src/schema/flight_routing/airports.sql`
-- `supabase/sql_src/schema/flight_routing/airlines.sql`
-- `supabase/sql_src/schema/flight_routing/flight_routes.sql`
-
-Each file defines exactly one table, its table-owned indexes, constraints, RLS state, and grants.
-`flight_routes` answers whether an eligible directional relationship exists. `flight_services`
-answers when a recurring flight operates. Neither table stores dated live availability or fares.
-
-## Access model
-
-All exposed domain tables have RLS enabled. `anon` and `authenticated` currently have no
-table privileges or policies. Only `service_role` can read or mutate the data until a reviewed API
-or RPC boundary exists.
-
-## Deferred work
-
-- OurAirports importer
-- Licensed schedule-provider adapter
-- Dated live schedules, seat availability, and prices
+All tables deny direct client access and are available only through reviewed RPC/Edge boundaries.
+A licensed schedule provider can add a separate schedule model later without changing these facts.

@@ -1,0 +1,21 @@
+-- Travelpayouts/Aviasales short-lived content-observation source.
+-- Keep these capability flags aligned with the account agreement used in production.
+INSERT INTO admin.data_sources (
+  id,code,provider_code,name,source_type,environment_scope,production_allowed,seo_allowed,
+  derived_data_allowed,storage_allowed,retention_days,production_display_allowed,cache_allowed,
+  max_cache_ttl_seconds,attribution_text,attribution_url,license_notes
+)
+VALUES (
+  '11000000-0000-4000-8000-000000000002','travelpayouts','travelpayouts',
+  'Travelpayouts / Aviasales Data API','content_observation','production',TRUE,TRUE,TRUE,TRUE,7,TRUE,TRUE,604800,
+  'Flight search powered by Aviasales','https://www.aviasales.com',
+  'Store only the replaceable current normalized observation set for at most 7 days; refresh on day 6 and keep no raw response archive or fare history.'
+)
+ON CONFLICT (code) DO UPDATE SET
+  provider_code=EXCLUDED.provider_code,name=EXCLUDED.name,source_type=EXCLUDED.source_type,
+  environment_scope=EXCLUDED.environment_scope,production_allowed=EXCLUDED.production_allowed,
+  seo_allowed=EXCLUDED.seo_allowed,derived_data_allowed=EXCLUDED.derived_data_allowed,
+  storage_allowed=EXCLUDED.storage_allowed,retention_days=EXCLUDED.retention_days,
+  production_display_allowed=EXCLUDED.production_display_allowed,cache_allowed=EXCLUDED.cache_allowed,
+  max_cache_ttl_seconds=EXCLUDED.max_cache_ttl_seconds,attribution_text=EXCLUDED.attribution_text,
+  attribution_url=EXCLUDED.attribution_url,license_notes=EXCLUDED.license_notes,updated_at=now();

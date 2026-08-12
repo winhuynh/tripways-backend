@@ -2,8 +2,12 @@
 
 **PRD sản phẩm liên quan:** `docs/product/p2-licensed-flight-data-prd.md`  
 **Phụ thuộc:** P1 hoàn tất và provider rights được phê duyệt
-**Trạng thái:** Chưa bắt đầu — canonical graph/read-model foundation không phải P2 acceptance
-**Cập nhật:** 2026-08-05
+**Trạng thái:** Hoãn schedule-provider scope; không triển khai AirLabs/AeroDataBox
+**Cập nhật:** 2026-08-12
+
+> Tài liệu schedule bên dưới là future design reference. Implementation hiện hành dùng OurAirports
+> cho reference data và Travelpayouts `flight-content-observations.v1` cho cached commercial content;
+> không map cached fares thành recurring schedules.
 
 Canonical route/service tables, 0–3-stop graph search, page read models và estimated-price schema
 được chuẩn bị sớm trong P0A. P2 chỉ bắt đầu sau P1 và chỉ được nghiệm thu bằng licensed provider,
@@ -15,7 +19,7 @@ production rights, staging publication và remote evidence.
 Licensed schedule provider
   → provider adapter
     → P1 ingestion state machine
-      → canonical flight_routes + flight_services
+      → canonical flight_routes + flight_content_observations
         → refresh_route_options()
           → refresh_pseo_read_models()
             → versioned public read APIs
@@ -145,7 +149,7 @@ P2 hoàn thiện:
 
 Airport read model là journey-led và không nhúng route arrays: orientation, quick answers, arrival,
 departure, transport, curated airport modules, FAQ, internal links và provenance. Verified direct
-flights được đọc riêng từ current `route_search_options`; chỉ row `stop_count = 0` tạo từ published
+flights được đọc riêng từ current `flight_route_options`; chỉ row `stop_count = 0` tạo từ published
 licensed schedule mới đủ điều kiện. `route_options` nhiều leg không được đưa vào Airport Page.
 
 Country và airline page chỉ thêm nếu initial inventory và search intent được phê duyệt; không bắt
@@ -256,7 +260,7 @@ Tham chiếu `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
 ## 15. Route projection và estimated fare
 
-- Hợp nhất route search trên `route_search_options`; không duy trì đồng thời
+- Hợp nhất route search trên `flight_route_options`; không duy trì đồng thời
   `rpc_search_route_options` và `rpc_search_route_options_v2` sau compatibility window.
 - Projection bổ sung destination country/region, domestic flag và facet; scope origin-city phải lọc
   được departure airport.

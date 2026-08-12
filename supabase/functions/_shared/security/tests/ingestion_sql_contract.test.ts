@@ -205,3 +205,22 @@ Deno.test('OurAirports source fixture records reviewed production and storage ri
   assert.ok(includesSql(sql, 'TRUE'));
   assert.doesNotMatch(sql, /openflights/i);
 });
+
+Deno.test('Travelpayouts cron checks daily and calls provider only after six days', async () => {
+  const sql = await readSource('operations/configure_travelpayouts_content_cron.sql');
+  assert.ok(sql.includes("'tripways-travelpayouts-content-daily-check'"));
+  assert.ok(sql.includes("'20 2 * * *'"));
+  assert.ok(sql.includes("interval '6 days'"));
+  assert.ok(sql.includes("'/functions/v1/ingestion-price-estimates'"));
+  assert.ok(sql.includes('vault.decrypted_secrets'));
+});
+
+Deno.test('Travelpayouts source is configured for a replaceable seven-day cache', async () => {
+  const sql = await Deno.readTextFile(
+    new URL('../../../../seed/travelpayouts_source.sql', import.meta.url),
+  );
+  assert.ok(sql.includes("'content_observation'"));
+  assert.ok(sql.includes("'travelpayouts'"));
+  assert.ok(sql.includes('604800'));
+  assert.match(sql, /no raw response archive/i);
+});

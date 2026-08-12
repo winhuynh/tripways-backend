@@ -2,10 +2,13 @@
 
 **PRD sản phẩm liên quan:** `docs/product/p3-commercial-mvp-prd.md`  
 **Phụ thuộc:** P2 hoàn tất, live-search và affiliate agreements được phê duyệt
-**Trạng thái:** Chưa bắt đầu
-**Cập nhật:** 2026-08-05
+**Trạng thái:** Affiliate-first foundation đang triển khai; live offer orchestration chưa bắt đầu
+**Cập nhật:** 2026-08-12
 
-`route_price_estimates` và price ingestion foundation hiện tại không phải offer search, search state,
+> Foundation hiện hành publish observation tối đa 24 giờ, refresh từ ngày thứ 6 và handoff qua
+> allowlisted Aviasales host. Kiến trúc live-search bên dưới vẫn là upgrade độc lập.
+
+`flight_content_observations` và price ingestion foundation hiện tại không phải offer search, search state,
 affiliate handoff hoặc P3 acceptance. Live offer luôn là short-lived provider result với expiry và
 server-owned outbound reference riêng.
 

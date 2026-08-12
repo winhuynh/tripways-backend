@@ -48,7 +48,7 @@ CREATE TABLE admin.data_sources (
     CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
 
   CONSTRAINT data_sources_type_check
-    CHECK (source_type IN ('base_data', 'schedule', 'development_fixture')),
+    CHECK (source_type IN ('base_data', 'content_observation', 'schedule', 'development_fixture')),
 
   CONSTRAINT data_sources_environment_check
     CHECK (environment_scope IN ('development', 'production')),
@@ -151,6 +151,9 @@ CREATE TABLE public.cities (
   country_id  UUID              NOT NULL REFERENCES public.countries (id),
   name        TEXT              NOT NULL,
   slug        TEXT              NOT NULL,
+  iata_code   TEXT              NULL UNIQUE,
+  currency_code TEXT            NULL,
+  primary_language TEXT         NULL,
   latitude    DOUBLE PRECISION  NULL,
   longitude   DOUBLE PRECISION  NULL,
   timezone    TEXT              NULL,
@@ -170,6 +173,15 @@ CREATE TABLE public.cities (
 
   CONSTRAINT cities_slug_check
     CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT cities_iata_code_check
+    CHECK (iata_code IS NULL OR iata_code ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT cities_currency_code_check
+    CHECK (currency_code IS NULL OR currency_code ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT cities_primary_language_check
+    CHECK (primary_language IS NULL OR primary_language ~ '^[a-z]{2,3}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT cities_latitude_check
     CHECK (latitude BETWEEN -90 AND 90),
@@ -386,55 +398,6 @@ ALTER TABLE public.airlines ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.airlines FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airlines TO service_role;
 
--- >>> supabase/sql_src/schema/flight_routing/metro_areas.sql
-
--- Table: public.metro_areas
--- Feature: Place Discovery
--- Purpose: Group airports under a stable multi-airport market identity.
-
-CREATE TABLE public.metro_areas (
-  id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  country_id        UUID         NOT NULL REFERENCES public.countries (id),
-  city_id           UUID         NULL REFERENCES public.cities (id),
-  code              TEXT         NOT NULL UNIQUE,
-  name              TEXT         NOT NULL,
-  slug              TEXT         NOT NULL UNIQUE,
-  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
-  source_record_id  TEXT         NOT NULL,
-  last_verified_at  TIMESTAMPTZ  NOT NULL,
-  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  CONSTRAINT metro_areas_source_record_key UNIQUE (source_id, source_record_id),
-  CONSTRAINT metro_areas_code_check CHECK (code ~ '^[A-Z]{3}$'),
-  CONSTRAINT metro_areas_slug_check CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$')
-);
-
-ALTER TABLE public.metro_areas ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.metro_areas FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.metro_areas TO service_role;
-
--- >>> supabase/sql_src/schema/flight_routing/metro_area_airports.sql
-
--- Table: public.metro_area_airports
--- Feature: Place Discovery
--- Purpose: Associate airports with a multi-airport market.
-
-CREATE TABLE public.metro_area_airports (
-  metro_area_id  UUID         NOT NULL REFERENCES public.metro_areas (id) ON DELETE CASCADE,
-  airport_id     UUID         NOT NULL REFERENCES public.airports (id),
-  relevance      NUMERIC(6,5) NOT NULL DEFAULT 1,
-  created_at     TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  PRIMARY KEY (metro_area_id, airport_id),
-  CONSTRAINT metro_area_airports_relevance_check CHECK (relevance BETWEEN 0 AND 1)
-);
-
-CREATE INDEX metro_area_airports_airport_idx ON public.metro_area_airports USING btree (airport_id);
-ALTER TABLE public.metro_area_airports ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.metro_area_airports FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.metro_area_airports TO service_role;
-
 -- >>> supabase/sql_src/schema/flight_routing/place_aliases.sql
 
 -- Table: public.place_aliases
@@ -466,106 +429,25 @@ ALTER TABLE public.place_aliases ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.place_aliases FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.place_aliases TO service_role;
 
--- >>> supabase/sql_src/schema/flight_routing/nearby_airports.sql
-
--- Table: public.nearby_airports
--- Feature: Place Discovery
--- Purpose: Store directional nearby-airport alternatives with deterministic relevance.
-
-CREATE TABLE public.nearby_airports (
-  airport_id         UUID         NOT NULL REFERENCES public.airports (id),
-  nearby_airport_id  UUID         NOT NULL REFERENCES public.airports (id),
-  distance_km        NUMERIC(8,2) NOT NULL,
-  relevance          NUMERIC(6,5) NOT NULL,
-  source_id          UUID         NOT NULL REFERENCES admin.data_sources (id),
-  last_verified_at   TIMESTAMPTZ  NOT NULL,
-  created_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  PRIMARY KEY (airport_id, nearby_airport_id),
-  CONSTRAINT nearby_airports_direction_check CHECK (airport_id <> nearby_airport_id),
-  CONSTRAINT nearby_airports_distance_check CHECK (distance_km > 0),
-  CONSTRAINT nearby_airports_relevance_check CHECK (relevance BETWEEN 0 AND 1)
-);
-
-ALTER TABLE public.nearby_airports ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.nearby_airports FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.nearby_airports TO service_role;
-
--- >>> supabase/sql_src/schema/flight_routing/airport_terminals.sql
-
--- Table: public.airport_terminals
--- Feature: Airport Knowledge
--- Purpose: Store provider-neutral terminal identities and review state.
-
-CREATE TABLE public.airport_terminals (
-  id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  airport_id        UUID         NOT NULL REFERENCES public.airports (id),
-  code              TEXT         NOT NULL,
-  name              TEXT         NOT NULL,
-  status            TEXT         NOT NULL DEFAULT 'unknown',
-  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
-  source_record_id  TEXT         NOT NULL,
-  last_verified_at  TIMESTAMPTZ  NOT NULL,
-  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-  updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  CONSTRAINT airport_terminals_airport_code_key UNIQUE (airport_id, code),
-  CONSTRAINT airport_terminals_source_record_key UNIQUE (source_id, source_record_id),
-  CONSTRAINT airport_terminals_status_check CHECK (status IN ('active', 'inactive', 'unknown'))
-);
-
-ALTER TABLE public.airport_terminals ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.airport_terminals FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_terminals TO service_role;
-
--- >>> supabase/sql_src/schema/flight_routing/airport_terminal_airlines.sql
-
--- Table: public.airport_terminal_airlines
--- Feature: Airport Knowledge
--- Purpose: Associate airlines with terminals for a bounded validity window.
-
-CREATE TABLE public.airport_terminal_airlines (
-  terminal_id       UUID         NOT NULL REFERENCES public.airport_terminals (id) ON DELETE CASCADE,
-  airline_id        UUID         NOT NULL REFERENCES public.airlines (id),
-  valid_from        DATE         NULL,
-  valid_to          DATE         NULL,
-  source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
-  last_verified_at  TIMESTAMPTZ  NOT NULL,
-  created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  PRIMARY KEY (terminal_id, airline_id),
-  CONSTRAINT airport_terminal_airlines_validity_check CHECK ((valid_from IS NULL) = (valid_to IS NULL)),
-  CONSTRAINT airport_terminal_airlines_order_check CHECK (valid_from IS NULL OR valid_from <= valid_to)
-);
-
-ALTER TABLE public.airport_terminal_airlines ENABLE ROW LEVEL SECURITY;
-REVOKE ALL ON TABLE public.airport_terminal_airlines FROM anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.airport_terminal_airlines TO service_role;
-
 -- >>> supabase/sql_src/schema/flight_routing/flight_routes.sql
 
 -- Table: public.flight_routes
 -- Feature: Flight Routing
--- Purpose: Store directional scheduled-flight relationships used by route search.
--- Responsibilities: Preserve airline attribution, schedule hints, trust state, and source lineage.
+-- Purpose: Store short-lived directional route evidence, not schedules.
 
 CREATE TABLE public.flight_routes (
   id                      UUID           PRIMARY KEY DEFAULT gen_random_uuid(),
   origin_airport_id       UUID           NOT NULL REFERENCES public.airports (id),
   destination_airport_id  UUID           NOT NULL REFERENCES public.airports (id),
-  operating_airline_id    UUID           NULL REFERENCES public.airlines (id),
-  marketing_airline_id    UUID           NULL REFERENCES public.airlines (id),
-  is_codeshare            BOOLEAN        NOT NULL DEFAULT FALSE,
+  canonical_airline_id    UUID           NULL REFERENCES public.airlines (id),
+  provider_airline_iata   TEXT           NULL,
+  evidence_type           TEXT           NOT NULL,
   status                  TEXT           NOT NULL DEFAULT 'unknown',
-  frequency_per_week      NUMERIC(6, 2)  NULL,
-  days_of_week            SMALLINT[]     NULL,
-  seasonality             TEXT           NOT NULL DEFAULT 'unknown',
-  seasonal_start          DATE           NULL,
-  seasonal_end            DATE           NULL,
   confidence_score        NUMERIC(4, 3)  NOT NULL,
   source_id               UUID           NOT NULL REFERENCES admin.data_sources (id),
   source_record_id        TEXT           NOT NULL,
-  last_verified_at        TIMESTAMPTZ    NOT NULL,
+  observed_at             TIMESTAMPTZ    NOT NULL,
+  valid_until             TIMESTAMPTZ    NULL,
   created_at              TIMESTAMPTZ    NOT NULL DEFAULT now(),
   updated_at              TIMESTAMPTZ    NOT NULL DEFAULT now(),
 
@@ -588,26 +470,14 @@ CREATE TABLE public.flight_routes (
       )
     ),
 
-  CONSTRAINT flight_routes_frequency_check
-    CHECK (frequency_per_week IS NULL OR frequency_per_week >= 0),
+  CONSTRAINT flight_routes_airline_iata_check
+    CHECK (provider_airline_iata IS NULL OR provider_airline_iata ~ '^[A-Z0-9]{2,3}$'),
 
-  CONSTRAINT flight_routes_days_check
-    CHECK (
-      days_of_week IS NULL
-      OR (
-        cardinality(days_of_week) BETWEEN 1 AND 7
-        AND days_of_week <@ ARRAY[1, 2, 3, 4, 5, 6, 7]::SMALLINT[]
-      )
-    ),
+  CONSTRAINT flight_routes_evidence_type_check
+    CHECK (evidence_type IN ('provider_route', 'content_observation', 'manual')),
 
-  CONSTRAINT flight_routes_seasonality_check
-    CHECK (seasonality IN ('year_round', 'seasonal', 'unknown')),
-
-  CONSTRAINT flight_routes_seasonal_dates_check
-    CHECK ((seasonal_start IS NULL) = (seasonal_end IS NULL)),
-
-  CONSTRAINT flight_routes_seasonal_order_check
-    CHECK (seasonal_start IS NULL OR seasonal_start <= seasonal_end),
+  CONSTRAINT flight_routes_validity_check
+    CHECK (valid_until IS NULL OR valid_until > observed_at),
 
   CONSTRAINT flight_routes_confidence_check
     CHECK (confidence_score BETWEEN 0 AND 1)
@@ -622,10 +492,70 @@ ON public.flight_routes USING btree (origin_airport_id, status, destination_airp
 CREATE INDEX flight_routes_destination_status_idx
 ON public.flight_routes USING btree (destination_airport_id, status);
 
-CREATE INDEX flight_routes_operating_airline_status_idx
-ON public.flight_routes USING btree (operating_airline_id, status);
+CREATE INDEX flight_routes_airline_status_idx
+ON public.flight_routes USING btree (canonical_airline_id, status);
 
 ALTER TABLE public.flight_routes ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON TABLE public.flight_routes FROM anon, authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.flight_routes TO service_role;
+
+-- >>> supabase/sql_src/schema/flight_routing/flight_content_observations.sql
+
+-- Table: public.flight_content_observations
+-- Feature: Flight Content
+-- Purpose: Short-lived provider observations for pSEO display; never a live offer inventory.
+
+CREATE TABLE public.flight_content_observations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  origin_city_id UUID NOT NULL REFERENCES public.cities (id),
+  destination_city_id UUID NOT NULL REFERENCES public.cities (id),
+  origin_airport_id UUID NULL REFERENCES public.airports (id),
+  destination_airport_id UUID NULL REFERENCES public.airports (id),
+  canonical_airline_id UUID NULL REFERENCES public.airlines (id),
+  provider_airline_iata TEXT NULL,
+  observation_type TEXT NOT NULL,
+  trip_type TEXT NOT NULL,
+  direct BOOLEAN NULL,
+  transfer_count INTEGER NULL,
+  observed_amount NUMERIC(14,2) NULL,
+  currency_code TEXT NULL,
+  market_code TEXT NOT NULL,
+  locale TEXT NOT NULL,
+  departure_date DATE NULL,
+  return_date DATE NULL,
+  duration_minutes INTEGER NULL,
+  source_id UUID NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id TEXT NOT NULL,
+  observed_at TIMESTAMPTZ NOT NULL,
+  provider_expires_at TIMESTAMPTZ NULL,
+  valid_until TIMESTAMPTZ NOT NULL,
+  affiliate_path TEXT NULL,
+  status TEXT NOT NULL DEFAULT 'draft',
+  data_version UUID NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  CONSTRAINT flight_content_observations_source_record_key UNIQUE (source_id, source_record_id),
+  CONSTRAINT flight_content_observations_direction_check CHECK (origin_city_id <> destination_city_id),
+  CONSTRAINT flight_content_observations_type_check CHECK (observation_type IN ('popular_direction', 'cached_fare', 'special_offer', 'price_calendar')),
+  CONSTRAINT flight_content_observations_trip_check CHECK (trip_type IN ('one_way', 'return')),
+  CONSTRAINT flight_content_observations_transfer_check CHECK (transfer_count IS NULL OR transfer_count >= 0),
+  CONSTRAINT flight_content_observations_direct_check CHECK (direct IS NULL OR transfer_count IS NULL OR direct = (transfer_count = 0)),
+  CONSTRAINT flight_content_observations_amount_check CHECK ((observed_amount IS NULL AND currency_code IS NULL) OR (observed_amount >= 0 AND currency_code ~ '^[A-Z]{3}$')),
+  CONSTRAINT flight_content_observations_airline_check CHECK (provider_airline_iata IS NULL OR provider_airline_iata ~ '^[A-Z0-9]{2,3}$'),
+  CONSTRAINT flight_content_observations_market_check CHECK (market_code ~ '^[a-z]{2}$'),
+  CONSTRAINT flight_content_observations_locale_check CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
+  CONSTRAINT flight_content_observations_dates_check CHECK (return_date IS NULL OR departure_date IS NULL OR return_date >= departure_date),
+  CONSTRAINT flight_content_observations_duration_check CHECK (duration_minutes IS NULL OR duration_minutes > 0),
+  CONSTRAINT flight_content_observations_validity_check CHECK (valid_until > observed_at AND valid_until <= observed_at + interval '7 days' AND (provider_expires_at IS NULL OR valid_until <= provider_expires_at)),
+  CONSTRAINT flight_content_observations_affiliate_check CHECK (affiliate_path IS NULL OR (affiliate_path LIKE '/%' AND affiliate_path NOT LIKE '//%')),
+  CONSTRAINT flight_content_observations_status_check CHECK (status IN ('draft', 'published', 'expired'))
+);
+
+CREATE INDEX flight_content_observations_route_idx ON public.flight_content_observations
+  (origin_city_id, destination_city_id, status, valid_until, market_code, currency_code);
+
+ALTER TABLE public.flight_content_observations ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE public.flight_content_observations FROM anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.flight_content_observations TO service_role;

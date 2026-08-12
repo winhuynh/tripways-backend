@@ -1,9 +1,13 @@
 # PRD P2: Dữ liệu chuyến bay có bản quyền
 
-**Trạng thái:** Chưa bắt đầu — giữ làm yêu cầu chi tiết cho phase P2
-**Cập nhật:** 2026-08-05
+**Trạng thái:** Hoãn schedule-provider scope; commercial content đi theo Travelpayouts plan
+**Cập nhật:** 2026-08-12
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
+
+> Quyết định hiện hành: P2 không tích hợp AirLabs/AeroDataBox. Các phần schedule-provider bên dưới
+> được giữ làm yêu cầu tương lai, không phải dependency để ra mắt pSEO/affiliate MVP. Contract hiện
+> tại là short-lived Travelpayouts content observations theo kế hoạch City Hub.
 
 ## 1. Vấn đề
 

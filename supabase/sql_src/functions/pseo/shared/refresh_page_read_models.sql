@@ -41,24 +41,13 @@ BEGIN
     city_page.city_id,
     city_page.locale,
     registry.entity_key,
-    jsonb_set(
-      private.build_city_page_payload(jsonb_build_object(
+    private.build_city_page_payload(jsonb_build_object(
       'city_slug', registry.entity_key,
       'locale', city_page.locale,
       'route_direction', city_page.route_direction,
       'destination_limit', 20,
       'publication_version_id', p_publication_version_id
-      ))->'data',
-      '{content_sections}',
-      COALESCE((
-        SELECT jsonb_agg(to_jsonb(section) - 'city_page_id' ORDER BY section.display_order)
-        FROM public.city_content_sections section
-        WHERE section.city_page_id = city_page.id
-          AND section.locale = city_page.locale
-          AND section.status = 'published'
-      ), '[]'::JSONB),
-      TRUE
-    )
+    ))->'data'
   FROM public.city_pages city_page
   JOIN public.pseo_pages AS registry ON registry.id = city_page.pseo_page_id
   WHERE city_page.route_direction = 'outbound'

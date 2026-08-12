@@ -19,7 +19,7 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  (public.rpc_get_homepage_statistics() #>> '{data,direct_route_count}')::INTEGER > 0,
+  (public.rpc_get_homepage_statistics() #>> '{data,published_direct_route_count}')::INTEGER > 0,
   'homepage statistics use the current published route projection'
 );
 

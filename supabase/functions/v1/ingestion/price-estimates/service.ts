@@ -1,4 +1,4 @@
-import type { PriceEstimateProviderResult } from './provider-contract.ts';
+import type { FlightContentProviderResult } from './provider-contract.ts';
 import type { PriceEstimateIngestionRequest } from './request.ts';
 
 export type PriceEstimatePublicationResult = {
@@ -7,7 +7,7 @@ export type PriceEstimatePublicationResult = {
   rejectedCount: number;
   errorCode: string | null;
 };
-export type PriceEstimateAdapter = { load(): Promise<PriceEstimateProviderResult> };
+export type PriceEstimateAdapter = { load(): Promise<FlightContentProviderResult> };
 export async function executePriceEstimateIngestion(
   request: PriceEstimateIngestionRequest,
   adapters: ReadonlyMap<string, PriceEstimateAdapter>,
@@ -27,7 +27,7 @@ export async function executePriceEstimateIngestion(
     ).join(''),
     p_provider_version: result.batch.schemaVersion,
     p_source_time: result.batch.sourceTime,
-    p_estimates: result.batch.estimates,
+    p_observations: result.batch.observations,
   });
   if (response.status !== 'published' && response.errorCode !== 'ERR_INGESTION_BATCH_DUPLICATE') {
     throw new Error(response.errorCode ?? 'ERR_INGESTION_PUBLISH_FAILED');

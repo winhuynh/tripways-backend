@@ -8,6 +8,9 @@ CREATE TABLE public.cities (
   country_id  UUID              NOT NULL REFERENCES public.countries (id),
   name        TEXT              NOT NULL,
   slug        TEXT              NOT NULL,
+  iata_code   TEXT              NULL UNIQUE,
+  currency_code TEXT            NULL,
+  primary_language TEXT         NULL,
   latitude    DOUBLE PRECISION  NULL,
   longitude   DOUBLE PRECISION  NULL,
   timezone    TEXT              NULL,
@@ -27,6 +30,15 @@ CREATE TABLE public.cities (
 
   CONSTRAINT cities_slug_check
     CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'),
+
+  CONSTRAINT cities_iata_code_check
+    CHECK (iata_code IS NULL OR iata_code ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT cities_currency_code_check
+    CHECK (currency_code IS NULL OR currency_code ~ '^[A-Z]{3}$'),
+
+  CONSTRAINT cities_primary_language_check
+    CHECK (primary_language IS NULL OR primary_language ~ '^[a-z]{2,3}(?:-[A-Z]{2})?$'),
 
   CONSTRAINT cities_latitude_check
     CHECK (latitude BETWEEN -90 AND 90),

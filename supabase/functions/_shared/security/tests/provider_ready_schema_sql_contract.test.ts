@@ -12,26 +12,9 @@ async function read(path: string): Promise<string> {
 }
 
 const tables = [
-  ['schema/flight_routing/metro_areas.sql', 'public.metro_areas'],
-  ['schema/flight_routing/metro_area_airports.sql', 'public.metro_area_airports'],
   ['schema/flight_routing/place_aliases.sql', 'public.place_aliases'],
-  ['schema/flight_routing/nearby_airports.sql', 'public.nearby_airports'],
-  ['schema/flight_routing/airport_terminals.sql', 'public.airport_terminals'],
-  ['schema/flight_routing/airport_terminal_airlines.sql', 'public.airport_terminal_airlines'],
-  ['schema/pseo/city/city_facts.sql', 'public.city_facts'],
-  ['schema/pseo/airport/airport_facilities.sql', 'public.airport_facilities'],
-  ['schema/pseo/airport/airport_journey_steps.sql', 'public.airport_journey_steps'],
-  ['schema/pseo/airport/airport_access_options.sql', 'public.airport_access_options'],
-  ['schema/pseo/airport/airport_lounges.sql', 'public.airport_lounges'],
-  ['schema/pseo/shared/route_price_estimates.sql', 'public.route_price_estimates'],
+  ['schema/flight_routing/flight_content_observations.sql', 'public.flight_content_observations'],
   ['schema/pseo/route/route_pages.sql', 'public.route_pages'],
-  ['schema/pseo/route/route_page_faqs.sql', 'public.route_page_faqs'],
-  [
-    'schema/pseo/route/route_page_airport_comparisons.sql',
-    'public.route_page_airport_comparisons',
-  ],
-  ['schema/pseo/route/route_page_travel_facts.sql', 'public.route_page_travel_facts'],
-  ['schema/pseo/route/route_page_editorial_sections.sql', 'public.route_page_editorial_sections'],
 ] as const;
 
 Deno.test('provider-ready canonical tables are isolated, protected, and versionable', async () => {
@@ -47,47 +30,60 @@ Deno.test('provider-ready canonical tables are isolated, protected, and versiona
   }
 });
 
-Deno.test('route price estimates are provider-ready but distinct from live offers', async () => {
-  const sql = await read('schema/pseo/shared/route_price_estimates.sql');
+Deno.test('flight content observations are short-lived and distinct from live offers', async () => {
+  const sql = await read('schema/flight_routing/flight_content_observations.sql');
   for (
     const field of [
       'trip_type',
-      'cabin',
-      'stop_bucket',
-      'price_min',
-      'price_max',
+      'observation_type',
+      'direct',
+      'transfer_count',
+      'observed_amount',
+      'provider_airline_iata',
+      'canonical_airline_id',
       'currency_code',
-      'estimate_method',
-      'sample_window_start',
-      'sample_window_end',
-      'sample_count',
+      'market_code',
+      'locale',
+      'departure_date',
+      'return_date',
+      'duration_minutes',
       'source_id',
       'source_record_id',
-      'confidence_score',
-      'last_verified_at',
+      'observed_at',
+      'provider_expires_at',
       'valid_until',
+      'affiliate_path',
       'data_version',
     ]
   ) {
-    assert.ok(sql.includes(field), `route_price_estimates must define ${field}`);
+    assert.ok(sql.includes(field), `flight content observations must define ${field}`);
   }
+  assert.equal(sql.includes('price_min'), false);
+  assert.equal(sql.includes('price_max'), false);
   assert.equal(sql.includes('offer_id'), false);
   assert.equal(sql.includes('booking_url'), false);
 });
 
-Deno.test('structured facts require locale, citation, review, and freshness', async () => {
-  for (
-    const path of [
-      'schema/pseo/city/city_facts.sql',
-      'schema/pseo/airport/airport_journey_steps.sql',
-      'schema/pseo/airport/airport_facilities.sql',
-    ]
-  ) {
-    const sql = await read(path);
-    for (
-      const field of ['locale', 'primary_source_url', 'last_verified_at', 'status', 'data_version']
-    ) {
-      assert.ok(sql.includes(field), `${path} must define ${field}`);
-    }
+Deno.test('affiliate handoff uses a fixed partner host and rejects expired observations', async () => {
+  const sql = await read('functions/pseo/shared/rpc_get_flight_affiliate_handoff.sql');
+  assert.ok(sql.includes("'https://www.aviasales.com'"));
+  assert.ok(sql.includes('observation.valid_until>now()'));
+  assert.ok(sql.includes("source.provider_code='travelpayouts'"));
+  assert.equal(sql.includes('p_url'), false);
+});
+
+Deno.test('route observation resolver does not query removed estimate dimensions', async () => {
+  const sql = await read('functions/pseo/shared/resolve_route_price_estimate.sql');
+  assert.equal(sql.includes('estimate.cabin'), false);
+  assert.equal(sql.includes('estimate.stop_bucket'), false);
+  assert.ok(sql.includes('estimate.observed_at'));
+});
+
+Deno.test('page sources use one aggregate while read models remain separate', async () => {
+  for (const type of ['city', 'airport', 'route']) {
+    const page = await read(`schema/pseo/${type}/${type}_pages.sql`);
+    const model = await read(`schema/pseo/${type}/${type}_page_read_models.sql`);
+    assert.ok(page.includes('content jsonb not null'));
+    assert.ok(model.includes(`create table public.${type}_page_read_models`));
   }
 });

@@ -39,7 +39,7 @@ CREATE TABLE admin.data_sources (
     CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
 
   CONSTRAINT data_sources_type_check
-    CHECK (source_type IN ('base_data', 'schedule', 'development_fixture')),
+    CHECK (source_type IN ('base_data', 'content_observation', 'schedule', 'development_fixture')),
 
   CONSTRAINT data_sources_environment_check
     CHECK (environment_scope IN ('development', 'production')),

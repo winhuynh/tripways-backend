@@ -154,10 +154,16 @@ Một phase chỉ hoàn tất khi:
 Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
 - Không provider call nào nằm trong page-render path; ingestion và publication tạo read model trước.
-- AirLabs adapter, nếu được duyệt ở P2, chỉ normalize route, recurring schedule và reference data.
+- OurAirports cung cấp reference data; Travelpayouts adapter normalize content observations theo
+  `flight-content-observations.v1`.
 - City aggregation, region taxonomy, codeshare dedupe, frequency, confidence và indexability thuộc
   Tripways.
-- Price observation, live offer và affiliate redirect dùng contract/adapters riêng ở P3.
+- Observation được giữ tối đa 24 giờ, không lưu raw payload, không lưu lịch sử và được thay nguyên
+  batch. Cron kiểm tra mỗi ngày và chỉ fetch lại khi batch đã sang ngày thứ 6.
+- Affiliate handoff chỉ ghép relative provider path với allowlisted Aviasales host ở server; client
+  không truyền destination URL.
+- AeroDataBox/AirLabs không có credential, cron, adapter hoặc schema trong implementation hiện tại.
+  Schedule provider tương lai phải đi qua adapter riêng và rights gate mới.
 - Contract giá và affiliate phải optional, có capability gating và kill switch; tắt chúng không làm
   hỏng City Hub.
 
@@ -190,7 +196,7 @@ Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-comme
 
 ### P2
 
-- `route_search_options` là projection duy nhất cho global, origin-city, airport-from, airport-to và
+- `flight_route_options` là projection duy nhất cho global, origin-city, airport-from, airport-to và
   city-pair.
 - Generic discovery bổ sung geography, departure-airport, duration và estimated-price facets.
   Airport scope chỉ nhận counterpart query/country/region, domestic/international và operating

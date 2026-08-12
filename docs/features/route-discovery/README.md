@@ -1,58 +1,21 @@
 # Route Discovery
 
-## Responsibility
-
-Route Discovery builds structurally possible journeys of zero to three stops from recurring
-schedules. It does not claim dated inventory, seats, live fares, fare rules, or booking
-availability.
-
-## Shared read path
+Route Discovery materializes one disposable projection for search and all pSEO page builders:
 
 ```text
-flight_routes + flight_services
-              │
-              ▼
-      refresh_route_options()
-              │
-              ▼
-         route_options
-              │ publication build
-              ▼
- refresh_route_search_options(version)
-              │
-              ▼
-     route_search_options
-              │
-              ▼
- rpc_search_route_options_v2(jsonb)
-              │
-              ▼
-       route-search-query
+flight_routes + current flight_content_observations
+                         │
+                         ▼
+          flight_route_options(publication_version)
+                         │
+                         ▼
+              rpc_search_routes(jsonb)
 ```
 
-Homepage, City, Airport, and Route pages use this one search projection and contract. Supported
-scopes are `global`, `origin_city`, `origin_airport`, and `city_pair`. Shared filters include stops,
-airlines, connection airports, total duration, maximum per-leg layover, cabin, price/currency, and
-keyset pagination.
+The projection contains direct directional evidence, canonical geography, optional airline
+identity, and at most one fresh observed amount. It contains no schedule, recurrence, connection,
+layover, live availability, or synthetic price range.
 
-The Edge transport validates and normalizes the request once. PostgreSQL revalidates the contract,
-owns filtering/facets/ranking, and returns the shared `{ data, meta, error }` envelope. Ranking is
-deterministic: fewer stops, shorter duration, higher confidence, then UUID.
-
-## Provider boundary
-
-Base-data and price providers map into canonical ingestion contracts. Changing provider adapters
-does not change page or route-search contracts. Missing, expired, or unlicensed prices remain
-explicit null states and never become zero or live availability.
-
-## Verification
-
-```bash
-supabase db reset --local --yes
-psql postgresql://postgres:postgres@127.0.0.1:55322/postgres \
-  -v ON_ERROR_STOP=1 -f supabase/snippets/e2e_shared_route_search.sql
-deno test --config supabase/functions/deno.json --allow-read supabase/functions
-```
-
-Development fixtures prove valid direct, one-, two-, and three-stop paths. Their source rights keep
-them permanently non-production and non-indexable.
+Provider adapters publish the same observation contract, so changing provider does not change page
+or search consumers. A daily cron checks freshness and refreshes Travelpayouts on day six, or sooner
+when the provider expiry has already passed.

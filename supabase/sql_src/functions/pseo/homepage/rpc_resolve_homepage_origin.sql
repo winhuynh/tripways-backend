@@ -67,7 +67,7 @@ BEGIN
       ) AS distance_km,
       (
         SELECT count(*)::INTEGER
-        FROM public.route_search_options route_option
+        FROM public.flight_route_options route_option
         WHERE route_option.publication_version_id = v_version_id
           AND route_option.origin_airport_id = airport.id
       ) AS route_count
@@ -77,7 +77,7 @@ BEGIN
       ON city.id = airport.city_id
     JOIN LATERAL (
       SELECT option.origin_city_slug
-      FROM public.route_search_options option
+      FROM public.flight_route_options option
       WHERE option.publication_version_id = v_version_id
         AND option.origin_airport_id = airport.id
       ORDER BY option.origin_city_slug
@@ -89,7 +89,7 @@ BEGIN
       AND airport.longitude IS NOT NULL
       AND EXISTS (
         SELECT 1
-        FROM public.route_search_options route_option
+        FROM public.flight_route_options route_option
         WHERE route_option.publication_version_id = v_version_id
           AND route_option.origin_airport_id = airport.id
       )
@@ -113,7 +113,7 @@ BEGIN
       NULL::DOUBLE PRECISION AS distance_km,
       (
         SELECT count(*)::INTEGER
-        FROM public.route_search_options route_option
+        FROM public.flight_route_options route_option
         WHERE route_option.publication_version_id = v_version_id
           AND route_option.origin_airport_id = airport.id
       ) AS route_count
@@ -123,7 +123,7 @@ BEGIN
       ON city.id = airport.city_id
     LEFT JOIN LATERAL (
       SELECT option.origin_city_slug
-      FROM public.route_search_options option
+      FROM public.flight_route_options option
       WHERE option.publication_version_id = v_version_id
         AND option.origin_airport_id = airport.id
       ORDER BY option.origin_city_slug

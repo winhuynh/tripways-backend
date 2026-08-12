@@ -107,10 +107,10 @@ Deno.test('local Supabase enables Storage before applying the media bucket migra
   assert.match(config, /\[storage\]\s+enabled\s*=\s*true/);
 });
 
-Deno.test('airport guide exposes airport imagery without a legacy airline summary', async () => {
+Deno.test('airport guide exposes canonical imagery through the aggregate payload', async () => {
   const airportPage = await readSource('functions/pseo/airport/build_airport_page_payload.sql');
 
-  assert.ok(includesSql(airportPage, "'image_path', airport.image_path"));
+  assert.ok(includesSql(airportPage, "'image_path',v_airport.image_path"));
   assert.equal(includesSql(airportPage, 'airline.logo_path'), false);
   assert.equal(includesSql(airportPage, "'airline_summary'"), false);
 });
@@ -120,10 +120,21 @@ Deno.test('flight routes enforce direction, source lineage, confidence, and unkn
 
   assert.ok(includesSql(sql, 'origin_airport_id <> destination_airport_id'));
   assert.ok(includesSql(sql, 'unique (source_id, source_record_id)'));
-  assert.ok(includesSql(sql, 'confidence_score between 0 and 1'));
-  assert.ok(includesSql(sql, 'frequency_per_week numeric(6, 2)'));
-  assert.ok(includesSql(sql, "seasonality text not null default 'unknown'"));
+  assert.ok(includesSql(sql, 'provider_airline_iata text null'));
+  assert.ok(includesSql(sql, 'observed_at timestamptz not null'));
+  assert.ok(includesSql(sql, 'evidence_type text not null'));
   assert.ok(includesSql(sql, "'verified_active'"));
   assert.ok(includesSql(sql, "'low_confidence'"));
-  assert.equal(includesSql(sql, 'frequency_per_week numeric(6, 2) not null'), false);
+  assert.equal(includesSql(sql, 'frequency_per_week'), false);
+  assert.equal(includesSql(sql, 'days_of_week'), false);
+  assert.equal(includesSql(sql, 'seasonality'), false);
+});
+
+Deno.test('cities own metro identity and stable city facts', async () => {
+  const sql = await readSource('schema/flight_routing/cities.sql');
+  for (const field of ['iata_code', 'currency_code', 'primary_language', 'timezone']) {
+    assert.ok(sql.includes(field), `cities must define ${field}`);
+  }
+  assert.equal(await readSource('schema/flight_routing/metro_areas.sql'), '');
+  assert.equal(await readSource('schema/flight_routing/metro_area_airports.sql'), '');
 });

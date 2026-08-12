@@ -21,10 +21,8 @@ enabled = true
 sql_paths = [
   "./seed/fixture.sql",
   "./seed/flight_routing_fixture.sql",
-  "./seed/city_pseo_fixture.sql",
-  "./seed/airport_pseo_fixture.sql",
-  "./seed/provider_ready_page_fixture.sql",
   "./seed/ourairports_source.sql",
+  "./seed/travelpayouts_source.sql",
 ]
 
 [realtime]
@@ -101,6 +99,12 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/page/query/index.ts"
+
+[functions.homepage-statistics]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/homepage/statistics/index.ts"
 
 [functions.ingestion-base-data]
 enabled = true

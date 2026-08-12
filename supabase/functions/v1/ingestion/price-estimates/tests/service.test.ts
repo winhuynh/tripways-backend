@@ -10,9 +10,9 @@ Deno.test('price ingestion switches provider through registry without changing p
         Promise.resolve({
           ok: true as const,
           batch: {
-            schemaVersion: 'route-price-estimates.v1' as const,
+            schemaVersion: 'flight-content-observations.v1' as const,
             sourceTime: null,
-            estimates: [],
+            observations: [],
           },
         }),
     }]]),
@@ -27,7 +27,7 @@ Deno.test('price ingestion switches provider through registry without changing p
     },
   );
   assert.equal(result.status, 'published');
-  assert.equal(published.p_provider_version, 'route-price-estimates.v1');
+  assert.equal(published.p_provider_version, 'flight-content-observations.v1');
   assert.equal(published.p_source_code, 'licensed_prices');
 });
 

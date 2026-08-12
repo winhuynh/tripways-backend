@@ -13,6 +13,7 @@
 ### Task 1: Lock canonical source contracts
 
 **Files:**
+
 - Modify: `supabase/functions/_shared/security/tests/canonical_pseo_sql_contract.test.ts`
 - Modify: `supabase/functions/_shared/security/tests/route_discovery_sql_contract.test.ts`
 - Create: `supabase/snippets/e2e_canonical_pseo_source.sql`
@@ -23,6 +24,7 @@
 ### Task 2: Consolidate schema ownership
 
 **Files:**
+
 - Modify: `supabase/sql_src/schema/pseo/shared/pseo_pages.sql`
 - Modify: `supabase/sql_src/schema/pseo/city/city_pages.sql`
 - Modify: `supabase/sql_src/schema/pseo/airport/airport_pages.sql`
@@ -39,6 +41,7 @@
 ### Task 3: Build one publication pipeline
 
 **Files:**
+
 - Modify: `supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql`
 - Modify: `supabase/sql_src/functions/pseo/shared/publish_read_model_version.sql`
 - Delete: `supabase/sql_src/functions/pseo/shared/refresh_pseo_read_models.sql`
@@ -52,6 +55,7 @@
 ### Task 4: Move every page builder to the canonical projection
 
 **Files:**
+
 - Modify: `supabase/sql_src/functions/pseo/city/resolve_city_page_context.sql`
 - Modify: `supabase/sql_src/functions/pseo/city/build_city_page_payload.sql`
 - Modify: `supabase/sql_src/functions/pseo/airport/build_airport_page_payload.sql`
@@ -69,6 +73,7 @@
 ### Task 5: Make search/filter consume the same projection
 
 **Files:**
+
 - Modify: `supabase/sql_src/functions/route_discovery/rpc_search_routes.sql`
 - Modify: `supabase/sql_src/functions/pseo/homepage/refresh_homepage_statistics.sql`
 - Modify: `supabase/sql_src/functions/pseo/homepage/rpc_search_places.sql`
@@ -80,6 +85,7 @@
 ### Task 6: Reproducible ingestion, seed, and migrations
 
 **Files:**
+
 - Modify: `supabase/sql_src/functions/ingestion/publish_base_data_batch.sql`
 - Move local preview generation from `supabase/sql_src/operations/` to `supabase/seed/` or `scripts/`.
 - Modify: `scripts/regenerate-supabase-migrations.sh`
@@ -92,6 +98,7 @@
 ### Task 7: Full verification and frontend QA
 
 **Files:**
+
 - Verify backend and `/Users/winn/Documents/Tripways/tripways-web` without unrelated edits.
 
 - [ ] Run backend formatting, Deno checks/tests, SQL E2E, migration regeneration guard, and database reset.
