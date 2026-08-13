@@ -15,8 +15,8 @@ DECLARE
   v_route_count INTEGER;
   v_page_counts JSONB;
 BEGIN
-  IF p_source_type NOT IN ('production', 'development_fixture') THEN
-    RETURN private.build_rpc_error(NULL, 'ERR_INVALID_REQUEST', 'Invalid publication source type.');
+  IF p_source_type NOT IN ('production', 'staging', 'development_fixture') THEN
+    RETURN admin.build_rpc_error(NULL, 'ERR_INVALID_REQUEST', 'Invalid publication source type.');
   END IF;
 
   -- STEP 01: Serialize publishers so two candidates cannot race the current marker.
@@ -31,27 +31,15 @@ BEGIN
 
   -- STEP 02: Keep candidate failures in a subtransaction and preserve the current version.
   BEGIN
-    v_route_count := private.refresh_route_search_options(v_version_id);
+    v_route_count := admin.refresh_route_search_options(v_version_id);
 
-    -- STEP 02A: Derive lifecycle only on the canonical page registry.
-    UPDATE public.pseo_pages AS registry
-    SET
-      is_indexable = FALSE,
-      noindex_reason = CASE
-        WHEN p_source_type = 'development_fixture' THEN 'development_fixture'
-        WHEN registry.status <> 'published' THEN 'not_published'
-        WHEN registry.page_type IN ('city', 'airport', 'city_route') THEN 'source_not_seo_eligible'
-        ELSE COALESCE(registry.noindex_reason, 'unsupported_page_type')
-      END,
-      data_version = v_version_id,
-      generated_at = now();
-
-    -- Set both constrained lifecycle fields together after the safe noindex baseline.
-    UPDATE public.pseo_pages AS registry
-    SET is_indexable = TRUE, noindex_reason = NULL
-    WHERE p_source_type = 'production'
-      AND registry.status = 'published'
-      AND CASE
+    -- STEP 02A: Derive both constrained lifecycle fields in one registry update.
+    WITH page_eligibility AS (
+      SELECT
+        registry.id,
+        p_source_type = 'production'
+        AND registry.status = 'published'
+        AND CASE
         WHEN registry.page_type = 'city' THEN EXISTS (
           SELECT 1
           FROM public.city_pages AS content
@@ -81,9 +69,26 @@ BEGIN
             AND content.content_reviewed_at IS NOT NULL
         )
         ELSE FALSE
-      END;
+        END AS is_eligible
+      FROM public.pseo_pages AS registry
+    )
+    UPDATE public.pseo_pages AS registry
+    SET
+      is_indexable = eligibility.is_eligible,
+      noindex_reason = CASE
+        WHEN eligibility.is_eligible THEN NULL
+        WHEN p_source_type = 'development_fixture' THEN 'development_fixture'
+        WHEN p_source_type = 'staging' THEN 'staging_environment'
+        WHEN registry.status <> 'published' THEN 'not_published'
+        WHEN registry.page_type IN ('city', 'airport', 'city_route') THEN 'source_not_seo_eligible'
+        ELSE COALESCE(registry.noindex_reason, 'unsupported_page_type')
+      END,
+      data_version = v_version_id,
+      generated_at = now()
+    FROM page_eligibility AS eligibility
+    WHERE eligibility.id = registry.id;
 
-    v_page_counts := private.refresh_page_read_models(v_version_id);
+    v_page_counts := admin.refresh_page_read_models(v_version_id);
 
     IF v_route_count = 0 THEN
       RAISE EXCEPTION USING
@@ -101,7 +106,7 @@ BEGIN
         END
       WHERE id = v_version_id;
 
-      RETURN private.build_rpc_error(
+      RETURN admin.build_rpc_error(
         NULL,
         'ERR_PUBLICATION_FAILED',
         'Read-model publication failed.'

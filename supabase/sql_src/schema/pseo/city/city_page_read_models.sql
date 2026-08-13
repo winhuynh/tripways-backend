@@ -5,6 +5,7 @@ CREATE TABLE public.city_page_read_models (
   locale                 TEXT        NOT NULL,
   canonical_slug         TEXT        NOT NULL,
   payload                JSONB       NOT NULL,
+  metadata               JSONB       NOT NULL,
   generated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT city_page_read_models_identity_key
@@ -14,7 +15,10 @@ CREATE TABLE public.city_page_read_models (
   UNIQUE (publication_version_id, canonical_slug, locale),
 
   CONSTRAINT city_page_read_models_payload_check
-  CHECK (jsonb_typeof(payload) = 'object')
+  CHECK (jsonb_typeof(payload) = 'object'),
+
+  CONSTRAINT city_page_read_models_metadata_check
+  CHECK (jsonb_typeof(metadata) = 'object')
 );
 
 CREATE INDEX city_page_read_models_lookup_idx

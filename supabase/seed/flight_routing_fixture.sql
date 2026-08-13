@@ -21,9 +21,38 @@ INSERT INTO public.airlines (id,iata,icao,name,slug,country_id,business_model,st
 ('50000000-0000-4000-8000-000000000001','VN','HVN','Vietnam Airlines','vietnam-airlines','20000000-0000-4000-8000-000000000001','full_service','active','10000000-0000-4000-8000-000000000001','airline-vn',now()),
 ('50000000-0000-4000-8000-000000000002','SQ','SIA','Singapore Airlines','singapore-airlines','20000000-0000-4000-8000-000000000002','full_service','active','10000000-0000-4000-8000-000000000001','airline-sq',now());
 
-INSERT INTO public.flight_routes (id,origin_airport_id,destination_airport_id,canonical_airline_id,provider_airline_iata,evidence_type,status,confidence_score,source_id,source_record_id,observed_at) VALUES
-('60000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000004','50000000-0000-4000-8000-000000000001','VN','manual','verified_active',0.980,'10000000-0000-4000-8000-000000000001','route-sgn-lhr',now()),
-('60000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000002','50000000-0000-4000-8000-000000000002','SQ','manual','verified_active',0.990,'10000000-0000-4000-8000-000000000001','route-sgn-sin',now());
+INSERT INTO public.flight_route_prices (
+  id, origin_city_id, destination_city_id, origin_airport_id, destination_airport_id,
+  canonical_airline_id, provider_airline_iata, observation_type, trip_type, direct,
+  transfer_count, observed_amount, currency_code, market_code, locale, departure_date,
+  source_id, data_source, provider_code, source_record_id, observed_at, valid_until,
+  affiliate_path, status, data_version
+)
+VALUES
+  (
+    '60000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000004',
+    '40000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000004',
+    '50000000-0000-4000-8000-000000000001',
+    'VN', 'cached_fare', 'one_way', TRUE, 0, 392, 'USD', 'us', 'en-GB',
+    CURRENT_DATE + 30, '10000000-0000-4000-8000-000000000001', 'fixture', 'fixture',
+    'price-sgn-lhr', now(), now() + INTERVAL '6 days', '/search/SGN-LON', 'published',
+    '60000000-0000-4000-8000-000000000011'
+  ),
+  (
+    '60000000-0000-4000-8000-000000000002',
+    '30000000-0000-4000-8000-000000000001',
+    '30000000-0000-4000-8000-000000000002',
+    '40000000-0000-4000-8000-000000000001',
+    '40000000-0000-4000-8000-000000000002',
+    '50000000-0000-4000-8000-000000000002',
+    'SQ', 'cached_fare', 'one_way', TRUE, 0, 98, 'USD', 'us', 'en-GB',
+    CURRENT_DATE + 30, '10000000-0000-4000-8000-000000000001', 'fixture', 'fixture',
+    'price-sgn-sin', now(), now() + INTERVAL '6 days', '/search/SGN-SIN', 'published',
+    '60000000-0000-4000-8000-000000000012'
+  );
 
 INSERT INTO public.pseo_pages (id,page_type,entity_key,locale,canonical_path,display_title,status,is_indexable,noindex_reason,source_freshness_at) VALUES
 ('81000000-0000-4000-8000-000000000001','city','ho-chi-minh-city','en-GB','/flights-from-ho-chi-minh-city','Flights from Ho Chi Minh City','published',false,'development_fixture',now()),
@@ -31,7 +60,7 @@ INSERT INTO public.pseo_pages (id,page_type,entity_key,locale,canonical_path,dis
 ('81000000-0000-4000-8000-000000000003','city_route','ho-chi-minh-city-london','en-GB','/flights/ho-chi-minh-city-london','Ho Chi Minh City to London flights','published',false,'development_fixture',now());
 
 INSERT INTO public.city_pages (pseo_page_id,city_id,locale,route_direction,primary_airport_id,content,content_reviewed_at) VALUES
-('81000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','en-GB','outbound','40000000-0000-4000-8000-000000000001','{"seo":{"h1":"Flights from Ho Chi Minh City"},"intro":"Explore route evidence and cached observations."}',now());
+('81000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','en-GB','outbound','40000000-0000-4000-8000-000000000001','{"seo":{"h1":"Flights from Ho Chi Minh City"},"intro":"Explore recently cached route prices."}',now());
 INSERT INTO public.airport_pages (pseo_page_id,airport_id,locale,content,content_reviewed_at) VALUES
 ('81000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','en-GB','{"seo":{"h1":"Tan Son Nhat Airport guide"},"orientation":"Local development fixture."}',now());
 INSERT INTO public.route_pages (pseo_page_id,origin_city_id,destination_city_id,locale,content,content_reviewed_at) VALUES

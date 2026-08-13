@@ -16,7 +16,7 @@ CREATE TABLE public.publication_versions (
     CHECK (status IN ('building', 'published', 'failed', 'retired')),
 
   CONSTRAINT publication_versions_source_check
-    CHECK (source_type IN ('production', 'development_fixture')),
+    CHECK (source_type IN ('production', 'staging', 'development_fixture')),
 
   CONSTRAINT publication_versions_current_check
     CHECK (is_current = FALSE OR (status = 'published' AND published_at IS NOT NULL)),

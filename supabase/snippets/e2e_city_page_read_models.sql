@@ -14,28 +14,28 @@ END;
 $$;
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #>> '{data,city,slug}' = 'bangkok',
-  'Bangkok city page resolves through the canonical page RPC'
+  public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,city,slug}' = 'ho-chi-minh-city',
+  'Ho Chi Minh City page resolves through the canonical page RPC'
 );
 
 SELECT pg_temp.test_assert(
-  jsonb_array_length(public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,airports}') = 2,
-  'Bangkok page exposes both seeded departure airports'
+  jsonb_array_length(public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #> '{data,routes}') = 2,
+  'Ho Chi Minh City page exposes both seeded routes'
 );
 
 SELECT pg_temp.test_assert(
-  jsonb_array_length(public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,featured_destinations}') > 0,
-  'Bangkok page exposes direct destinations'
+  public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,routes,0,from}' = 'SGN',
+  'Ho Chi Minh City routes expose the public origin code'
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,price_summary}' IS NOT NULL,
-  'Bangkok page exposes an explicit estimated-price state'
+  (public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,routes,0,observed_amount}')::NUMERIC > 0,
+  'Ho Chi Minh City page exposes a fresh estimated route price'
 );
 
 SELECT pg_temp.test_assert(
-  jsonb_array_length(public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,faqs}') = 4,
-  'Bangkok page exposes page-specific FAQs'
+  public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,content,seo,h1}' = 'Flights from Ho Chi Minh City',
+  'Ho Chi Minh City page exposes reviewed aggregate content'
 );
 
 SELECT pg_temp.test_assert(

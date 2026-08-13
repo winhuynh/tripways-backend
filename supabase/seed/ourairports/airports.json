@@ -8415,6 +8415,17 @@
     "type": "medium_airport"
   },
   {
+    "sourceId": "299082",
+    "name": "Amravati  Airport",
+    "iata": "AVR",
+    "icao": "VAAM",
+    "citySourceId": "ourairports-city:in:in-mm:amravati",
+    "countryIso2": "IN",
+    "latitude": 20.814608,
+    "longitude": 77.717765,
+    "type": "medium_airport"
+  },
+  {
     "sourceId": "331218",
     "name": "Sindhudurg Airport",
     "iata": "SDW",
@@ -11287,7 +11298,7 @@
   },
   {
     "sourceId": "3675",
-    "name": "Memphis International Airport",
+    "name": "Frederick W. Smith International Airport",
     "iata": "MEM",
     "icao": "KMEM",
     "citySourceId": "ourairports-city:us:us-tn:memphis",

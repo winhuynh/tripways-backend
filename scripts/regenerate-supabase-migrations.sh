@@ -56,9 +56,7 @@ find "$migrations_dir" -maxdepth 1 -type f -name "*.sql" -delete
 emit_migration \
   "20260714080000_platform.sql" \
   "platform" \
-  "supabase/sql_src/schema/_platform/private.sql" \
-  "supabase/sql_src/schema/_platform/admin.sql" \
-  "supabase/sql_src/schema/_platform/analytics.sql"
+  "supabase/sql_src/schema/_platform/admin.sql"
 
 emit_migration \
   "20260714080100_user_schema.sql" \
@@ -79,9 +77,7 @@ emit_migration \
   "supabase/sql_src/schema/flight_routing/cities.sql" \
   "supabase/sql_src/schema/flight_routing/airports.sql" \
   "supabase/sql_src/schema/flight_routing/airlines.sql" \
-  "supabase/sql_src/schema/flight_routing/place_aliases.sql" \
-  "supabase/sql_src/schema/flight_routing/flight_routes.sql" \
-  "supabase/sql_src/schema/flight_routing/flight_content_observations.sql"
+  "supabase/sql_src/schema/flight_routing/flight_route_prices.sql"
 
 emit_migration \
   "20260714080300_route_discovery_schema.sql" \
@@ -94,8 +90,6 @@ emit_migration \
   "base data ingestion schema" \
   "supabase/sql_src/schema/ingestion/raw_import_batches.sql" \
   "supabase/sql_src/schema/ingestion/raw_base_data_records.sql" \
-  "supabase/sql_src/schema/ingestion/ingestion_runs.sql" \
-  "supabase/sql_src/schema/ingestion/ingestion_issues.sql" \
   "supabase/sql_src/schema/ingestion/ourairports_denylist.sql"
 
 emit_migration \
@@ -107,15 +101,12 @@ emit_migration \
   "supabase/sql_src/schema/pseo/route/route_pages.sql" \
   "supabase/sql_src/schema/pseo/city/city_page_read_models.sql" \
   "supabase/sql_src/schema/pseo/airport/airport_page_read_models.sql" \
-  "supabase/sql_src/schema/pseo/route/route_page_read_models.sql" \
-  "supabase/sql_src/schema/pseo/shared/pseo_internal_links.sql"
+  "supabase/sql_src/schema/pseo/route/route_page_read_models.sql"
 
 emit_migration \
   "20260714080450_shared_functions.sql" \
   "shared functions" \
-  "supabase/sql_src/functions/_shared/build_rpc_error.sql" \
-  "supabase/sql_src/functions/_shared/normalize_airport_iata.sql" \
-  "supabase/sql_src/functions/_shared/normalize_airline_iata.sql"
+  "supabase/sql_src/functions/_shared/build_rpc_error.sql"
 
 emit_migration \
   "20260714080500_system_functions.sql" \
@@ -144,24 +135,16 @@ emit_migration \
 emit_migration \
   "20260714080900_pseo_functions.sql" \
   "pSEO functions" \
-  "supabase/sql_src/functions/pseo/city/parse_city_page_identity.sql" \
-  "supabase/sql_src/functions/pseo/city/resolve_city_page_context.sql" \
-  "supabase/sql_src/functions/pseo/airport/parse_airport_page_identity.sql" \
-  "supabase/sql_src/functions/pseo/airport/resolve_airport_page_context.sql" \
   "supabase/sql_src/functions/pseo/city/build_city_page_payload.sql" \
   "supabase/sql_src/functions/pseo/airport/build_airport_page_payload.sql" \
-  "supabase/sql_src/functions/pseo/shared/resolve_route_price_estimate.sql" \
   "supabase/sql_src/functions/pseo/shared/rpc_get_flight_affiliate_handoff.sql" \
-  "supabase/sql_src/functions/pseo/homepage/rpc_search_places.sql" \
-  "supabase/sql_src/functions/pseo/homepage/rpc_resolve_homepage_origin.sql" \
   "supabase/sql_src/functions/pseo/homepage/rpc_get_homepage_statistics.sql" \
   "supabase/sql_src/functions/pseo/route/build_route_page_payload.sql" \
   "supabase/sql_src/functions/pseo/shared/rpc_get_sitemap.sql" \
   "supabase/sql_src/functions/pseo/shared/refresh_page_read_models.sql" \
   "supabase/sql_src/functions/pseo/shared/publish_read_model_version.sql" \
   "supabase/sql_src/functions/pseo/shared/rpc_get_page.sql" \
-  "supabase/sql_src/operations/generate_local_geo_preview_pages.sql" \
-  "supabase/sql_src/operations/rename_city_slug.sql"
+  "supabase/sql_src/operations/sync_provider_pseo_pages.sql"
 
 emit_migration \
   "20260714081000_ingestion_functions.sql" \
@@ -169,9 +152,9 @@ emit_migration \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_get_ourairports_denylist.sql" \
-  "supabase/sql_src/operations/configure_ourairports_cron.sql" \
-  "supabase/sql_src/operations/configure_travelpayouts_content_cron.sql" \
-  "supabase/sql_src/functions/ingestion/publish_price_estimate_batch.sql"
+  "supabase/sql_src/operations/configure_ingestion_crons.sql" \
+  "supabase/sql_src/functions/ingestion/publish_price_estimate_batch.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_publish_price_estimate_batch.sql"
 
 find "$source_root" -type f -name "*.sql" \
   | sed "s|$repo_root/||" \

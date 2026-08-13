@@ -10,7 +10,7 @@
     "test:auth": "pnpm test:auth:contract && deno test --config supabase/functions/deno.json supabase/functions/_shared/tests supabase/functions/v1/user/profile/tests supabase/functions/v1/user/account-security/tests supabase/functions/v1/user/delete-account/tests",
     "test:ingestion": "deno test --config supabase/functions/deno.json --allow-read supabase/functions/_shared/security/tests/ingestion_sql_contract.test.ts supabase/functions/v1/ingestion/base-data/tests supabase/functions/v1/ingestion/price-estimates/tests",
     "test:pseo:contract": "deno test --config supabase/functions/deno.json --allow-read supabase/functions/_shared/security/tests/canonical_pseo_sql_contract.test.ts",
-    "edge:check": "deno check --config supabase/functions/deno.json supabase/functions/v1/system/health/index.ts supabase/functions/v1/user/profile/index.ts supabase/functions/v1/user/account-security/index.ts supabase/functions/v1/user/delete-account/index.ts supabase/functions/v1/page/query/index.ts supabase/functions/v1/homepage/origin/index.ts supabase/functions/v1/route-search/query/index.ts supabase/functions/v1/sitemap/query/index.ts supabase/functions/v1/ingestion/base-data/index.ts supabase/functions/v1/ingestion/price-estimates/index.ts",
+    "edge:check": "deno check --config supabase/functions/deno.json supabase/functions/v1/system/health/index.ts supabase/functions/v1/user/profile/index.ts supabase/functions/v1/user/account-security/index.ts supabase/functions/v1/user/delete-account/index.ts supabase/functions/v1/page/query/index.ts supabase/functions/v1/homepage/statistics/index.ts supabase/functions/v1/route-search/query/index.ts supabase/functions/v1/sitemap/query/index.ts supabase/functions/v1/ingestion/base-data/index.ts supabase/functions/v1/ingestion/price-estimates/index.ts supabase/functions/v1/flight/affiliate-handoff/index.ts",
     "edge:fmt:check": "deno fmt --config supabase/functions/deno.json --check supabase/functions",
     "verify": "pnpm format:check && pnpm edge:fmt:check && pnpm edge:check",
     "supabase:start": "supabase start",
@@ -18,6 +18,7 @@
     "supabase:reset": "supabase db reset --local --yes",
     "supabase:migrations:regenerate": "bash scripts/regenerate-supabase-migrations.sh",
     "smoke:approved-api": "deno run --allow-env --allow-net scripts/smoke-approved-base-data-api.ts",
+    "check:staging": "bash scripts/check-staging-readiness.sh",
     "ourairports:generate-local": "deno run --allow-net=davidmegginson.github.io,raw.githubusercontent.com --allow-read=supabase/seed/ourairports --allow-write=supabase/seed/ourairports scripts/generate-ourairports-local-data.ts",
     "ourairports:import-local": "deno run --allow-env=LOCAL_DATABASE_URL --allow-read=supabase/seed/ourairports --allow-run=psql scripts/import-ourairports-local-data.ts",
     "verify:p0a": "bash scripts/verify-p0a-local.sh"

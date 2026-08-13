@@ -3,7 +3,7 @@
 -- Feature: System
 -- Purpose: Verify that the database is reachable through a stable, side-effect-free contract.
 -- Responsibilities: Return service status and the current database timestamp.
--- Notes: Uses invoker security and reads no domain or private data.
+-- Notes: Uses invoker security and reads no domain or internal data.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.health_check()
@@ -21,4 +21,3 @@ $$;
 
 REVOKE ALL ON FUNCTION public.health_check() FROM public;
 GRANT EXECUTE ON FUNCTION public.health_check() TO anon, authenticated, service_role;
-

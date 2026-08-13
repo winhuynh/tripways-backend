@@ -6,6 +6,7 @@ export type PriceEstimatePublicationResult = {
   acceptedCount: number;
   rejectedCount: number;
   errorCode: string | null;
+  dataVersion?: string | null;
 };
 export type PriceEstimateAdapter = { load(): Promise<FlightContentProviderResult> };
 export async function executePriceEstimateIngestion(

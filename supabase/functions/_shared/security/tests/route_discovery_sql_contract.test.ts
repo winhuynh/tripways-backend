@@ -37,8 +37,8 @@ Deno.test('route search reads only the lean route projection', async () => {
   const search = await read('functions/route_discovery/rpc_search_routes.sql');
   const refresh = await read('functions/route_discovery/refresh_route_search_options.sql');
   assert.ok(search.includes('public.flight_route_options'));
-  assert.ok(refresh.includes('public.flight_routes'));
-  assert.ok(refresh.includes('public.flight_content_observations'));
+  assert.ok(refresh.includes('public.flight_route_prices'));
+  assert.equal(refresh.includes('public.flight_routes'), false);
   assert.equal(refresh.includes('public.flight_services'), false);
   assert.equal(refresh.includes('with recursive'), false);
 });

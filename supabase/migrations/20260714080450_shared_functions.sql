@@ -8,14 +8,14 @@
 -- >>> supabase/sql_src/functions/_shared/build_rpc_error.sql
 
 -- ============================================================================
--- Function: private.build_rpc_error
+-- Function: admin.build_rpc_error
 -- Feature: Shared RPC contract
 -- Purpose: Build the stable error envelope returned by public read RPCs.
 -- Responsibilities: Preserve caller-selected empty data shape, metadata, code, and message.
 -- Notes: The helper is internal and executable only by the service-role RPC caller.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.build_rpc_error(
+CREATE OR REPLACE FUNCTION admin.build_rpc_error(
   p_data JSONB,
   p_code TEXT,
   p_message TEXT
@@ -36,64 +36,6 @@ AS $$
   );
 $$;
 
-REVOKE ALL ON FUNCTION private.build_rpc_error(JSONB, TEXT, TEXT)
+REVOKE ALL ON FUNCTION admin.build_rpc_error(JSONB, TEXT, TEXT)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION private.build_rpc_error(JSONB, TEXT, TEXT) TO service_role;
-
--- >>> supabase/sql_src/functions/_shared/normalize_airport_iata.sql
-
--- ============================================================================
--- Function: private.normalize_airport_iata
--- Feature: Shared RPC validation
--- Purpose: Normalize and validate one airport IATA code.
--- Responsibilities: Trim input, uppercase valid codes, and reject malformed values.
--- Notes: NULL represents invalid or missing input.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION private.normalize_airport_iata(p_value TEXT)
-RETURNS TEXT
-LANGUAGE sql
-IMMUTABLE
-STRICT
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-  SELECT CASE
-    WHEN upper(btrim(p_value)) ~ '^[A-Z]{3}$'
-      THEN upper(btrim(p_value))
-    ELSE NULL
-  END;
-$$;
-
-REVOKE ALL ON FUNCTION private.normalize_airport_iata(TEXT)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION private.normalize_airport_iata(TEXT) TO service_role;
-
--- >>> supabase/sql_src/functions/_shared/normalize_airline_iata.sql
-
--- ============================================================================
--- Function: private.normalize_airline_iata
--- Feature: Shared RPC validation
--- Purpose: Normalize and validate one airline IATA code.
--- Responsibilities: Trim input, uppercase valid codes, and reject malformed values.
--- Notes: NULL represents invalid or missing input.
--- ============================================================================
-
-CREATE OR REPLACE FUNCTION private.normalize_airline_iata(p_value TEXT)
-RETURNS TEXT
-LANGUAGE sql
-IMMUTABLE
-STRICT
-SECURITY INVOKER
-SET search_path = ''
-AS $$
-  SELECT CASE
-    WHEN upper(btrim(p_value)) ~ '^[A-Z0-9]{2}$'
-      THEN upper(btrim(p_value))
-    ELSE NULL
-  END;
-$$;
-
-REVOKE ALL ON FUNCTION private.normalize_airline_iata(TEXT)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION private.normalize_airline_iata(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION admin.build_rpc_error(JSONB, TEXT, TEXT) TO service_role;

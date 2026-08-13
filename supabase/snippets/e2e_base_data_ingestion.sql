@@ -32,7 +32,7 @@ BEGIN
   )
   RETURNING id INTO v_source_id;
 
-  v_first_result := private.publish_base_data_batch(
+  v_first_result := admin.publish_base_data_batch(
     'p0a_ingestion_e2e',
     'p0a-valid-idempotency',
     repeat('a', 64),
@@ -74,7 +74,7 @@ BEGIN
     RAISE EXCEPTION 'Unknown optional values must remain NULL';
   END IF;
 
-  v_replay_result := private.publish_base_data_batch(
+  v_replay_result := admin.publish_base_data_batch(
     'p0a_ingestion_e2e',
     'p0a-valid-idempotency',
     repeat('a', 64),
@@ -87,7 +87,7 @@ BEGIN
     RAISE EXCEPTION 'Expected duplicate result, got %', v_replay_result;
   END IF;
 
-  v_invalid_result := private.publish_base_data_batch(
+  v_invalid_result := admin.publish_base_data_batch(
     'p0a_ingestion_e2e',
     'p0a-invalid-idempotency',
     repeat('b', 64),

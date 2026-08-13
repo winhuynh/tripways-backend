@@ -1,28 +1,28 @@
 \set ON_ERROR_STOP on
 
-SELECT private.generate_local_geo_preview_pages();
+SELECT admin.sync_provider_pseo_pages('development_fixture');
 SELECT public.publish_read_model_version('development_fixture');
 
 DO $$
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM public.city_page_read_models WHERE canonical_slug = 'annecy'
+    SELECT 1 FROM public.city_page_read_models WHERE canonical_slug = 'london'
   ) THEN
-    RAISE EXCEPTION 'Annecy preview city page was not generated';
+    RAISE EXCEPTION 'London preview city page was not generated';
   END IF;
 
   IF NOT EXISTS (
-    SELECT 1 FROM public.airport_page_read_models WHERE airport_iata = 'NCY'
+    SELECT 1 FROM public.airport_page_read_models WHERE airport_iata = 'LHR'
   ) THEN
-    RAISE EXCEPTION 'NCY preview airport page was not generated';
+    RAISE EXCEPTION 'LHR preview airport page was not generated';
   END IF;
 
   IF NOT EXISTS (
     SELECT 1
     FROM public.route_page_read_models
-    WHERE canonical_slug = 'bangkok-thailand-to-singapore'
+    WHERE canonical_slug = 'ho-chi-minh-city-london'
   ) THEN
-    RAISE EXCEPTION 'Bangkok to Singapore preview route page was not generated';
+    RAISE EXCEPTION 'Ho Chi Minh City to London preview route page was not generated';
   END IF;
 
   IF EXISTS (

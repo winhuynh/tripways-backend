@@ -118,6 +118,12 @@ verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/ingestion/price-estimates/index.ts"
 
+[functions.flight-affiliate-handoff]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/flight/affiliate-handoff/index.ts"
+
 [functions.sitemap-query]
 enabled = true
 verify_jwt = false

@@ -3,12 +3,12 @@
 Route Discovery materializes one disposable projection for search and all pSEO page builders:
 
 ```text
-flight_routes + current flight_content_observations
-                         │
-                         ▼
+       current flight_route_prices
+                    │
+                    ▼
           flight_route_options(publication_version)
-                         │
-                         ▼
+                    │
+                    ▼
               rpc_search_routes(jsonb)
 ```
 

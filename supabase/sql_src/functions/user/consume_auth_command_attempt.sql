@@ -47,7 +47,7 @@ BEGIN
     - ((extract(MINUTE FROM v_now)::INTEGER % 5) * INTERVAL '1 minute');
 
   -- STEP 02: Consume the fixed-window quota atomically across concurrent requests.
-  INSERT INTO private.auth_command_attempts (
+  INSERT INTO admin.auth_command_attempts (
     subject_hash,
     action,
     window_started_at,
@@ -57,12 +57,12 @@ BEGIN
   VALUES (p_subject_hash, p_action, v_window_started_at, 1, v_now)
   ON CONFLICT (subject_hash, action, window_started_at)
   DO UPDATE SET
-    attempt_count = private.auth_command_attempts.attempt_count + 1,
+    attempt_count = admin.auth_command_attempts.attempt_count + 1,
     updated_at = EXCLUDED.updated_at
   RETURNING attempt_count INTO v_attempt_count;
 
   -- STEP 03: Bound operational state without a separate cleanup worker at MVP scale.
-  DELETE FROM private.auth_command_attempts
+  DELETE FROM admin.auth_command_attempts
   WHERE window_started_at < v_now - INTERVAL '24 hours';
 
   RETURN jsonb_build_object(

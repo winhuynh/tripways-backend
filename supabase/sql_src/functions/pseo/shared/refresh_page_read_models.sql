@@ -1,11 +1,11 @@
 -- ============================================================================
--- Function: private.refresh_page_read_models
+-- Function: admin.refresh_page_read_models
 -- Purpose: Materialize all page-specific single-load read models for one candidate version.
 -- Responsibilities: Compose bounded page payloads outside the public request path.
 -- Notes: Private builders compose bounded modules only during publication.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.refresh_page_read_models(p_publication_version_id UUID)
+CREATE OR REPLACE FUNCTION admin.refresh_page_read_models(p_publication_version_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
 VOLATILE
@@ -34,22 +34,27 @@ BEGIN
     city_id,
     locale,
     canonical_slug,
-    payload
+    payload,
+    metadata
   )
   SELECT
     p_publication_version_id,
     city_page.city_id,
     city_page.locale,
     registry.entity_key,
-    private.build_city_page_payload(jsonb_build_object(
+    built.response->'data',
+    built.response->'meta'
+  FROM public.city_pages city_page
+  JOIN public.pseo_pages AS registry ON registry.id = city_page.pseo_page_id
+  CROSS JOIN LATERAL (
+    SELECT admin.build_city_page_payload(jsonb_build_object(
       'city_slug', registry.entity_key,
       'locale', city_page.locale,
       'route_direction', city_page.route_direction,
       'destination_limit', 20,
       'publication_version_id', p_publication_version_id
-    ))->'data'
-  FROM public.city_pages city_page
-  JOIN public.pseo_pages AS registry ON registry.id = city_page.pseo_page_id
+    )) AS response
+  ) AS built
   WHERE city_page.route_direction = 'outbound'
     AND registry.status <> 'archived';
   GET DIAGNOSTICS v_city_count = ROW_COUNT;
@@ -59,22 +64,27 @@ BEGIN
     airport_id,
     locale,
     airport_iata,
-    payload
+    payload,
+    metadata
   )
   SELECT
     p_publication_version_id,
     airport_page.airport_id,
     airport_page.locale,
     airport.iata,
-    private.build_airport_page_payload(jsonb_build_object(
-      'airport_iata', airport.iata,
-      'locale', airport_page.locale,
-      'publication_version_id', p_publication_version_id
-    ))->'data'
+    built.response->'data',
+    built.response->'meta'
   FROM public.airport_pages airport_page
   JOIN public.airports airport
     ON airport.id = airport_page.airport_id
   JOIN public.pseo_pages AS registry ON registry.id = airport_page.pseo_page_id
+  CROSS JOIN LATERAL (
+    SELECT admin.build_airport_page_payload(jsonb_build_object(
+      'airport_iata', airport.iata,
+      'locale', airport_page.locale,
+      'publication_version_id', p_publication_version_id
+    )) AS response
+  ) AS built
   WHERE registry.status <> 'archived';
   GET DIAGNOSTICS v_airport_count = ROW_COUNT;
 
@@ -83,20 +93,25 @@ BEGIN
     route_page_id,
     locale,
     canonical_slug,
-    payload
+    payload,
+    metadata
   )
   SELECT
     p_publication_version_id,
     route_page.id,
     route_page.locale,
     registry.entity_key,
-    private.build_route_page_payload(jsonb_build_object(
+    built.response->'data',
+    built.response->'meta'
+  FROM public.route_pages route_page
+  JOIN public.pseo_pages AS registry ON registry.id = route_page.pseo_page_id
+  CROSS JOIN LATERAL (
+    SELECT admin.build_route_page_payload(jsonb_build_object(
       'route_slug', registry.entity_key,
       'locale', route_page.locale,
       'publication_version_id', p_publication_version_id
-    ))->'data'
-  FROM public.route_pages route_page
-  JOIN public.pseo_pages AS registry ON registry.id = route_page.pseo_page_id
+    )) AS response
+  ) AS built
   WHERE registry.status <> 'archived';
   GET DIAGNOSTICS v_route_count = ROW_COUNT;
 
@@ -108,6 +123,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.refresh_page_read_models(UUID)
+REVOKE ALL ON FUNCTION admin.refresh_page_read_models(UUID)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION private.refresh_page_read_models(UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION admin.refresh_page_read_models(UUID) TO service_role;

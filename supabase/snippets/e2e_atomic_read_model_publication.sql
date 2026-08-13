@@ -18,7 +18,7 @@ SELECT id
 FROM public.publication_versions
 WHERE is_current = TRUE;
 
-DELETE FROM public.route_options;
+DELETE FROM public.flight_route_prices;
 
 SELECT pg_temp.test_assert(
   public.publish_read_model_version('development_fixture') #>> '{error,code}'

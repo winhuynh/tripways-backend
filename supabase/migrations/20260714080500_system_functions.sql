@@ -12,7 +12,7 @@
 -- Feature: System
 -- Purpose: Verify that the database is reachable through a stable, side-effect-free contract.
 -- Responsibilities: Return service status and the current database timestamp.
--- Notes: Uses invoker security and reads no domain or private data.
+-- Notes: Uses invoker security and reads no domain or internal data.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.health_check()

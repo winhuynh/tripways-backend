@@ -79,7 +79,7 @@ Credentials và payload thô của provider luôn nằm phía máy chủ và tro
 ### 6.1 Ingestion trung lập provider
 
 - Adapter provider chuyển payload nguồn đã phê duyệt thành đầu vào tuyến và dịch vụ định kỳ chuẩn.
-- Payload thô và trường riêng của provider nằm trong vùng private.
+- Payload thô và trường riêng của provider nằm trong vùng admin.
 - Batch tái sử dụng mô hình validation, diff, idempotency và xuất bản nguyên tử của P1.
 - Dữ liệu sai hoặc thiếu bản quyền không được thay thế đồ thị tuyến đã xuất bản.
 

@@ -18,7 +18,7 @@ AS $$
       'published_direct_route_count', count(DISTINCT option.route_path)::INTEGER
     ),
     'meta', jsonb_build_object(
-      'data_version', version.id,
+      'data_version', 'v_' || md5(version.id::TEXT),
       'generated_at', version.published_at
     ),
     'error', NULL

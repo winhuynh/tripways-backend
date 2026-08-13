@@ -7,18 +7,26 @@
 
 -- >>> supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql
 
--- Build a disposable route-search projection from provider-neutral route evidence.
-CREATE OR REPLACE FUNCTION private.refresh_route_search_options(p_publication_version_id UUID)
+-- ============================================================================
+-- Function: admin.refresh_route_search_options
+-- Purpose: Build a disposable route-search projection from fresh route prices.
+-- Responsibilities: Materialize one complete candidate publication version.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.refresh_route_search_options(p_publication_version_id UUID)
 RETURNS INTEGER
 LANGUAGE plpgsql
 VOLATILE
 SET search_path = ''
 AS $$
-DECLARE v_count INTEGER;
+DECLARE
+  v_count INTEGER;
 BEGIN
   IF NOT EXISTS (
-    SELECT 1 FROM public.publication_versions v
-    WHERE v.id = p_publication_version_id AND v.status = 'building'
+    SELECT 1
+    FROM public.publication_versions AS version
+    WHERE version.id = p_publication_version_id
+      AND version.status = 'building'
   ) THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_PUBLICATION_VERSION_INVALID';
   END IF;
@@ -34,56 +42,67 @@ BEGIN
     canonical_airline_id, provider_airline_iata, evidence_type, confidence_score,
     observed_amount, currency_code, observation_valid_until, route_path
   )
-  SELECT
-    route.id, p_publication_version_id,
+  SELECT DISTINCT ON (
+    price.origin_airport_id,
+    price.destination_airport_id,
+    price.provider_airline_iata
+  )
+    price.id, p_publication_version_id,
     origin_city.id, origin_city.slug, origin_country.iso2,
     destination_city.id, destination_city.slug, destination_country.iso2,
     origin_airport.id, origin_airport.iata,
     destination_airport.id, destination_airport.iata,
-    route.canonical_airline_id, route.provider_airline_iata, route.evidence_type, route.confidence_score,
-    observation.observed_amount, observation.currency_code, observation.valid_until,
+    price.canonical_airline_id, price.provider_airline_iata, 'content_observation', 1.000,
+    price.observed_amount, price.currency_code, price.valid_until,
     registry.canonical_path
-  FROM public.flight_routes route
-  JOIN public.airports origin_airport ON origin_airport.id = route.origin_airport_id
+  FROM public.flight_route_prices price
+  JOIN public.airports origin_airport ON origin_airport.id = price.origin_airport_id
   JOIN public.cities origin_city ON origin_city.id = origin_airport.city_id
   JOIN public.countries origin_country ON origin_country.id = origin_city.country_id
-  JOIN public.airports destination_airport ON destination_airport.id = route.destination_airport_id
+  JOIN public.airports destination_airport ON destination_airport.id = price.destination_airport_id
   JOIN public.cities destination_city ON destination_city.id = destination_airport.city_id
   JOIN public.countries destination_country ON destination_country.id = destination_city.country_id
-  JOIN admin.data_sources source ON source.id = route.source_id
+  JOIN admin.data_sources source ON source.id = price.source_id
   LEFT JOIN public.route_pages page
     ON page.origin_city_id = origin_city.id
    AND page.destination_city_id = destination_city.id
    AND page.locale = 'en-GB'
   LEFT JOIN public.pseo_pages registry ON registry.id = page.pseo_page_id AND registry.status <> 'archived'
-  LEFT JOIN LATERAL (
-    SELECT item.observed_amount, item.currency_code, item.valid_until
-    FROM public.flight_content_observations item
-    JOIN admin.data_sources observation_source ON observation_source.id = item.source_id
-    WHERE item.origin_city_id = origin_city.id
-      AND item.destination_city_id = destination_city.id
-      AND item.status = 'published'
-      AND item.valid_until > now()
-      AND item.observed_amount IS NOT NULL
-      AND observation_source.production_display_allowed
-    ORDER BY item.observed_at DESC, item.id
-    LIMIT 1
-  ) observation ON TRUE
-  WHERE route.status IN ('verified_active', 'likely_active', 'seasonal')
-    AND (route.valid_until IS NULL OR route.valid_until > now())
+  WHERE price.status = 'published'
+    AND price.valid_until > now()
+    AND price.observed_amount IS NOT NULL
+    AND price.origin_airport_id IS NOT NULL
+    AND price.destination_airport_id IS NOT NULL
     AND origin_airport.status = 'active'
     AND destination_airport.status = 'active'
     AND origin_city.id <> destination_city.id
-    AND (source.derived_data_allowed OR source.source_type = 'development_fixture');
+    AND (source.production_display_allowed OR source.source_type = 'development_fixture')
+  ORDER BY
+    price.origin_airport_id,
+    price.destination_airport_id,
+    price.provider_airline_iata,
+    price.observed_amount,
+    price.observed_at DESC,
+    price.id;
 
   GET DIAGNOSTICS v_count = ROW_COUNT;
   RETURN v_count;
 END;
 $$;
 
+REVOKE ALL ON FUNCTION admin.refresh_route_search_options(UUID)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.refresh_route_search_options(UUID) TO service_role;
+
 -- >>> supabase/sql_src/functions/route_discovery/rpc_search_routes.sql
 
--- Search the lean route projection. Schedule-specific filters are intentionally unsupported.
+-- ============================================================================
+-- Function: public.rpc_search_routes
+-- Purpose: Search the current lean route projection.
+-- Responsibilities: Validate supported filters and return a bounded public route payload.
+-- Notes: Schedule-specific filters are intentionally unsupported.
+-- ============================================================================
+
 CREATE OR REPLACE FUNCTION public.rpc_search_routes(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -106,7 +125,7 @@ BEGIN
     OR p_input - ARRAY['scope', 'filters', 'page_size'] <> '{}'::JSONB
     OR COALESCE(p_input->'filters', '{}'::JSONB) - ARRAY['currency', 'max_amount'] <> '{}'::JSONB
   THEN
-    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route search request.');
+    RETURN admin.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route search request.');
   END IF;
 
   v_scope_type := p_input #>> '{scope,type}';
@@ -121,15 +140,28 @@ BEGIN
     OR v_page_size NOT BETWEEN 1 AND 100
     OR (v_currency IS NOT NULL AND v_currency !~ '^[A-Z]{3}$')
     OR (v_max_amount IS NOT NULL AND (v_max_amount < 0 OR v_currency IS NULL))
-    OR (v_scope_type IN ('origin_city', 'origin_airport') AND NULLIF(btrim(COALESCE(v_scope_key, '')), '') IS NULL)
-    OR (v_scope_type = 'city_pair' AND (NULLIF(v_scope_from, '') IS NULL OR NULLIF(v_scope_to, '') IS NULL OR v_scope_from = v_scope_to))
+    OR (
+      v_scope_type IN ('origin_city', 'origin_airport')
+      AND NULLIF(btrim(COALESCE(v_scope_key, '')), '') IS NULL
+    )
+    OR (
+      v_scope_type = 'city_pair'
+      AND (
+        NULLIF(v_scope_from, '') IS NULL
+        OR NULLIF(v_scope_to, '') IS NULL
+        OR v_scope_from = v_scope_to
+      )
+    )
   THEN
-    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route search request.');
+    RETURN admin.build_rpc_error('[]'::JSONB, 'ERR_INVALID_REQUEST', 'Invalid route search request.');
   END IF;
 
-  SELECT id INTO v_version_id FROM public.publication_versions WHERE is_current = TRUE;
+  SELECT version.id
+  INTO v_version_id
+  FROM public.publication_versions AS version
+  WHERE version.is_current = TRUE;
   IF v_version_id IS NULL THEN
-    RETURN private.build_rpc_error('[]'::JSONB, 'ERR_ROUTE_DISCOVERY_UNAVAILABLE', 'No route publication is available.');
+    RETURN admin.build_rpc_error('[]'::JSONB, 'ERR_ROUTE_DISCOVERY_UNAVAILABLE', 'No route publication is available.');
   END IF;
 
   WITH filtered AS (
@@ -138,14 +170,25 @@ BEGIN
     WHERE option.publication_version_id = v_version_id
       AND (v_scope_type <> 'origin_city' OR option.origin_city_slug = v_scope_key)
       AND (v_scope_type <> 'origin_airport' OR option.origin_airport_iata = upper(v_scope_key))
-      AND (v_scope_type <> 'city_pair' OR (option.origin_city_slug = v_scope_from AND option.destination_city_slug = v_scope_to))
-      AND (v_max_amount IS NULL OR (option.observed_amount <= v_max_amount AND option.currency_code = v_currency))
+      AND (
+        v_scope_type <> 'city_pair'
+        OR (
+          option.origin_city_slug = v_scope_from
+          AND option.destination_city_slug = v_scope_to
+        )
+      )
+      AND (
+        v_max_amount IS NULL
+        OR (
+          option.observed_amount <= v_max_amount
+          AND option.currency_code = v_currency
+        )
+      )
     ORDER BY option.confidence_score DESC, option.id
     LIMIT v_page_size
   )
   SELECT jsonb_build_object(
     'data', COALESCE(jsonb_agg(jsonb_build_object(
-      'id', id,
       'from', origin_airport_iata,
       'to', destination_airport_iata,
       'airline', provider_airline_iata,
@@ -157,7 +200,10 @@ BEGIN
         'valid_until', observation_valid_until
       ) END
     ) ORDER BY confidence_score DESC, id), '[]'::JSONB),
-    'meta', jsonb_build_object('data_version', v_version_id, 'page_size', v_page_size),
+    'meta', jsonb_build_object(
+      'data_version', 'v_' || md5(v_version_id::TEXT),
+      'page_size', v_page_size
+    ),
     'error', NULL
   ) INTO v_result FROM filtered;
 

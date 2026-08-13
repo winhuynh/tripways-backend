@@ -1,10 +1,10 @@
--- Table: private.auth_command_attempts
+-- Table: admin.auth_command_attempts
 -- Feature: User authentication
 -- Purpose: Persist bounded counters for sensitive account-command rate limits.
 -- Responsibilities: Store only hashed subjects, actions, fixed windows, and attempt counts.
 -- Notes: Raw user IDs and IP addresses are never persisted.
 
-CREATE TABLE private.auth_command_attempts (
+CREATE TABLE admin.auth_command_attempts (
   subject_hash       TEXT         NOT NULL,
   action             TEXT         NOT NULL,
   window_started_at  TIMESTAMPTZ  NOT NULL,
@@ -24,5 +24,5 @@ CREATE TABLE private.auth_command_attempts (
     CHECK (attempt_count > 0)
 );
 
-REVOKE ALL ON TABLE private.auth_command_attempts FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.auth_command_attempts TO service_role;
+REVOKE ALL ON TABLE admin.auth_command_attempts FROM public, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.auth_command_attempts TO service_role;

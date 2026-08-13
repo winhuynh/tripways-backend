@@ -8,7 +8,7 @@
 -- >>> supabase/sql_src/functions/ingestion/publish_base_data_batch.sql
 
 -- ============================================================================
--- Function: private.publish_base_data_batch
+-- Function: admin.publish_base_data_batch
 -- Purpose: Validate and atomically publish one canonical base-data batch.
 -- Responsibilities:
 --   - Enforce source eligibility and replay safety.
@@ -19,7 +19,7 @@
 --   - Optional provider values remain NULL and never imply production eligibility.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.publish_base_data_batch(
+CREATE OR REPLACE FUNCTION admin.publish_base_data_batch(
   p_source_code       TEXT,
   p_idempotency_key   TEXT,
   p_checksum          TEXT,
@@ -39,8 +39,7 @@ DECLARE
 
   -- Batch and run
   v_batch_id        UUID;
-  v_existing_batch  private.raw_import_batches%ROWTYPE;
-  v_run_id          UUID;
+  v_existing_batch  admin.raw_import_batches%ROWTYPE;
   v_record_count    INTEGER;
   v_invalid_count   INTEGER;
   v_previous_eligible_count INTEGER;
@@ -56,7 +55,6 @@ DECLARE
   v_city_id         UUID;
   v_slug            TEXT;
   v_city_record     JSONB;
-  v_read_publication JSONB;
 BEGIN
   -- STEP 01: Validate bounded invocation fields and source rights.
   IF p_source_code IS NULL
@@ -116,7 +114,7 @@ BEGIN
   -- STEP 02: Return the stable result for checksum or idempotency replays.
   SELECT batch.*
   INTO v_existing_batch
-  FROM private.raw_import_batches AS batch
+  FROM admin.raw_import_batches AS batch
   WHERE batch.source_id = v_source_id
     AND (
       batch.checksum = p_checksum
@@ -135,7 +133,7 @@ BEGIN
   END IF;
 
   -- STEP 03: Persist the raw receipt and an atomic publication run.
-  INSERT INTO private.raw_import_batches (
+  INSERT INTO admin.raw_import_batches (
     source_id,
     provider_version,
     checksum,
@@ -169,7 +167,7 @@ BEGIN
   )
   RETURNING id INTO v_batch_id;
 
-  INSERT INTO private.raw_base_data_records (
+  INSERT INTO admin.raw_base_data_records (
     batch_id,
     record_type,
     source_key,
@@ -206,26 +204,12 @@ BEGIN
 
   GET DIAGNOSTICS v_record_count = ROW_COUNT;
 
-  INSERT INTO admin.ingestion_runs (
-    batch_id,
-    action,
-    mode,
-    status
-  )
-  VALUES (
-    v_batch_id,
-    'publish',
-    'atomic',
-    'started'
-  )
-  RETURNING id INTO v_run_id;
-
   -- STEP 04: Hold anomalous production snapshots for review before canonical mutation.
   v_eligible_count := jsonb_array_length(p_records -> 'airports');
 
   SELECT batch.eligible_record_count
   INTO v_previous_eligible_count
-  FROM private.raw_import_batches AS batch
+  FROM admin.raw_import_batches AS batch
   WHERE batch.source_id = v_source_id
     AND batch.status = 'published'
     AND batch.id <> v_batch_id
@@ -252,25 +236,13 @@ BEGIN
       OR v_deactivation_count > greatest(1, ceil(v_previous_eligible_count * 0.02))
     )
   THEN
-    UPDATE private.raw_import_batches
+    UPDATE admin.raw_import_batches
     SET status = 'awaiting_review', updated_at = now()
     WHERE id = v_batch_id;
-
-    UPDATE admin.ingestion_runs
-    SET
-      rejected_count = v_record_count,
-      status = 'failed',
-      stable_error_code = 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED',
-      completed_at = now()
-    WHERE id = v_run_id;
-
-    INSERT INTO admin.ingestion_issues (run_id, issue_code, severity)
-    VALUES (v_run_id, 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED', 'error');
 
     RETURN jsonb_build_object(
       'status', 'awaiting_review',
       'batchId', v_batch_id,
-      'runId', v_run_id,
       'acceptedCount', 0,
       'rejectedCount', v_record_count,
       'errorCode', 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED'
@@ -280,7 +252,7 @@ BEGIN
   -- STEP 05: Validate all required fields, coordinates, duplicates, and references.
   SELECT count(*)
   INTO v_invalid_count
-  FROM private.raw_base_data_records AS record
+  FROM admin.raw_base_data_records AS record
   WHERE record.batch_id = v_batch_id
     AND (
       record.source_key IS NULL
@@ -330,7 +302,7 @@ BEGIN
     SELECT count(*)::INTEGER
     FROM (
       SELECT record_type, source_key
-      FROM private.raw_base_data_records
+      FROM admin.raw_base_data_records
       WHERE batch_id = v_batch_id
       GROUP BY record_type, source_key
       HAVING count(*) > 1
@@ -339,12 +311,12 @@ BEGIN
 
   v_invalid_count := v_invalid_count + (
     SELECT count(*)::INTEGER
-    FROM private.raw_base_data_records AS record
+    FROM admin.raw_base_data_records AS record
     WHERE record.batch_id = v_batch_id
       AND record.record_type IN ('city', 'airport')
       AND NOT EXISTS (
         SELECT 1
-        FROM private.raw_base_data_records AS country
+        FROM admin.raw_base_data_records AS country
         WHERE country.batch_id = v_batch_id
           AND country.record_type = 'country'
           AND country.payload ->> 'iso2' = record.payload ->> 'countryIso2'
@@ -358,13 +330,13 @@ BEGIN
 
   v_invalid_count := v_invalid_count + (
     SELECT count(*)::INTEGER
-    FROM private.raw_base_data_records AS record
+    FROM admin.raw_base_data_records AS record
     WHERE record.batch_id = v_batch_id
       AND record.record_type = 'airport'
       AND NULLIF(record.payload ->> 'citySourceId', '') IS NOT NULL
       AND NOT EXISTS (
         SELECT 1
-        FROM private.raw_base_data_records AS city
+        FROM admin.raw_base_data_records AS city
         WHERE city.batch_id = v_batch_id
           AND city.record_type = 'city'
           AND city.source_key = record.payload ->> 'citySourceId'
@@ -372,46 +344,26 @@ BEGIN
   );
 
   IF v_invalid_count > 0 THEN
-    UPDATE private.raw_base_data_records
+    UPDATE admin.raw_base_data_records
     SET validation_state = 'invalid'
     WHERE batch_id = v_batch_id;
 
-    UPDATE private.raw_import_batches
+    UPDATE admin.raw_import_batches
     SET
       status = 'rejected',
       updated_at = now()
     WHERE id = v_batch_id;
 
-    UPDATE admin.ingestion_runs
-    SET
-      rejected_count = v_record_count,
-      status = 'failed',
-      stable_error_code = 'ERR_INGESTION_VALIDATION_FAILED',
-      completed_at = now()
-    WHERE id = v_run_id;
-
-    INSERT INTO admin.ingestion_issues (
-      run_id,
-      issue_code,
-      severity
-    )
-    VALUES (
-      v_run_id,
-      'ERR_INGESTION_VALIDATION_FAILED',
-      'error'
-    );
-
     RETURN jsonb_build_object(
       'status', 'rejected',
       'batchId', v_batch_id,
-      'runId', v_run_id,
       'acceptedCount', 0,
       'rejectedCount', v_record_count,
       'errorCode', 'ERR_INGESTION_VALIDATION_FAILED'
     );
   END IF;
 
-  UPDATE private.raw_base_data_records
+  UPDATE admin.raw_base_data_records
   SET validation_state = 'valid'
   WHERE batch_id = v_batch_id;
 
@@ -520,7 +472,7 @@ BEGIN
       IF v_city_id IS NULL THEN
         SELECT record.payload
         INTO v_city_record
-        FROM private.raw_base_data_records AS record
+        FROM admin.raw_base_data_records AS record
         WHERE record.batch_id = v_batch_id
           AND record.record_type = 'city'
           AND record.source_key = v_airport ->> 'citySourceId';
@@ -622,38 +574,27 @@ BEGIN
   END IF;
 
   -- STEP 07: Complete the operational evidence after canonical publication.
-  UPDATE private.raw_import_batches
+  UPDATE admin.raw_import_batches
   SET
     status = 'published',
     updated_at = now()
   WHERE id = v_batch_id;
 
-  UPDATE admin.ingestion_runs
-  SET
-    accepted_count = v_record_count,
-    status = 'succeeded',
-    completed_at = now()
-  WHERE id = v_run_id;
-
-  -- STEP 08: Publish every public page and search consumer from one canonical snapshot.
-  v_read_publication := public.publish_read_model_version(
-    CASE WHEN v_is_production_source THEN 'production' ELSE 'development_fixture' END
-  );
-
-  IF v_read_publication #>> '{error,code}' IS NOT NULL THEN
-    RAISE EXCEPTION USING
-      ERRCODE = 'P0001',
-      MESSAGE = 'ERR_INGESTION_PUBLISH_FAILED';
-  END IF;
+  -- STEP 08: Bound receipt retention independently from read-model publication.
+  DELETE FROM admin.raw_import_batches AS batch
+  USING admin.data_sources AS source
+  WHERE batch.source_id = source.id
+    AND source.id = v_source_id
+    AND batch.id <> v_batch_id
+    AND batch.received_at < now() - make_interval(days => COALESCE(source.retention_days, 30));
 
   RETURN jsonb_build_object(
     'status', 'published',
     'batchId', v_batch_id,
-    'runId', v_run_id,
     'acceptedCount', v_record_count,
     'rejectedCount', 0,
     'errorCode', NULL,
-    'dataVersion', v_read_publication #>> '{data,data_version}'
+    'dataVersion', NULL
   );
 EXCEPTION
   WHEN unique_violation OR check_violation OR foreign_key_violation THEN
@@ -663,7 +604,7 @@ EXCEPTION
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.publish_base_data_batch(
+REVOKE ALL ON FUNCTION admin.publish_base_data_batch(
   TEXT,
   TEXT,
   TEXT,
@@ -673,7 +614,7 @@ REVOKE ALL ON FUNCTION private.publish_base_data_batch(
   JSONB
 ) FROM public, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION private.publish_base_data_batch(
+GRANT EXECUTE ON FUNCTION admin.publish_base_data_batch(
   TEXT,
   TEXT,
   TEXT,
@@ -687,12 +628,12 @@ GRANT EXECUTE ON FUNCTION private.publish_base_data_batch(
 
 -- ============================================================================
 -- Function: public.rpc_publish_base_data_batch
--- Purpose: Provide a service-role-only PostgREST transport to private publication.
+-- Purpose: Provide a service-role-only PostgREST transport to internal publication.
 -- Responsibilities:
---   - Forward the bounded canonical batch to the private transactional function.
+--   - Forward the bounded canonical batch to the internal transactional function.
 --   - Keep the exposed wrapper security-invoker and unavailable to public clients.
 -- Notes:
---   - Domain validation and mutation remain in private.publish_base_data_batch.
+--   - Domain validation and mutation remain in admin.publish_base_data_batch.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.rpc_publish_base_data_batch(
@@ -708,7 +649,7 @@ RETURNS JSONB
 LANGUAGE sql
 SET search_path = ''
 AS $$
-  SELECT private.publish_base_data_batch(
+  SELECT admin.publish_base_data_batch(
     p_source_code,
     p_idempotency_key,
     p_checksum,
@@ -763,134 +704,121 @@ FROM public, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.rpc_get_ourairports_denylist() TO service_role;
 
--- >>> supabase/sql_src/operations/configure_ourairports_cron.sql
+-- >>> supabase/sql_src/operations/configure_ingestion_crons.sql
 
 -- ============================================================================
--- Function: private.configure_ourairports_cron
--- Purpose: Install the daily OurAirports ingestion trigger after Vault secrets exist.
--- Responsibilities: Keep environment-specific URL and worker credentials in Supabase Vault.
--- Notes: Requires Vault secrets project_url and ingestion_worker_secret.
+-- Function: admin.configure_ingestion_crons
+-- Purpose: Install the complete provider-ingestion schedule after Vault bootstrap.
+-- Responsibilities: Validate prerequisites and replace both jobs idempotently.
 -- ============================================================================
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
 
-CREATE OR REPLACE FUNCTION private.configure_ourairports_cron()
-RETURNS BIGINT
+CREATE OR REPLACE FUNCTION admin.configure_ingestion_crons()
+RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_job_id  BIGINT;
+  v_project_url       TEXT;
+  v_worker_secret     TEXT;
+  v_ourairports_job   BIGINT;
+  v_travelpayouts_job BIGINT;
 BEGIN
+  SELECT secret.decrypted_secret
+  INTO v_project_url
+  FROM vault.decrypted_secrets AS secret
+  WHERE secret.name = 'project_url';
+
+  SELECT secret.decrypted_secret
+  INTO v_worker_secret
+  FROM vault.decrypted_secrets AS secret
+  WHERE secret.name = 'ingestion_worker_secret';
+
+  IF v_project_url IS NULL
+    OR v_project_url !~ '^https://'
+    OR v_worker_secret IS NULL
+    OR char_length(v_worker_secret) < 16
+  THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_CRON_VAULT_PREREQUISITES_MISSING';
+  END IF;
+
   PERFORM cron.unschedule(job.jobid)
   FROM cron.job AS job
-  WHERE job.jobname = 'tripways-ourairports-daily';
+  WHERE job.jobname IN (
+    'tripways-ourairports-daily',
+    'tripways-travelpayouts-content-daily-check'
+  );
 
   SELECT cron.schedule(
     'tripways-ourairports-daily',
     '0 2 * * *',
-    $cron$
-      SELECT net.http_post(
-        url := (
-          SELECT secret.decrypted_secret
-          FROM vault.decrypted_secrets AS secret
-          WHERE secret.name = 'project_url'
-        ) || '/functions/v1/ingestion-base-data',
+    $cron$SELECT net.http_post(
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-base-data',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || (
-            SELECT secret.decrypted_secret
-            FROM vault.decrypted_secrets AS secret
-            WHERE secret.name = 'ingestion_worker_secret'
-          ),
+          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
           'Idempotency-Key', 'ourairports-' || to_char(CURRENT_DATE, 'YYYY-MM-DD')
         ),
-        body := jsonb_build_object(
-          'sourceCode', 'ourairports',
-          'providerMode', 'ourairports'
-        )
-      );
-    $cron$
+        body := jsonb_build_object('sourceCode', 'ourairports', 'providerMode', 'ourairports')
+      );$cron$
   )
-  INTO v_job_id;
-
-  RETURN v_job_id;
-END;
-$$;
-
-REVOKE ALL ON FUNCTION private.configure_ourairports_cron()
-FROM public, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION private.configure_ourairports_cron() TO service_role;
-
--- >>> supabase/sql_src/operations/configure_travelpayouts_content_cron.sql
-
--- Install a daily freshness check for Travelpayouts content observations.
--- The provider is called only when no published row is newer than six days.
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_net;
-
-CREATE OR REPLACE FUNCTION private.configure_travelpayouts_content_cron()
-RETURNS BIGINT
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = ''
-AS $$
-DECLARE v_job_id BIGINT;
-BEGIN
-  PERFORM cron.unschedule(job.jobid)
-  FROM cron.job AS job
-  WHERE job.jobname = 'tripways-travelpayouts-content-daily-check';
+  INTO v_ourairports_job;
 
   SELECT cron.schedule(
     'tripways-travelpayouts-content-daily-check',
     '20 2 * * *',
-    $cron$
-      SELECT net.http_post(
-        url := (SELECT secret.decrypted_secret FROM vault.decrypted_secrets secret WHERE secret.name='project_url') || '/functions/v1/ingestion-price-estimates',
+    $cron$SELECT net.http_post(
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-price-estimates',
         headers := jsonb_build_object(
-          'Content-Type','application/json',
-          'Authorization','Bearer ' || (SELECT secret.decrypted_secret FROM vault.decrypted_secrets secret WHERE secret.name='ingestion_worker_secret'),
-          'Idempotency-Key','travelpayouts-content-' || to_char(CURRENT_DATE,'YYYY-MM-DD')
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
+          'Idempotency-Key', 'travelpayouts-content-' || to_char(CURRENT_DATE, 'YYYY-MM-DD')
         ),
-        body := jsonb_build_object('sourceCode','travelpayouts','providerKey','travelpayouts')
+        body := jsonb_build_object('sourceCode', 'travelpayouts', 'providerKey', 'travelpayouts')
       )
       WHERE NOT EXISTS (
         SELECT 1
-        FROM public.flight_content_observations observation
-        JOIN admin.data_sources source ON source.id=observation.source_id
-        WHERE source.code='travelpayouts'
-          AND observation.status='published'
-          AND observation.valid_until > now()
-          AND observation.observed_at > now() - interval '6 days'
-      );
-    $cron$
-  ) INTO v_job_id;
-  RETURN v_job_id;
+        FROM public.flight_route_prices AS price
+        JOIN admin.data_sources AS source ON source.id = price.source_id
+        WHERE source.code = 'travelpayouts'
+          AND price.status = 'published'
+          AND price.valid_until > now()
+          AND price.observed_at > now() - interval '6 days'
+      );$cron$
+  )
+  INTO v_travelpayouts_job;
+
+  RETURN jsonb_build_object(
+    'ourairports_job_id', v_ourairports_job,
+    'travelpayouts_job_id', v_travelpayouts_job
+  );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.configure_travelpayouts_content_cron() FROM public,anon,authenticated;
-GRANT EXECUTE ON FUNCTION private.configure_travelpayouts_content_cron() TO service_role;
+REVOKE ALL ON FUNCTION admin.configure_ingestion_crons()
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.configure_ingestion_crons() TO service_role;
 
 -- >>> supabase/sql_src/functions/ingestion/publish_price_estimate_batch.sql
 
 -- ============================================================================
--- Function: private.publish_price_estimate_batch
+-- Function: admin.publish_price_estimate_batch
 -- Purpose: Atomically replace one source's current short-lived flight-content observations.
 -- Responsibilities: Validate rights/TTL, resolve references, publish current rows, and purge old rows.
 -- Notes: The legacy function name remains during the compatibility window.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.publish_price_estimate_batch(
+CREATE OR REPLACE FUNCTION admin.publish_price_estimate_batch(
   p_source_code       TEXT,
   p_idempotency_key   TEXT,
   p_checksum          TEXT,
   p_provider_version  TEXT,
   p_source_time       TIMESTAMPTZ,
-  p_observations      JSONB
+  p_observations      JSONB,
+  p_publication_source_type TEXT
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -911,6 +839,8 @@ DECLARE
   v_valid_until           TIMESTAMPTZ;
   v_count                 INTEGER := 0;
   v_rejected              INTEGER := 0;
+  v_resolvable_count      INTEGER := 0;
+  v_read_publication      JSONB;
 BEGIN
   -- STEP 01: Reject malformed or unbounded publication requests.
   IF p_provider_version <> 'flight-content-observations.v1'
@@ -918,6 +848,7 @@ BEGIN
     OR char_length(p_idempotency_key) NOT BETWEEN 8 AND 128
     OR jsonb_typeof(p_observations) <> 'array'
     OR jsonb_array_length(p_observations) > 1000
+    OR p_publication_source_type NOT IN ('development_fixture', 'staging', 'production')
   THEN
     RETURN jsonb_build_object(
       'status', 'failed',
@@ -957,7 +888,7 @@ BEGIN
   -- STEP 03: Make retries idempotent without retaining provider content in the receipt.
   SELECT batch.id
   INTO v_batch_id
-  FROM private.raw_import_batches AS batch
+  FROM admin.raw_import_batches AS batch
   WHERE batch.source_id = v_source.id
     AND (
       batch.checksum = p_checksum
@@ -975,7 +906,32 @@ BEGIN
     );
   END IF;
 
-  INSERT INTO private.raw_import_batches (
+  -- STEP 04: Preserve the current cache when the new batch cannot map any route.
+  SELECT count(*)::INTEGER
+  INTO v_resolvable_count
+  FROM jsonb_array_elements(p_observations) AS item(value)
+  JOIN public.airports AS origin_airport
+    ON origin_airport.iata = COALESCE(
+      NULLIF(item.value->>'originAirportIata', ''),
+      item.value->>'originCode'
+    )
+  JOIN public.airports AS destination_airport
+    ON destination_airport.iata = COALESCE(
+      NULLIF(item.value->>'destinationAirportIata', ''),
+      item.value->>'destinationCode'
+    )
+  WHERE origin_airport.city_id <> destination_airport.city_id;
+
+  IF v_resolvable_count = 0 THEN
+    RETURN jsonb_build_object(
+      'status', 'failed',
+      'acceptedCount', 0,
+      'rejectedCount', jsonb_array_length(p_observations),
+      'errorCode', 'ERR_INGESTION_NO_USABLE_PRICES'
+    );
+  END IF;
+
+  INSERT INTO admin.raw_import_batches (
     source_id,
     provider_version,
     checksum,
@@ -994,8 +950,8 @@ BEGIN
   RETURNING id
   INTO v_batch_id;
 
-  -- STEP 04: Replace the current observation set inside this transaction.
-  DELETE FROM public.flight_content_observations AS observation
+  -- STEP 05: Replace the current route-price set inside this transaction.
+  DELETE FROM public.flight_route_prices AS observation
   WHERE observation.source_id = v_source.id;
 
   FOR v_observation IN
@@ -1037,7 +993,7 @@ BEGIN
       CONTINUE;
     END IF;
 
-    INSERT INTO public.flight_content_observations (
+    INSERT INTO public.flight_route_prices (
       origin_city_id,
       destination_city_id,
       origin_airport_id,
@@ -1056,6 +1012,8 @@ BEGIN
       return_date,
       duration_minutes,
       source_id,
+      data_source,
+      provider_code,
       source_record_id,
       observed_at,
       provider_expires_at,
@@ -1083,6 +1041,8 @@ BEGIN
       (v_observation->>'returnDate')::DATE,
       (v_observation->>'durationMinutes')::INTEGER,
       v_source.id,
+      v_source.provider_code,
+      v_source.provider_code,
       v_observation->>'sourceId',
       v_found_at,
       v_provider_expires_at,
@@ -1095,61 +1055,90 @@ BEGIN
     v_count := v_count + 1;
   END LOOP;
 
-  -- STEP 05: Keep only bounded receipt metadata after publication.
-  UPDATE private.raw_import_batches AS batch
+  -- STEP 06: Publish one complete page and route snapshot in the same transaction.
+  PERFORM admin.sync_provider_pseo_pages(p_publication_source_type);
+  v_read_publication := public.publish_read_model_version(p_publication_source_type);
+
+  IF v_read_publication #>> '{error,code}' IS NOT NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = 'P0001',
+      MESSAGE = 'ERR_INGESTION_PUBLISH_FAILED';
+  END IF;
+
+  -- STEP 07: Keep only bounded receipt metadata after publication.
+  UPDATE admin.raw_import_batches AS batch
   SET status = 'published',
       updated_at = now()
   WHERE batch.id = v_batch_id;
+
+  DELETE FROM admin.raw_import_batches AS batch
+  WHERE batch.source_id = v_source.id
+    AND batch.id <> v_batch_id
+    AND batch.received_at < now() - make_interval(days => COALESCE(v_source.retention_days, 7));
 
   RETURN jsonb_build_object(
     'status', 'published',
     'acceptedCount', v_count,
     'rejectedCount', v_rejected,
     'errorCode', NULL,
-    'batchId', v_batch_id
+    'batchId', v_batch_id,
+    'dataVersion', v_read_publication #>> '{data,data_version}'
   );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.publish_price_estimate_batch(
+REVOKE ALL ON FUNCTION admin.publish_price_estimate_batch(
   TEXT,
   TEXT,
   TEXT,
   TEXT,
   TIMESTAMPTZ,
-  JSONB
+  JSONB,
+  TEXT
 )
 FROM public, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION private.publish_price_estimate_batch(
+GRANT EXECUTE ON FUNCTION admin.publish_price_estimate_batch(
   TEXT,
   TEXT,
   TEXT,
   TEXT,
   TIMESTAMPTZ,
-  JSONB
+  JSONB,
+  TEXT
 )
 TO service_role;
 
+-- >>> supabase/sql_src/functions/ingestion/rpc_publish_price_estimate_batch.sql
+
+-- ============================================================================
+-- Function: public.rpc_publish_price_estimate_batch
+-- Purpose: Expose the price-estimate publisher to the trusted ingestion service.
+-- Responsibilities: Forward a validated service-role request to the admin publisher.
+-- ============================================================================
+
 CREATE OR REPLACE FUNCTION public.rpc_publish_price_estimate_batch(
-  p_source_code       TEXT,
-  p_idempotency_key   TEXT,
-  p_checksum          TEXT,
-  p_provider_version  TEXT,
-  p_source_time       TIMESTAMPTZ,
-  p_observations      JSONB
+  p_source_code             TEXT,
+  p_idempotency_key         TEXT,
+  p_checksum                TEXT,
+  p_provider_version        TEXT,
+  p_source_time             TIMESTAMPTZ,
+  p_observations            JSONB,
+  p_publication_source_type TEXT
 )
 RETURNS JSONB
 LANGUAGE sql
+SECURITY INVOKER
 SET search_path = ''
 AS $$
-  SELECT private.publish_price_estimate_batch(
+  SELECT admin.publish_price_estimate_batch(
     p_source_code,
     p_idempotency_key,
     p_checksum,
     p_provider_version,
     p_source_time,
-    p_observations
+    p_observations,
+    p_publication_source_type
   );
 $$;
 
@@ -1159,7 +1148,8 @@ REVOKE ALL ON FUNCTION public.rpc_publish_price_estimate_batch(
   TEXT,
   TEXT,
   TIMESTAMPTZ,
-  JSONB
+  JSONB,
+  TEXT
 )
 FROM public, anon, authenticated;
 
@@ -1169,6 +1159,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_publish_price_estimate_batch(
   TEXT,
   TEXT,
   TIMESTAMPTZ,
-  JSONB
+  JSONB,
+  TEXT
 )
 TO service_role;

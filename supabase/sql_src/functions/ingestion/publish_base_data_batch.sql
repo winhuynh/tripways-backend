@@ -1,5 +1,5 @@
 -- ============================================================================
--- Function: private.publish_base_data_batch
+-- Function: admin.publish_base_data_batch
 -- Purpose: Validate and atomically publish one canonical base-data batch.
 -- Responsibilities:
 --   - Enforce source eligibility and replay safety.
@@ -10,7 +10,7 @@
 --   - Optional provider values remain NULL and never imply production eligibility.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.publish_base_data_batch(
+CREATE OR REPLACE FUNCTION admin.publish_base_data_batch(
   p_source_code       TEXT,
   p_idempotency_key   TEXT,
   p_checksum          TEXT,
@@ -30,8 +30,7 @@ DECLARE
 
   -- Batch and run
   v_batch_id        UUID;
-  v_existing_batch  private.raw_import_batches%ROWTYPE;
-  v_run_id          UUID;
+  v_existing_batch  admin.raw_import_batches%ROWTYPE;
   v_record_count    INTEGER;
   v_invalid_count   INTEGER;
   v_previous_eligible_count INTEGER;
@@ -47,7 +46,6 @@ DECLARE
   v_city_id         UUID;
   v_slug            TEXT;
   v_city_record     JSONB;
-  v_read_publication JSONB;
 BEGIN
   -- STEP 01: Validate bounded invocation fields and source rights.
   IF p_source_code IS NULL
@@ -107,7 +105,7 @@ BEGIN
   -- STEP 02: Return the stable result for checksum or idempotency replays.
   SELECT batch.*
   INTO v_existing_batch
-  FROM private.raw_import_batches AS batch
+  FROM admin.raw_import_batches AS batch
   WHERE batch.source_id = v_source_id
     AND (
       batch.checksum = p_checksum
@@ -126,7 +124,7 @@ BEGIN
   END IF;
 
   -- STEP 03: Persist the raw receipt and an atomic publication run.
-  INSERT INTO private.raw_import_batches (
+  INSERT INTO admin.raw_import_batches (
     source_id,
     provider_version,
     checksum,
@@ -160,7 +158,7 @@ BEGIN
   )
   RETURNING id INTO v_batch_id;
 
-  INSERT INTO private.raw_base_data_records (
+  INSERT INTO admin.raw_base_data_records (
     batch_id,
     record_type,
     source_key,
@@ -197,26 +195,12 @@ BEGIN
 
   GET DIAGNOSTICS v_record_count = ROW_COUNT;
 
-  INSERT INTO admin.ingestion_runs (
-    batch_id,
-    action,
-    mode,
-    status
-  )
-  VALUES (
-    v_batch_id,
-    'publish',
-    'atomic',
-    'started'
-  )
-  RETURNING id INTO v_run_id;
-
   -- STEP 04: Hold anomalous production snapshots for review before canonical mutation.
   v_eligible_count := jsonb_array_length(p_records -> 'airports');
 
   SELECT batch.eligible_record_count
   INTO v_previous_eligible_count
-  FROM private.raw_import_batches AS batch
+  FROM admin.raw_import_batches AS batch
   WHERE batch.source_id = v_source_id
     AND batch.status = 'published'
     AND batch.id <> v_batch_id
@@ -243,25 +227,13 @@ BEGIN
       OR v_deactivation_count > greatest(1, ceil(v_previous_eligible_count * 0.02))
     )
   THEN
-    UPDATE private.raw_import_batches
+    UPDATE admin.raw_import_batches
     SET status = 'awaiting_review', updated_at = now()
     WHERE id = v_batch_id;
-
-    UPDATE admin.ingestion_runs
-    SET
-      rejected_count = v_record_count,
-      status = 'failed',
-      stable_error_code = 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED',
-      completed_at = now()
-    WHERE id = v_run_id;
-
-    INSERT INTO admin.ingestion_issues (run_id, issue_code, severity)
-    VALUES (v_run_id, 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED', 'error');
 
     RETURN jsonb_build_object(
       'status', 'awaiting_review',
       'batchId', v_batch_id,
-      'runId', v_run_id,
       'acceptedCount', 0,
       'rejectedCount', v_record_count,
       'errorCode', 'ERR_INGESTION_ANOMALY_REVIEW_REQUIRED'
@@ -271,7 +243,7 @@ BEGIN
   -- STEP 05: Validate all required fields, coordinates, duplicates, and references.
   SELECT count(*)
   INTO v_invalid_count
-  FROM private.raw_base_data_records AS record
+  FROM admin.raw_base_data_records AS record
   WHERE record.batch_id = v_batch_id
     AND (
       record.source_key IS NULL
@@ -321,7 +293,7 @@ BEGIN
     SELECT count(*)::INTEGER
     FROM (
       SELECT record_type, source_key
-      FROM private.raw_base_data_records
+      FROM admin.raw_base_data_records
       WHERE batch_id = v_batch_id
       GROUP BY record_type, source_key
       HAVING count(*) > 1
@@ -330,12 +302,12 @@ BEGIN
 
   v_invalid_count := v_invalid_count + (
     SELECT count(*)::INTEGER
-    FROM private.raw_base_data_records AS record
+    FROM admin.raw_base_data_records AS record
     WHERE record.batch_id = v_batch_id
       AND record.record_type IN ('city', 'airport')
       AND NOT EXISTS (
         SELECT 1
-        FROM private.raw_base_data_records AS country
+        FROM admin.raw_base_data_records AS country
         WHERE country.batch_id = v_batch_id
           AND country.record_type = 'country'
           AND country.payload ->> 'iso2' = record.payload ->> 'countryIso2'
@@ -349,13 +321,13 @@ BEGIN
 
   v_invalid_count := v_invalid_count + (
     SELECT count(*)::INTEGER
-    FROM private.raw_base_data_records AS record
+    FROM admin.raw_base_data_records AS record
     WHERE record.batch_id = v_batch_id
       AND record.record_type = 'airport'
       AND NULLIF(record.payload ->> 'citySourceId', '') IS NOT NULL
       AND NOT EXISTS (
         SELECT 1
-        FROM private.raw_base_data_records AS city
+        FROM admin.raw_base_data_records AS city
         WHERE city.batch_id = v_batch_id
           AND city.record_type = 'city'
           AND city.source_key = record.payload ->> 'citySourceId'
@@ -363,46 +335,26 @@ BEGIN
   );
 
   IF v_invalid_count > 0 THEN
-    UPDATE private.raw_base_data_records
+    UPDATE admin.raw_base_data_records
     SET validation_state = 'invalid'
     WHERE batch_id = v_batch_id;
 
-    UPDATE private.raw_import_batches
+    UPDATE admin.raw_import_batches
     SET
       status = 'rejected',
       updated_at = now()
     WHERE id = v_batch_id;
 
-    UPDATE admin.ingestion_runs
-    SET
-      rejected_count = v_record_count,
-      status = 'failed',
-      stable_error_code = 'ERR_INGESTION_VALIDATION_FAILED',
-      completed_at = now()
-    WHERE id = v_run_id;
-
-    INSERT INTO admin.ingestion_issues (
-      run_id,
-      issue_code,
-      severity
-    )
-    VALUES (
-      v_run_id,
-      'ERR_INGESTION_VALIDATION_FAILED',
-      'error'
-    );
-
     RETURN jsonb_build_object(
       'status', 'rejected',
       'batchId', v_batch_id,
-      'runId', v_run_id,
       'acceptedCount', 0,
       'rejectedCount', v_record_count,
       'errorCode', 'ERR_INGESTION_VALIDATION_FAILED'
     );
   END IF;
 
-  UPDATE private.raw_base_data_records
+  UPDATE admin.raw_base_data_records
   SET validation_state = 'valid'
   WHERE batch_id = v_batch_id;
 
@@ -511,7 +463,7 @@ BEGIN
       IF v_city_id IS NULL THEN
         SELECT record.payload
         INTO v_city_record
-        FROM private.raw_base_data_records AS record
+        FROM admin.raw_base_data_records AS record
         WHERE record.batch_id = v_batch_id
           AND record.record_type = 'city'
           AND record.source_key = v_airport ->> 'citySourceId';
@@ -613,38 +565,27 @@ BEGIN
   END IF;
 
   -- STEP 07: Complete the operational evidence after canonical publication.
-  UPDATE private.raw_import_batches
+  UPDATE admin.raw_import_batches
   SET
     status = 'published',
     updated_at = now()
   WHERE id = v_batch_id;
 
-  UPDATE admin.ingestion_runs
-  SET
-    accepted_count = v_record_count,
-    status = 'succeeded',
-    completed_at = now()
-  WHERE id = v_run_id;
-
-  -- STEP 08: Publish every public page and search consumer from one canonical snapshot.
-  v_read_publication := public.publish_read_model_version(
-    CASE WHEN v_is_production_source THEN 'production' ELSE 'development_fixture' END
-  );
-
-  IF v_read_publication #>> '{error,code}' IS NOT NULL THEN
-    RAISE EXCEPTION USING
-      ERRCODE = 'P0001',
-      MESSAGE = 'ERR_INGESTION_PUBLISH_FAILED';
-  END IF;
+  -- STEP 08: Bound receipt retention independently from read-model publication.
+  DELETE FROM admin.raw_import_batches AS batch
+  USING admin.data_sources AS source
+  WHERE batch.source_id = source.id
+    AND source.id = v_source_id
+    AND batch.id <> v_batch_id
+    AND batch.received_at < now() - make_interval(days => COALESCE(source.retention_days, 30));
 
   RETURN jsonb_build_object(
     'status', 'published',
     'batchId', v_batch_id,
-    'runId', v_run_id,
     'acceptedCount', v_record_count,
     'rejectedCount', 0,
     'errorCode', NULL,
-    'dataVersion', v_read_publication #>> '{data,data_version}'
+    'dataVersion', NULL
   );
 EXCEPTION
   WHEN unique_violation OR check_violation OR foreign_key_violation THEN
@@ -654,7 +595,7 @@ EXCEPTION
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.publish_base_data_batch(
+REVOKE ALL ON FUNCTION admin.publish_base_data_batch(
   TEXT,
   TEXT,
   TEXT,
@@ -664,7 +605,7 @@ REVOKE ALL ON FUNCTION private.publish_base_data_batch(
   JSONB
 ) FROM public, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION private.publish_base_data_batch(
+GRANT EXECUTE ON FUNCTION admin.publish_base_data_batch(
   TEXT,
   TEXT,
   TEXT,

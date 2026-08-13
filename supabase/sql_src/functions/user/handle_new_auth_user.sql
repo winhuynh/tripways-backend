@@ -1,12 +1,12 @@
 -- ============================================================================
--- Function: private.handle_new_auth_user
+-- Function: admin.handle_new_auth_user
 -- Feature: User authentication
 -- Purpose: Bootstrap a validated application profile after Auth creates an identity.
 -- Responsibilities: Normalize display name, enforce its contract, and insert one profile row.
 -- Notes: Signup metadata is input only and is never used for authorization.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.handle_new_auth_user()
+CREATE OR REPLACE FUNCTION admin.handle_new_auth_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -30,4 +30,4 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.handle_new_auth_user() FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION admin.handle_new_auth_user() FROM public, anon, authenticated;

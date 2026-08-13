@@ -1,9 +1,9 @@
--- Table: private.raw_import_batches
+-- Table: admin.raw_import_batches
 -- Feature: Base Data Ingestion
 -- Purpose: Record immutable provider batch receipts before canonical publication.
 -- Responsibilities: Preserve source provenance, checksum idempotency, and batch lifecycle state.
 
-CREATE TABLE private.raw_import_batches (
+CREATE TABLE admin.raw_import_batches (
   id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
   provider_version  TEXT         NOT NULL,
@@ -79,7 +79,7 @@ CREATE TABLE private.raw_import_batches (
 );
 
 CREATE INDEX raw_import_batches_source_received_idx
-ON private.raw_import_batches USING btree (source_id, received_at DESC);
+ON admin.raw_import_batches USING btree (source_id, received_at DESC);
 
-REVOKE ALL ON TABLE private.raw_import_batches FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.raw_import_batches TO service_role;
+REVOKE ALL ON TABLE admin.raw_import_batches FROM public, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.raw_import_batches TO service_role;

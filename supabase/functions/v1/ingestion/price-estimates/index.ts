@@ -14,7 +14,7 @@ Deno.serve((request) =>
       executePriceEstimateIngestion(input, adapterRegistry(), async (args) => {
         const { data, error } = await getServiceRoleClient().rpc(
           'rpc_publish_price_estimate_batch',
-          args,
+          { ...args, p_publication_source_type: publicationSourceType() },
         );
         if (error || !isResult(data)) throw new Error('ERR_INGESTION_PUBLISH_FAILED');
         return data;
@@ -57,6 +57,13 @@ function adapterRegistry(): ReadonlyMap<string, PriceEstimateAdapter> {
 function requiredEnv(name: string): string {
   const value = Deno.env.get(name)?.trim();
   if (!value) throw new Error('ERR_SERVER_CONFIGURATION');
+  return value;
+}
+function publicationSourceType(): 'development_fixture' | 'staging' | 'production' {
+  const value = requiredEnv('PUBLICATION_SOURCE_TYPE');
+  if (value !== 'development_fixture' && value !== 'staging' && value !== 'production') {
+    throw new Error('ERR_SERVER_CONFIGURATION');
+  }
   return value;
 }
 function isResult(value: unknown): value is PriceEstimatePublicationResult {

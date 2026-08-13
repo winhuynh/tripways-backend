@@ -5,10 +5,10 @@
 **Trạng thái:** Affiliate-first foundation đang triển khai; live offer orchestration chưa bắt đầu
 **Cập nhật:** 2026-08-12
 
-> Foundation hiện hành publish observation tối đa 24 giờ, refresh từ ngày thứ 6 và handoff qua
+> Foundation hiện hành publish route price tối đa 7 ngày, refresh từ ngày thứ 6 và handoff qua
 > allowlisted Aviasales host. Kiến trúc live-search bên dưới vẫn là upgrade độc lập.
 
-`flight_content_observations` và price ingestion foundation hiện tại không phải offer search, search state,
+`flight_route_prices` và price ingestion foundation hiện tại không phải offer search, search state,
 affiliate handoff hoặc P3 acceptance. Live offer luôn là short-lived provider result với expiry và
 server-owned outbound reference riêng.
 
@@ -160,7 +160,7 @@ POST /api/events
 
 ## 10. Analytics
 
-Schema `analytics` không expose qua Data API.
+Schema `analytics` là scope tương lai và chưa tồn tại; khi được thêm, không expose qua Data API.
 
 Event allowlist:
 

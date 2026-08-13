@@ -1,17 +1,18 @@
 -- ============================================================================
--- Function: private.publish_price_estimate_batch
+-- Function: admin.publish_price_estimate_batch
 -- Purpose: Atomically replace one source's current short-lived flight-content observations.
 -- Responsibilities: Validate rights/TTL, resolve references, publish current rows, and purge old rows.
 -- Notes: The legacy function name remains during the compatibility window.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.publish_price_estimate_batch(
+CREATE OR REPLACE FUNCTION admin.publish_price_estimate_batch(
   p_source_code       TEXT,
   p_idempotency_key   TEXT,
   p_checksum          TEXT,
   p_provider_version  TEXT,
   p_source_time       TIMESTAMPTZ,
-  p_observations      JSONB
+  p_observations      JSONB,
+  p_publication_source_type TEXT
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -32,6 +33,8 @@ DECLARE
   v_valid_until           TIMESTAMPTZ;
   v_count                 INTEGER := 0;
   v_rejected              INTEGER := 0;
+  v_resolvable_count      INTEGER := 0;
+  v_read_publication      JSONB;
 BEGIN
   -- STEP 01: Reject malformed or unbounded publication requests.
   IF p_provider_version <> 'flight-content-observations.v1'
@@ -39,6 +42,7 @@ BEGIN
     OR char_length(p_idempotency_key) NOT BETWEEN 8 AND 128
     OR jsonb_typeof(p_observations) <> 'array'
     OR jsonb_array_length(p_observations) > 1000
+    OR p_publication_source_type NOT IN ('development_fixture', 'staging', 'production')
   THEN
     RETURN jsonb_build_object(
       'status', 'failed',
@@ -78,7 +82,7 @@ BEGIN
   -- STEP 03: Make retries idempotent without retaining provider content in the receipt.
   SELECT batch.id
   INTO v_batch_id
-  FROM private.raw_import_batches AS batch
+  FROM admin.raw_import_batches AS batch
   WHERE batch.source_id = v_source.id
     AND (
       batch.checksum = p_checksum
@@ -96,7 +100,32 @@ BEGIN
     );
   END IF;
 
-  INSERT INTO private.raw_import_batches (
+  -- STEP 04: Preserve the current cache when the new batch cannot map any route.
+  SELECT count(*)::INTEGER
+  INTO v_resolvable_count
+  FROM jsonb_array_elements(p_observations) AS item(value)
+  JOIN public.airports AS origin_airport
+    ON origin_airport.iata = COALESCE(
+      NULLIF(item.value->>'originAirportIata', ''),
+      item.value->>'originCode'
+    )
+  JOIN public.airports AS destination_airport
+    ON destination_airport.iata = COALESCE(
+      NULLIF(item.value->>'destinationAirportIata', ''),
+      item.value->>'destinationCode'
+    )
+  WHERE origin_airport.city_id <> destination_airport.city_id;
+
+  IF v_resolvable_count = 0 THEN
+    RETURN jsonb_build_object(
+      'status', 'failed',
+      'acceptedCount', 0,
+      'rejectedCount', jsonb_array_length(p_observations),
+      'errorCode', 'ERR_INGESTION_NO_USABLE_PRICES'
+    );
+  END IF;
+
+  INSERT INTO admin.raw_import_batches (
     source_id,
     provider_version,
     checksum,
@@ -115,8 +144,8 @@ BEGIN
   RETURNING id
   INTO v_batch_id;
 
-  -- STEP 04: Replace the current observation set inside this transaction.
-  DELETE FROM public.flight_content_observations AS observation
+  -- STEP 05: Replace the current route-price set inside this transaction.
+  DELETE FROM public.flight_route_prices AS observation
   WHERE observation.source_id = v_source.id;
 
   FOR v_observation IN
@@ -158,7 +187,7 @@ BEGIN
       CONTINUE;
     END IF;
 
-    INSERT INTO public.flight_content_observations (
+    INSERT INTO public.flight_route_prices (
       origin_city_id,
       destination_city_id,
       origin_airport_id,
@@ -177,6 +206,8 @@ BEGIN
       return_date,
       duration_minutes,
       source_id,
+      data_source,
+      provider_code,
       source_record_id,
       observed_at,
       provider_expires_at,
@@ -204,6 +235,8 @@ BEGIN
       (v_observation->>'returnDate')::DATE,
       (v_observation->>'durationMinutes')::INTEGER,
       v_source.id,
+      v_source.provider_code,
+      v_source.provider_code,
       v_observation->>'sourceId',
       v_found_at,
       v_provider_expires_at,
@@ -216,80 +249,56 @@ BEGIN
     v_count := v_count + 1;
   END LOOP;
 
-  -- STEP 05: Keep only bounded receipt metadata after publication.
-  UPDATE private.raw_import_batches AS batch
+  -- STEP 06: Publish one complete page and route snapshot in the same transaction.
+  PERFORM admin.sync_provider_pseo_pages(p_publication_source_type);
+  v_read_publication := public.publish_read_model_version(p_publication_source_type);
+
+  IF v_read_publication #>> '{error,code}' IS NOT NULL THEN
+    RAISE EXCEPTION USING
+      ERRCODE = 'P0001',
+      MESSAGE = 'ERR_INGESTION_PUBLISH_FAILED';
+  END IF;
+
+  -- STEP 07: Keep only bounded receipt metadata after publication.
+  UPDATE admin.raw_import_batches AS batch
   SET status = 'published',
       updated_at = now()
   WHERE batch.id = v_batch_id;
+
+  DELETE FROM admin.raw_import_batches AS batch
+  WHERE batch.source_id = v_source.id
+    AND batch.id <> v_batch_id
+    AND batch.received_at < now() - make_interval(days => COALESCE(v_source.retention_days, 7));
 
   RETURN jsonb_build_object(
     'status', 'published',
     'acceptedCount', v_count,
     'rejectedCount', v_rejected,
     'errorCode', NULL,
-    'batchId', v_batch_id
+    'batchId', v_batch_id,
+    'dataVersion', v_read_publication #>> '{data,data_version}'
   );
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.publish_price_estimate_batch(
+REVOKE ALL ON FUNCTION admin.publish_price_estimate_batch(
   TEXT,
   TEXT,
   TEXT,
   TEXT,
   TIMESTAMPTZ,
-  JSONB
+  JSONB,
+  TEXT
 )
 FROM public, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION private.publish_price_estimate_batch(
+GRANT EXECUTE ON FUNCTION admin.publish_price_estimate_batch(
   TEXT,
   TEXT,
   TEXT,
   TEXT,
   TIMESTAMPTZ,
-  JSONB
-)
-TO service_role;
-
-CREATE OR REPLACE FUNCTION public.rpc_publish_price_estimate_batch(
-  p_source_code       TEXT,
-  p_idempotency_key   TEXT,
-  p_checksum          TEXT,
-  p_provider_version  TEXT,
-  p_source_time       TIMESTAMPTZ,
-  p_observations      JSONB
-)
-RETURNS JSONB
-LANGUAGE sql
-SET search_path = ''
-AS $$
-  SELECT private.publish_price_estimate_batch(
-    p_source_code,
-    p_idempotency_key,
-    p_checksum,
-    p_provider_version,
-    p_source_time,
-    p_observations
-  );
-$$;
-
-REVOKE ALL ON FUNCTION public.rpc_publish_price_estimate_batch(
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  TIMESTAMPTZ,
-  JSONB
-)
-FROM public, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION public.rpc_publish_price_estimate_batch(
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  TIMESTAMPTZ,
-  JSONB
+  JSONB,
+  TEXT
 )
 TO service_role;

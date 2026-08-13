@@ -5,6 +5,7 @@ CREATE TABLE public.airport_page_read_models (
   locale                 TEXT        NOT NULL,
   airport_iata           TEXT        NOT NULL,
   payload                JSONB       NOT NULL,
+  metadata               JSONB       NOT NULL,
   generated_at           TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT airport_page_read_models_identity_key
@@ -17,7 +18,10 @@ CREATE TABLE public.airport_page_read_models (
   CHECK (airport_iata ~ '^[A-Z0-9]{3}$'),
 
   CONSTRAINT airport_page_read_models_payload_check
-  CHECK (jsonb_typeof(payload) = 'object')
+  CHECK (jsonb_typeof(payload) = 'object'),
+
+  CONSTRAINT airport_page_read_models_metadata_check
+  CHECK (jsonb_typeof(metadata) = 'object')
 );
 
 CREATE INDEX airport_page_read_models_lookup_idx

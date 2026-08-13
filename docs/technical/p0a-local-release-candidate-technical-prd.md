@@ -2,8 +2,8 @@
 
 **PRD sản phẩm liên quan:** `docs/product/p0-staging-readiness-prd.md`  
 **Kho mã:** `tripways-backend`, `tripways-web`  
-**Trạng thái:** Đang thực hiện
-**Cập nhật:** 2026-08-05
+**Trạng thái:** Hoàn tất local; kiến trúc chi tiết bên dưới là decision history
+**Cập nhật:** 2026-08-12
 **Kết quả:** Một release candidate chạy end-to-end ở local, đạt ít nhất 11/12 năng lực P0A và hoàn
 tất approved-API smoke trước formal acceptance.
 
@@ -18,10 +18,13 @@ Next.js Server Component
 
 Mock Provider API / Approved Real API
   → privileged local ingestion Edge Function
-    → private ingestion RPC
-      → private raw/staging tables
+    → service-role ingestion RPC
+      → admin raw receipt tables
         → canonical country/city/airport tables
 ```
+
+Implementation cuối P0A đã loại `private`, `analytics`, `ingestion_runs` và `ingestion_issues` để giữ
+schema tối thiểu. Trạng thái hiện hành được mô tả tại roadmap và first-cloud-staging runbook.
 
 Homepage, City, Airport và Route Page không được duy trì các mô hình trust khác nhau. Initial page
 load dùng unified page contract và một page-specific read-model lookup; mọi tương tác route filter
@@ -39,10 +42,10 @@ phép counterpart query/country/region, route type và operating airline ở pub
 
 ### 2.1 Ingestion foundation tối thiểu
 
-Tạo các bảng private/admin tối thiểu:
+Thiết kế ban đầu đề xuất các bảng private/admin sau; implementation cuối chỉ giữ hai bảng đầu:
 
-- `private.raw_import_batches`: batch ID, source ID, checksum, received time, source time, status.
-- `private.raw_base_data_records`: batch ID, record type, source key, payload JSONB, validation state.
+- `admin.raw_import_batches`: batch ID, source ID, checksum, received time, source time, status.
+- `admin.raw_base_data_records`: batch ID, record type, source key, payload JSONB, validation state.
 - `admin.ingestion_runs`: run ID, batch ID, action, counts, status, stable error code.
 - `admin.ingestion_issues`: run ID, source key hash hoặc bounded key, issue code, severity.
 

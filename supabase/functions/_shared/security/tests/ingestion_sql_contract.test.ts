@@ -17,14 +17,12 @@ function includesSql(sql: string, fragment: string): boolean {
 }
 
 const expectedTables = [
-  ['schema/ingestion/raw_import_batches.sql', 'private.raw_import_batches'],
-  ['schema/ingestion/raw_base_data_records.sql', 'private.raw_base_data_records'],
-  ['schema/ingestion/ingestion_runs.sql', 'admin.ingestion_runs'],
-  ['schema/ingestion/ingestion_issues.sql', 'admin.ingestion_issues'],
+  ['schema/ingestion/raw_import_batches.sql', 'admin.raw_import_batches'],
+  ['schema/ingestion/raw_base_data_records.sql', 'admin.raw_base_data_records'],
   ['schema/ingestion/ourairports_denylist.sql', 'admin.ourairports_denylist'],
 ] as const;
 
-Deno.test('ingestion stores one private or admin table per source file', async () => {
+Deno.test('ingestion stores one admin table per source file', async () => {
   for (const [path, qualifiedTable] of expectedTables) {
     const sql = await readSource(path);
     assert.ok(
@@ -50,7 +48,7 @@ Deno.test('raw batches enforce source checksum idempotency and bounded status', 
   assert.ok(
     includesSql(
       sql,
-      'revoke all on table private.raw_import_batches from public, anon, authenticated',
+      'revoke all on table admin.raw_import_batches from public, anon, authenticated',
     ),
   );
 });
@@ -83,12 +81,12 @@ Deno.test('raw records preserve payload privately and constrain validation state
   assert.ok(
     includesSql(
       sql,
-      'revoke all on table private.raw_base_data_records from public, anon, authenticated',
+      'revoke all on table admin.raw_base_data_records from public, anon, authenticated',
     ),
   );
 });
 
-Deno.test('data sources encode provider switching and complete publication rights', async () => {
+Deno.test('provider registry remains in admin and redundant log tables are removed', async () => {
   const sql = await readSource('schema/flight_routing/data_sources.sql');
 
   for (
@@ -109,25 +107,8 @@ Deno.test('data sources encode provider switching and complete publication right
   }
   assert.ok(includesSql(sql, 'unique (provider_code, code)'));
   assert.ok(includesSql(sql, 'rights_effective_at < rights_expires_at'));
-});
-
-Deno.test('ingestion runs are explicitly atomic and expose stable result counts', async () => {
-  const sql = await readSource('schema/ingestion/ingestion_runs.sql');
-
-  assert.ok(includesSql(sql, "mode text not null default 'atomic'"));
-  assert.ok(includesSql(sql, "check (mode = 'atomic')"));
-  assert.ok(includesSql(sql, 'accepted_count integer not null default 0'));
-  assert.ok(includesSql(sql, 'rejected_count integer not null default 0'));
-  assert.ok(includesSql(sql, 'stable_error_code text null'));
-});
-
-Deno.test('ingestion issues store bounded identity and severity without raw payload', async () => {
-  const sql = await readSource('schema/ingestion/ingestion_issues.sql');
-
-  assert.ok(includesSql(sql, 'source_key_hash text null'));
-  assert.ok(includesSql(sql, 'issue_code text not null'));
-  assert.ok(includesSql(sql, "severity in ('warning', 'error')"));
-  assert.equal(includesSql(sql, 'payload jsonb'), false);
+  assert.equal(await readSource('schema/ingestion/ingestion_runs.sql'), '');
+  assert.equal(await readSource('schema/ingestion/ingestion_issues.sql'), '');
 });
 
 Deno.test('ingestion operational tables grant access only to service role', async () => {
@@ -144,10 +125,10 @@ Deno.test('ingestion operational tables grant access only to service role', asyn
   }
 });
 
-Deno.test('publication is private, atomic, idempotent, and unknown-safe', async () => {
+Deno.test('publication is internal, atomic, idempotent, and unknown-safe', async () => {
   const sql = await readSource('functions/ingestion/publish_base_data_batch.sql');
 
-  assert.ok(includesSql(sql, 'create or replace function private.publish_base_data_batch'));
+  assert.ok(includesSql(sql, 'create or replace function admin.publish_base_data_batch'));
   assert.ok(includesSql(sql, 'security definer'));
   assert.ok(includesSql(sql, "set search_path = ''"));
   assert.ok(includesSql(sql, 'err_ingestion_batch_duplicate'));
@@ -162,13 +143,13 @@ Deno.test('publication is private, atomic, idempotent, and unknown-safe', async 
   assert.ok(includesSql(sql, "status = 'inactive'"));
   assert.ok(includesSql(sql, "status = 'active'"));
   assert.ok(includesSql(sql, 'pg_advisory_xact_lock'));
-  assert.ok(includesSql(sql, 'public.publish_read_model_version'));
-  assert.ok(includesSql(sql, 'err_ingestion_publish_failed'));
-  assert.ok(includesSql(sql, 'revoke all on function private.publish_base_data_batch'));
-  assert.ok(includesSql(sql, 'grant execute on function private.publish_base_data_batch'));
+  assert.equal(includesSql(sql, 'public.publish_read_model_version'), false);
+  assert.ok(includesSql(sql, 'make_interval(days => coalesce(source.retention_days, 30))'));
+  assert.ok(includesSql(sql, 'revoke all on function admin.publish_base_data_batch'));
+  assert.ok(includesSql(sql, 'grant execute on function admin.publish_base_data_batch'));
 });
 
-Deno.test('OurAirports denylist is private and readable only through a service-role RPC', async () => {
+Deno.test('OurAirports denylist is internal and readable only through a service-role RPC', async () => {
   const tableSql = await readSource('schema/ingestion/ourairports_denylist.sql');
   const rpcSql = await readSource('functions/ingestion/rpc_get_ourairports_denylist.sql');
 
@@ -181,8 +162,8 @@ Deno.test('OurAirports denylist is private and readable only through a service-r
   assert.equal(includesSql(rpcSql, 'to authenticated'), false);
 });
 
-Deno.test('OurAirports cron setup calls only the fixed ingestion function with Vault secrets', async () => {
-  const sql = await readSource('operations/configure_ourairports_cron.sql');
+Deno.test('one cron installer validates Vault and schedules both providers', async () => {
+  const sql = await readSource('operations/configure_ingestion_crons.sql');
 
   assert.ok(includesSql(sql, 'create extension if not exists pg_cron'));
   assert.ok(includesSql(sql, 'create extension if not exists pg_net'));
@@ -192,6 +173,11 @@ Deno.test('OurAirports cron setup calls only the fixed ingestion function with V
   assert.ok(sql.includes("'/functions/v1/ingestion-base-data'"));
   assert.ok(sql.includes('vault.decrypted_secrets'));
   assert.ok(sql.includes("'ourairports'"));
+  assert.ok(sql.includes("'tripways-travelpayouts-content-daily-check'"));
+  assert.ok(sql.includes("'20 2 * * *'"));
+  assert.ok(sql.includes("interval '6 days'"));
+  assert.ok(sql.includes("'/functions/v1/ingestion-price-estimates'"));
+  assert.ok(includesSql(sql, 'err_cron_vault_prerequisites_missing'));
 });
 
 Deno.test('OurAirports source fixture records reviewed production and storage rights', async () => {
@@ -204,15 +190,6 @@ Deno.test('OurAirports source fixture records reviewed production and storage ri
   assert.ok(includesSql(sql, "'production'"));
   assert.ok(includesSql(sql, 'TRUE'));
   assert.doesNotMatch(sql, /openflights/i);
-});
-
-Deno.test('Travelpayouts cron checks daily and calls provider only after six days', async () => {
-  const sql = await readSource('operations/configure_travelpayouts_content_cron.sql');
-  assert.ok(sql.includes("'tripways-travelpayouts-content-daily-check'"));
-  assert.ok(sql.includes("'20 2 * * *'"));
-  assert.ok(sql.includes("interval '6 days'"));
-  assert.ok(sql.includes("'/functions/v1/ingestion-price-estimates'"));
-  assert.ok(sql.includes('vault.decrypted_secrets'));
 });
 
 Deno.test('Travelpayouts source is configured for a replaceable seven-day cache', async () => {

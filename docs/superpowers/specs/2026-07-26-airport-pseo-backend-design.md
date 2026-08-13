@@ -145,7 +145,7 @@ data_version
 For `outbound`, counterpart facts describe destinations. For `inbound`, they describe origins.
 This prevents duplicated inbound/outbound count columns that can become inconsistent.
 
-`private.parse_city_page_identity`, `private.resolve_city_page_context`, and city public RPC inputs
+`admin.parse_city_page_identity`, `admin.resolve_city_page_context`, and city public RPC inputs
 accept `route_direction`, defaulting to `outbound` for backward compatibility. The resolved page
 context includes the direction. City route filters select the correct side of
 `pseo_direct_routes`.
@@ -353,13 +353,13 @@ the eligible projection.
 
 ### Private identity helpers
 
-`private.parse_airport_page_identity(JSONB)` validates:
+`admin.parse_airport_page_identity(JSONB)` validates:
 
 - input is an object;
 - `airport_iata` normalizes to uppercase and matches `^[A-Z]{3}$`;
 - locale follows the existing locale contract.
 
-`private.resolve_airport_page_context(TEXT, TEXT)` resolves:
+`admin.resolve_airport_page_context(TEXT, TEXT)` resolves:
 
 - airport;
 - airport page;

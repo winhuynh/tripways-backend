@@ -1,11 +1,11 @@
 -- ============================================================================
 -- Function: public.rpc_publish_base_data_batch
--- Purpose: Provide a service-role-only PostgREST transport to private publication.
+-- Purpose: Provide a service-role-only PostgREST transport to internal publication.
 -- Responsibilities:
---   - Forward the bounded canonical batch to the private transactional function.
+--   - Forward the bounded canonical batch to the internal transactional function.
 --   - Keep the exposed wrapper security-invoker and unavailable to public clients.
 -- Notes:
---   - Domain validation and mutation remain in private.publish_base_data_batch.
+--   - Domain validation and mutation remain in admin.publish_base_data_batch.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.rpc_publish_base_data_batch(
@@ -21,7 +21,7 @@ RETURNS JSONB
 LANGUAGE sql
 SET search_path = ''
 AS $$
-  SELECT private.publish_base_data_batch(
+  SELECT admin.publish_base_data_batch(
     p_source_code,
     p_idempotency_key,
     p_checksum,

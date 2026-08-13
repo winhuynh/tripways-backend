@@ -7,12 +7,12 @@
 
 -- >>> supabase/sql_src/schema/ingestion/raw_import_batches.sql
 
--- Table: private.raw_import_batches
+-- Table: admin.raw_import_batches
 -- Feature: Base Data Ingestion
 -- Purpose: Record immutable provider batch receipts before canonical publication.
 -- Responsibilities: Preserve source provenance, checksum idempotency, and batch lifecycle state.
 
-CREATE TABLE private.raw_import_batches (
+CREATE TABLE admin.raw_import_batches (
   id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
   provider_version  TEXT         NOT NULL,
@@ -88,21 +88,21 @@ CREATE TABLE private.raw_import_batches (
 );
 
 CREATE INDEX raw_import_batches_source_received_idx
-ON private.raw_import_batches USING btree (source_id, received_at DESC);
+ON admin.raw_import_batches USING btree (source_id, received_at DESC);
 
-REVOKE ALL ON TABLE private.raw_import_batches FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.raw_import_batches TO service_role;
+REVOKE ALL ON TABLE admin.raw_import_batches FROM public, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.raw_import_batches TO service_role;
 
 -- >>> supabase/sql_src/schema/ingestion/raw_base_data_records.sql
 
--- Table: private.raw_base_data_records
+-- Table: admin.raw_base_data_records
 -- Feature: Base Data Ingestion
--- Purpose: Preserve bounded provider records inside the private ingestion boundary.
+-- Purpose: Preserve bounded provider records inside the internal ingestion boundary.
 -- Responsibilities: Link records to a batch and record their validation outcome.
 
-CREATE TABLE private.raw_base_data_records (
+CREATE TABLE admin.raw_base_data_records (
   id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  batch_id          UUID         NOT NULL REFERENCES private.raw_import_batches (id) ON DELETE CASCADE,
+  batch_id          UUID         NOT NULL REFERENCES admin.raw_import_batches (id) ON DELETE CASCADE,
   record_type       TEXT         NOT NULL,
   source_key        TEXT         NOT NULL,
   payload           JSONB        NOT NULL,
@@ -146,92 +146,10 @@ CREATE TABLE private.raw_base_data_records (
 );
 
 CREATE INDEX raw_base_data_records_batch_idx
-ON private.raw_base_data_records USING btree (batch_id);
+ON admin.raw_base_data_records USING btree (batch_id);
 
-REVOKE ALL ON TABLE private.raw_base_data_records FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.raw_base_data_records TO service_role;
-
--- >>> supabase/sql_src/schema/ingestion/ingestion_runs.sql
-
--- Table: admin.ingestion_runs
--- Feature: Base Data Ingestion
--- Purpose: Record bounded operational outcomes for ingestion attempts.
--- Responsibilities: Track atomic publication actions, counts, status, and stable errors.
-
-CREATE TABLE admin.ingestion_runs (
-  id                 UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  batch_id           UUID         NOT NULL REFERENCES private.raw_import_batches (id),
-  action             TEXT         NOT NULL,
-  mode               TEXT         NOT NULL DEFAULT 'atomic',
-  accepted_count     INTEGER      NOT NULL DEFAULT 0,
-  rejected_count     INTEGER      NOT NULL DEFAULT 0,
-  status             TEXT         NOT NULL DEFAULT 'started',
-  stable_error_code  TEXT         NULL,
-  started_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
-  completed_at       TIMESTAMPTZ  NULL,
-  created_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  CONSTRAINT ingestion_runs_mode_check
-    CHECK (mode = 'atomic'),
-
-  CONSTRAINT ingestion_runs_action_check
-    CHECK (action IN ('validate', 'publish')),
-
-  CONSTRAINT ingestion_runs_counts_check
-    CHECK (accepted_count >= 0 AND rejected_count >= 0),
-
-  CONSTRAINT ingestion_runs_status_check
-    CHECK (status IN ('started', 'succeeded', 'failed')),
-
-  CONSTRAINT ingestion_runs_error_code_check
-    CHECK (
-      stable_error_code IS NULL
-      OR stable_error_code ~ '^ERR_[A-Z0-9_]+$'
-    ),
-
-  CONSTRAINT ingestion_runs_completion_check
-    CHECK (
-      (status = 'started' AND completed_at IS NULL)
-      OR (status IN ('succeeded', 'failed') AND completed_at IS NOT NULL)
-    )
-);
-
-CREATE INDEX ingestion_runs_batch_started_idx
-ON admin.ingestion_runs USING btree (batch_id, started_at DESC);
-
-REVOKE ALL ON TABLE admin.ingestion_runs FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.ingestion_runs TO service_role;
-
--- >>> supabase/sql_src/schema/ingestion/ingestion_issues.sql
-
--- Table: admin.ingestion_issues
--- Feature: Base Data Ingestion
--- Purpose: Record bounded validation and publication issues without retaining raw payloads.
--- Responsibilities: Associate stable issue codes and severities with an ingestion run.
-
-CREATE TABLE admin.ingestion_issues (
-  id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  run_id           UUID         NOT NULL REFERENCES admin.ingestion_runs (id) ON DELETE CASCADE,
-  source_key_hash  TEXT         NULL,
-  issue_code       TEXT         NOT NULL,
-  severity         TEXT         NOT NULL,
-  created_at       TIMESTAMPTZ  NOT NULL DEFAULT now(),
-
-  CONSTRAINT ingestion_issues_source_key_hash_check
-    CHECK (source_key_hash IS NULL OR source_key_hash ~ '^[a-f0-9]{64}$'),
-
-  CONSTRAINT ingestion_issues_issue_code_check
-    CHECK (issue_code ~ '^ERR_[A-Z0-9_]+$'),
-
-  CONSTRAINT ingestion_issues_severity_check
-    CHECK (severity IN ('warning', 'error'))
-);
-
-CREATE INDEX ingestion_issues_run_idx
-ON admin.ingestion_issues USING btree (run_id);
-
-REVOKE ALL ON TABLE admin.ingestion_issues FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.ingestion_issues TO service_role;
+REVOKE ALL ON TABLE admin.raw_base_data_records FROM public, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.raw_base_data_records TO service_role;
 
 -- >>> supabase/sql_src/schema/ingestion/ourairports_denylist.sql
 

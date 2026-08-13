@@ -1,11 +1,11 @@
--- Table: private.raw_base_data_records
+-- Table: admin.raw_base_data_records
 -- Feature: Base Data Ingestion
--- Purpose: Preserve bounded provider records inside the private ingestion boundary.
+-- Purpose: Preserve bounded provider records inside the internal ingestion boundary.
 -- Responsibilities: Link records to a batch and record their validation outcome.
 
-CREATE TABLE private.raw_base_data_records (
+CREATE TABLE admin.raw_base_data_records (
   id                UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  batch_id          UUID         NOT NULL REFERENCES private.raw_import_batches (id) ON DELETE CASCADE,
+  batch_id          UUID         NOT NULL REFERENCES admin.raw_import_batches (id) ON DELETE CASCADE,
   record_type       TEXT         NOT NULL,
   source_key        TEXT         NOT NULL,
   payload           JSONB        NOT NULL,
@@ -49,7 +49,7 @@ CREATE TABLE private.raw_base_data_records (
 );
 
 CREATE INDEX raw_base_data_records_batch_idx
-ON private.raw_base_data_records USING btree (batch_id);
+ON admin.raw_base_data_records USING btree (batch_id);
 
-REVOKE ALL ON TABLE private.raw_base_data_records FROM public, anon, authenticated;
-GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE private.raw_base_data_records TO service_role;
+REVOKE ALL ON TABLE admin.raw_base_data_records FROM public, anon, authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.raw_base_data_records TO service_role;

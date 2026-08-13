@@ -25,7 +25,7 @@ CREATE TABLE public.publication_versions (
     CHECK (status IN ('building', 'published', 'failed', 'retired')),
 
   CONSTRAINT publication_versions_source_check
-    CHECK (source_type IN ('production', 'development_fixture')),
+    CHECK (source_type IN ('production', 'staging', 'development_fixture')),
 
   CONSTRAINT publication_versions_current_check
     CHECK (is_current = FALSE OR (status = 'published' AND published_at IS NOT NULL)),
@@ -46,7 +46,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.publication_versions TO ser
 
 -- Table: public.flight_route_options
 -- Feature: Flight Route Discovery
--- Purpose: Disposable, versioned read projection built from route evidence and fresh observations.
+-- Purpose: Disposable, versioned read projection built from fresh route prices.
 
 CREATE TABLE public.flight_route_options (
   id UUID NOT NULL,
@@ -72,7 +72,11 @@ CREATE TABLE public.flight_route_options (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   PRIMARY KEY (publication_version_id, id),
   CONSTRAINT flight_route_options_direction_check CHECK (origin_city_id <> destination_city_id),
-  CONSTRAINT flight_route_options_amount_check CHECK ((observed_amount IS NULL AND currency_code IS NULL) OR (observed_amount >= 0 AND currency_code ~ '^[A-Z]{3}$'))
+  CONSTRAINT flight_route_options_amount_check
+    CHECK (
+      (observed_amount IS NULL AND currency_code IS NULL)
+      OR (observed_amount >= 0 AND currency_code ~ '^[A-Z]{3}$')
+    )
 );
 
 CREATE INDEX flight_route_options_origin_idx ON public.flight_route_options

@@ -33,6 +33,10 @@ Deno.test('legacy page-module schemas are removed', async () => {
   ) assert.equal(await read(path), '', path);
 });
 
+Deno.test('unused city slug mutation operation is removed', async () => {
+  assert.equal(await read('operations/rename_city_slug.sql'), '');
+});
+
 Deno.test('all page builders compose aggregate content and the lean route projection', async () => {
   for (const type of ['city', 'airport', 'route']) {
     const sql = await read(`functions/pseo/${type}/build_${type}_page_payload.sql`);
@@ -42,43 +46,59 @@ Deno.test('all page builders compose aggregate content and the lean route projec
   }
 });
 
+Deno.test('public page builders use explicit DTO allowlists without internal identifiers', async () => {
+  for (const type of ['city', 'airport']) {
+    const sql = await read(`functions/pseo/${type}/build_${type}_page_payload.sql`);
+    assert.equal(sql.includes('to_jsonb(option)'), false);
+    assert.equal(sql.includes("'canonical_airline_id'"), false);
+  }
+  const cityBuilder = await read('functions/pseo/city/build_city_page_payload.sql');
+  for (const field of ['canonical_path', 'is_indexable', 'noindex_reason', 'source_freshness_at']) {
+    assert.ok(cityBuilder.includes(field), `page response metadata must expose ${field}`);
+  }
+  const rpc = await read('functions/pseo/shared/rpc_get_page.sql');
+  assert.ok(rpc.includes("'meta', v_metadata || jsonb_build_object"));
+  assert.ok(rpc.includes("'v_' || md5"));
+  assert.equal(rpc.includes("'data_version', v_version_id"), false);
+});
+
 Deno.test('route page adds only fresh content observations', async () => {
   const sql = await read('functions/pseo/route/build_route_page_payload.sql');
-  assert.ok(sql.includes('public.flight_content_observations'));
-  assert.ok(sql.includes("item.status='published'"));
-  assert.ok(sql.includes('item.valid_until>now()'));
+  const compact = sql.replaceAll(/\s+/g, '');
+  assert.ok(sql.includes('public.flight_route_prices'));
+  assert.ok(compact.includes("item.status='published'"));
+  assert.ok(compact.includes('item.valid_until>now()'));
   assert.ok(sql.includes('item.observed_amount'));
 });
 
 Deno.test('publication refreshes one shared lean projection before all page read models', async () => {
   const publish = await read('functions/pseo/shared/publish_read_model_version.sql');
   const refresh = await read('functions/pseo/shared/refresh_page_read_models.sql');
-  assert.ok(publish.includes('private.refresh_route_search_options(v_version_id)'));
-  assert.ok(publish.includes('private.refresh_page_read_models(v_version_id)'));
+  assert.ok(publish.includes('admin.refresh_route_search_options(v_version_id)'));
+  assert.ok(publish.includes('admin.refresh_page_read_models(v_version_id)'));
   assert.ok(refresh.includes('public.city_page_read_models'));
   assert.ok(refresh.includes('public.airport_page_read_models'));
   assert.ok(refresh.includes('public.route_page_read_models'));
 });
 
 Deno.test('homepage reads only the current flight route projection', async () => {
-  for (
-    const file of [
-      'rpc_search_places.sql',
-      'rpc_resolve_homepage_origin.sql',
-      'rpc_get_homepage_statistics.sql',
-    ]
-  ) {
-    const sql = await read(`functions/pseo/homepage/${file}`);
-    assert.ok(sql.includes('public.flight_route_options'), file);
-    assert.ok(sql.includes('public.publication_versions'), file);
-    assert.equal(sql.includes('public.route_search_options'), false);
-  }
+  const sql = await read('functions/pseo/homepage/rpc_get_homepage_statistics.sql');
+  assert.ok(sql.includes('public.flight_route_options'));
+  assert.ok(sql.includes('public.publication_versions'));
+  assert.equal(sql.includes('public.route_search_options'), false);
+  assert.equal(await read('functions/pseo/homepage/rpc_search_places.sql'), '');
+  assert.equal(await read('functions/pseo/homepage/rpc_resolve_homepage_origin.sql'), '');
+  assert.ok(sql.includes("'v_' || md5"));
+  assert.equal(sql.includes("'data_version', version.id"), false);
 });
 
 Deno.test('public route search is read-only and service-role only', async () => {
   const sql = await read('functions/route_discovery/rpc_search_routes.sql');
   assert.ok(sql.includes('public.flight_route_options'));
   assert.ok(sql.includes('stable'));
+  assert.ok(sql.includes("'v_' || md5"));
+  assert.equal(sql.includes("'data_version', v_version_id"), false);
+  assert.equal(sql.includes("'id', id"), false);
   assert.ok(
     sql.includes(
       'revoke all on function public.rpc_search_routes(jsonb) from public, anon, authenticated',

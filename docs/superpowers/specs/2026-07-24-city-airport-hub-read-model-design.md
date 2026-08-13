@@ -14,7 +14,7 @@ route statistics or locale-specific copy in the normalized `airports` table.
 - `public.city_page_airport_content` stores reviewed, locale-specific hub labels, descriptions,
   ordering, and publication state for one airport within one city page.
 - `public.city_direct_routes` remains the versioned source for airport route statistics.
-- `private.get_city_airport_route_stats()` derives reusable statistics for every active airport in
+- `admin.get_city_airport_route_stats()` derives reusable statistics for every active airport in
   one city and one data version.
 - `public.rpc_get_city_airports()` composes normalized airport facts, reviewed content, and derived
   statistics into one bounded read model.

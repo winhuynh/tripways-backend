@@ -12,8 +12,7 @@ async function read(path: string): Promise<string> {
 }
 
 const tables = [
-  ['schema/flight_routing/place_aliases.sql', 'public.place_aliases'],
-  ['schema/flight_routing/flight_content_observations.sql', 'public.flight_content_observations'],
+  ['schema/flight_routing/flight_route_prices.sql', 'public.flight_route_prices'],
   ['schema/pseo/route/route_pages.sql', 'public.route_pages'],
 ] as const;
 
@@ -30,8 +29,8 @@ Deno.test('provider-ready canonical tables are isolated, protected, and versiona
   }
 });
 
-Deno.test('flight content observations are short-lived and distinct from live offers', async () => {
-  const sql = await read('schema/flight_routing/flight_content_observations.sql');
+Deno.test('flight route prices are short-lived and distinct from live offers', async () => {
+  const sql = await read('schema/flight_routing/flight_route_prices.sql');
   for (
     const field of [
       'trip_type',
@@ -47,16 +46,18 @@ Deno.test('flight content observations are short-lived and distinct from live of
       'departure_date',
       'return_date',
       'duration_minutes',
-      'source_id',
+      'data_source',
+      'provider_code',
       'source_record_id',
       'observed_at',
       'provider_expires_at',
       'valid_until',
       'affiliate_path',
+      'public_reference',
       'data_version',
     ]
   ) {
-    assert.ok(sql.includes(field), `flight content observations must define ${field}`);
+    assert.ok(sql.includes(field), `flight route prices must define ${field}`);
   }
   assert.equal(sql.includes('price_min'), false);
   assert.equal(sql.includes('price_max'), false);
@@ -66,17 +67,35 @@ Deno.test('flight content observations are short-lived and distinct from live of
 
 Deno.test('affiliate handoff uses a fixed partner host and rejects expired observations', async () => {
   const sql = await read('functions/pseo/shared/rpc_get_flight_affiliate_handoff.sql');
+  const compact = sql.replaceAll(/\s+/g, '');
+  assert.ok(sql.includes('p_observation_ref text'));
+  assert.ok(compact.includes('observation.public_reference=input.requested_reference'));
   assert.ok(sql.includes("'https://www.aviasales.com'"));
-  assert.ok(sql.includes('observation.valid_until>now()'));
-  assert.ok(sql.includes("source.provider_code='travelpayouts'"));
+  assert.ok(compact.includes('observation.valid_until>now()'));
+  assert.ok(compact.includes("observation.provider_code='travelpayouts'"));
   assert.equal(sql.includes('p_url'), false);
 });
 
-Deno.test('route observation resolver does not query removed estimate dimensions', async () => {
-  const sql = await read('functions/pseo/shared/resolve_route_price_estimate.sql');
-  assert.equal(sql.includes('estimate.cabin'), false);
-  assert.equal(sql.includes('estimate.stop_bucket'), false);
-  assert.ok(sql.includes('estimate.observed_at'));
+Deno.test('route payload exposes a public observation reference without internal IDs', async () => {
+  const sql = await read('functions/pseo/route/build_route_page_payload.sql');
+  for (
+    const field of [
+      'observation_ref',
+      'public_reference',
+      'observed_amount',
+      'currency_code',
+      'departure_date',
+      'observed_at',
+      'valid_until',
+    ]
+  ) assert.ok(sql.includes(field));
+  assert.equal(sql.includes("'observation_id'"), false);
+  assert.equal(sql.includes("'id',"), false);
+  assert.equal(sql.includes("'affiliate_path'"), false);
+});
+
+Deno.test('legacy route observation resolver is removed', async () => {
+  assert.equal(await read('functions/pseo/shared/resolve_route_price_estimate.sql'), '');
 });
 
 Deno.test('page sources use one aggregate while read models remain separate', async () => {

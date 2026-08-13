@@ -15,22 +15,7 @@ END;
 $$;
 
 SELECT pg_temp.test_assert(
-  private.normalize_airport_iata(' bkk ') = 'BKK',
-  'airport IATA helper trims and normalizes valid input'
-);
-
-SELECT pg_temp.test_assert(
-  private.normalize_airport_iata('invalid') IS NULL,
-  'airport IATA helper rejects invalid input'
-);
-
-SELECT pg_temp.test_assert(
-  private.normalize_airline_iata(' tg ') = 'TG',
-  'airline IATA helper trims and normalizes valid input'
-);
-
-SELECT pg_temp.test_assert(
-  private.build_rpc_error(
+  admin.build_rpc_error(
     '[]'::JSONB,
     'ERR_TEST',
     'Test error.'
@@ -46,22 +31,9 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  private.parse_city_page_identity(
-    '{"city_slug":" Bangkok ","locale":"en-GB"}'::JSONB
-  ) #>> '{data,city_slug}' = 'bangkok',
-  'city identity helper normalizes a valid slug'
-);
-
-SELECT pg_temp.test_assert(
-  private.resolve_city_page_context('bangkok', 'en-GB')
-    #>> '{data,city_id}' IS NOT NULL,
-  'city context helper resolves the seeded Bangkok page'
-);
-
-SELECT pg_temp.test_assert(
   NOT has_function_privilege(
     'anon',
-    'private.build_rpc_error(jsonb,text,text)',
+    'admin.build_rpc_error(jsonb,text,text)',
     'EXECUTE'
   ),
   'anon cannot execute internal RPC helpers'

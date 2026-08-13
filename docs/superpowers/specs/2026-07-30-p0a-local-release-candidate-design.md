@@ -45,8 +45,8 @@ airport records. The fixture adapter is completely offline. The optional approve
 server allowlist, a bounded record count, and environment-only credentials. Both adapters pass
 through the same parser and validation rules.
 
-Raw receipt data is stored only in `private.raw_import_batches` and
-`private.raw_base_data_records`. Operational results are stored in `admin.ingestion_runs` and
+Raw receipt data is stored only in `admin.raw_import_batches` and
+`admin.raw_base_data_records`. Operational results are stored in `admin.ingestion_runs` and
 `admin.ingestion_issues`. Neither schema is exposed through the Data API.
 
 ### Publication transaction
@@ -107,12 +107,12 @@ builds use local or bundled fonts so they do not depend on an external font down
 
 ## Data Model
 
-### `private.raw_import_batches`
+### `admin.raw_import_batches`
 
 Stores the source, provider version, checksum, idempotency identity, receipt timestamp, optional
 source timestamp, and batch status. A source/checksum uniqueness constraint enforces replay safety.
 
-### `private.raw_base_data_records`
+### `admin.raw_base_data_records`
 
 Stores batch membership, record type, bounded source key, JSONB payload, and validation state. The
 table is private, has no public grants, and retains unknown fields only inside the raw boundary.

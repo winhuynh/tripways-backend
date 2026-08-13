@@ -14,7 +14,7 @@ The folder name represents the product feature, not necessarily the PostgreSQL s
 `schema/flight_routing/airports.sql` owns `public.airports`.
 
 Public RPCs own transport contracts and orchestration. Reusable parsing, normalization, resolution,
-and envelope behavior belongs in least-privilege functions under the `private` schema. Do not
+and envelope behavior belongs in least-privilege functions under the `admin` schema. Do not
 extract single-caller query blocks merely to make an RPC shorter.
 
 ## Migration workflow

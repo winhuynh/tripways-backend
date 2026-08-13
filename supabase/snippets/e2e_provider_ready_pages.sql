@@ -14,11 +14,6 @@ END;
 $$;
 
 SELECT pg_temp.test_assert(
-  jsonb_array_length(public.rpc_search_places('{"query":"lon","locale":"en-GB","limit":8}'::JSONB)->'data') >= 1,
-  'aliases, cities, airports and metros are searchable'
-);
-
-SELECT pg_temp.test_assert(
   (public.rpc_get_homepage_statistics() #>> '{data,published_direct_route_count}')::INTEGER > 0,
   'homepage statistics use the current published route projection'
 );
@@ -29,57 +24,45 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,structured_facts}' IS NOT NULL,
-  'city has cited structured facts'
+  public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,city,slug}' = 'ho-chi-minh-city',
+  'city page exposes its canonical entity'
 );
 
 SELECT pg_temp.test_assert(
-  NOT (public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB)->'data' ? 'featured_airlines'),
+  NOT (public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB)->'data' ? 'featured_airlines'),
   'city does not expose a standalone airline section'
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"airport","entity_key":"BKK","locale":"en-GB"}'::JSONB) #> '{data,arrival,steps}' IS NOT NULL
-  AND public.rpc_get_page('{"page_type":"airport","entity_key":"BKK","locale":"en-GB"}'::JSONB) #> '{data,departure,steps}' IS NOT NULL
-  AND public.rpc_get_page('{"page_type":"airport","entity_key":"BKK","locale":"en-GB"}'::JSONB) #> '{data,transport}' IS NOT NULL
-  AND public.rpc_get_page('{"page_type":"airport","entity_key":"BKK","locale":"en-GB"}'::JSONB) #> '{data,provenance}' IS NOT NULL
-  AND NOT (public.rpc_get_page('{"page_type":"airport","entity_key":"BKK","locale":"en-GB"}'::JSONB)->'data' ? 'featured_outbound_routes'),
-  'airport has journey-led modules without embedded legacy routes'
+  public.rpc_get_page('{"page_type":"airport","entity_key":"SGN","locale":"en-GB"}'::JSONB) #>> '{data,airport,iata}' = 'SGN'
+  AND public.rpc_get_page('{"page_type":"airport","entity_key":"SGN","locale":"en-GB"}'::JSONB) #> '{data,content}' IS NOT NULL
+  AND NOT (public.rpc_get_page('{"page_type":"airport","entity_key":"SGN","locale":"en-GB"}'::JSONB)->'data' ? 'featured_outbound_routes'),
+  'airport page exposes its canonical entity without embedded legacy routes'
 );
 
 SELECT pg_temp.test_assert(
-  (public.rpc_search_routes('{"scope":{"type":"airport","key":"BKK","direction":"from"},"filters":{},"page_size":100}'::JSONB) #>> '{meta,total}')::INTEGER > 0
+  jsonb_array_length(public.rpc_search_routes('{"scope":{"type":"origin_airport","key":"SGN"},"filters":{},"page_size":100}'::JSONB)->'data') > 0
   AND NOT EXISTS (
     SELECT 1
-    FROM jsonb_array_elements(public.rpc_search_routes('{"scope":{"type":"airport","key":"BKK","direction":"from"},"filters":{},"page_size":100}'::JSONB)->'data') item
-    WHERE (item->>'stops')::INTEGER <> 0 OR item->>'from' <> 'BKK'
+    FROM jsonb_array_elements(public.rpc_search_routes('{"scope":{"type":"origin_airport","key":"SGN"},"filters":{},"page_size":100}'::JSONB)->'data') item
+    WHERE item->>'from' <> 'SGN'
   ),
-  'airport from-search returns only verified direct services from that airport'
+  'origin-airport search returns only routes from that airport'
 );
 
 SELECT pg_temp.test_assert(
-  (public.rpc_search_routes('{"scope":{"type":"airport","key":"BKK","direction":"to"},"filters":{},"page_size":100}'::JSONB) #>> '{meta,total}')::INTEGER > 0
-  AND NOT EXISTS (
-    SELECT 1
-    FROM jsonb_array_elements(public.rpc_search_routes('{"scope":{"type":"airport","key":"BKK","direction":"to"},"filters":{},"page_size":100}'::JSONB)->'data') item
-    WHERE (item->>'stops')::INTEGER <> 0 OR item->>'to' <> 'BKK'
-  ),
-  'airport to-search returns only verified direct services to that airport'
+  public.rpc_get_page('{"page_type":"route","entity_key":"ho-chi-minh-city-london","locale":"en-GB"}'::JSONB) #>> '{data,route,origin,slug}' = 'ho-chi-minh-city',
+  'route page exposes its canonical origin'
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"route","entity_key":"ho-chi-minh-city-to-london","locale":"en-GB"}'::JSONB) #>> '{data,unknowns,self_transfer}' = 'unknown',
-  'route page is honest about unavailable operational facts'
+  jsonb_array_length(public.rpc_search_routes('{"scope":{"type":"city_pair","from":"ho-chi-minh-city","to":"london"},"filters":{},"page_size":100}'::JSONB)->'data') > 0,
+  'route search supports one canonical city pair'
 );
 
 SELECT pg_temp.test_assert(
-  (public.rpc_search_routes('{"scope":{"type":"city_pair","from":"ho-chi-minh-city","to":"london"},"filters":{"max_stops":3},"page_size":100}'::JSONB) #>> '{meta,total}')::INTEGER > 0,
-  'route search supports direct and connecting options'
-);
-
-SELECT pg_temp.test_assert(
-  jsonb_array_length(public.rpc_search_routes('{"scope":{"type":"city_pair","from":"ho-chi-minh-city","to":"london"},"filters":{"max_stops":3,"price_max":1,"currency":"USD"},"page_size":100}'::JSONB)->'data') = 0,
-  'missing price never passes a numeric price filter'
+  jsonb_array_length(public.rpc_search_routes('{"scope":{"type":"city_pair","from":"ho-chi-minh-city","to":"london"},"filters":{"max_amount":1,"currency":"USD"},"page_size":100}'::JSONB)->'data') = 0,
+  'route above the maximum amount does not pass the price filter'
 );
 
 ROLLBACK;

@@ -254,7 +254,7 @@ carefully rather than reverted.
 
 - Travelpayouts tokens remain server-side in Supabase secrets.
 - Cron invokes a fixed Edge Function with the existing privileged worker authentication boundary.
-- Exposed tables use RLS and least-privilege grants; raw/operational data remains private.
+- Exposed tables use RLS and least-privilege grants; raw/operational data remains admin.
 - Privileged functions set an explicit empty `search_path` and schema-qualify references.
 - Provider and affiliate errors are normalized before public responses.
 - Redirect hosts and paths are allowlisted and tested against open redirects.

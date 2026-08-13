@@ -23,7 +23,7 @@ const expectedTables = [
   ['schema/flight_routing/cities.sql', 'public.cities'],
   ['schema/flight_routing/airports.sql', 'public.airports'],
   ['schema/flight_routing/airlines.sql', 'public.airlines'],
-  ['schema/flight_routing/flight_routes.sql', 'public.flight_routes'],
+  ['schema/flight_routing/flight_route_prices.sql', 'public.flight_route_prices'],
 ] as const;
 
 Deno.test('flight routing keeps one table per schema source file', async () => {
@@ -50,14 +50,20 @@ Deno.test('public flight routing tables enable RLS and expose no client writes',
   }
 });
 
-Deno.test('data sources record environment and license capabilities', async () => {
+Deno.test('data sources remain in admin with the denylist', async () => {
   const sql = await readSource('schema/flight_routing/data_sources.sql');
+  const adminSchema = await readSource('schema/_platform/admin.sql');
 
   assert.ok(includesSql(sql, 'environment_scope text not null'));
   assert.ok(includesSql(sql, "check (environment_scope in ('development', 'production'))"));
   assert.ok(includesSql(sql, 'production_allowed boolean not null default false'));
   assert.ok(includesSql(sql, 'seo_allowed boolean not null default false'));
   assert.ok(includesSql(sql, 'derived_data_allowed boolean not null default false'));
+  assert.ok(includesSql(sql, 'create table admin.data_sources'));
+  assert.ok(includesSql(adminSchema, 'grant usage on schema admin to service_role'));
+  assert.equal(includesSql(sql, 'grant usage on schema admin to service_role'), false);
+  assert.equal(await readSource('schema/ingestion/ingestion_runs.sql'), '');
+  assert.equal(await readSource('schema/ingestion/ingestion_issues.sql'), '');
 });
 
 Deno.test('airports enforce stable codes, coordinates, and supported source values', async () => {
@@ -110,24 +116,13 @@ Deno.test('local Supabase enables Storage before applying the media bucket migra
 Deno.test('airport guide exposes canonical imagery through the aggregate payload', async () => {
   const airportPage = await readSource('functions/pseo/airport/build_airport_page_payload.sql');
 
-  assert.ok(includesSql(airportPage, "'image_path',v_airport.image_path"));
+  assert.ok(includesSql(airportPage, "'image_path', v_airport.image_path"));
   assert.equal(includesSql(airportPage, 'airline.logo_path'), false);
   assert.equal(includesSql(airportPage, "'airline_summary'"), false);
 });
 
-Deno.test('flight routes enforce direction, source lineage, confidence, and unknown-safe fields', async () => {
-  const sql = await readSource('schema/flight_routing/flight_routes.sql');
-
-  assert.ok(includesSql(sql, 'origin_airport_id <> destination_airport_id'));
-  assert.ok(includesSql(sql, 'unique (source_id, source_record_id)'));
-  assert.ok(includesSql(sql, 'provider_airline_iata text null'));
-  assert.ok(includesSql(sql, 'observed_at timestamptz not null'));
-  assert.ok(includesSql(sql, 'evidence_type text not null'));
-  assert.ok(includesSql(sql, "'verified_active'"));
-  assert.ok(includesSql(sql, "'low_confidence'"));
-  assert.equal(includesSql(sql, 'frequency_per_week'), false);
-  assert.equal(includesSql(sql, 'days_of_week'), false);
-  assert.equal(includesSql(sql, 'seasonality'), false);
+Deno.test('canonical flight route evidence table is removed', async () => {
+  assert.equal(await readSource('schema/flight_routing/flight_routes.sql'), '');
 });
 
 Deno.test('cities own metro identity and stable city facts', async () => {

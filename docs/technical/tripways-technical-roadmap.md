@@ -1,7 +1,7 @@
 # Lộ trình kỹ thuật MVP Tripways
 
-**Trạng thái:** Đang thực hiện — phase hiện tại P0A
-**Cập nhật:** 2026-08-05
+**Trạng thái:** P0A hoàn tất; P0B sẵn sàng triển khai cloud staging lần đầu
+**Cập nhật:** 2026-08-12
 **Phạm vi:** `tripways-backend`, `tripways-web`
 
 ## 1. Mục đích
@@ -21,14 +21,14 @@ P0A Local Release Candidate
           → P4 Controlled pSEO Scale
 ```
 
-| Phase | Trạng thái         |
-| ----- | ------------------ |
-| P0A   | **Đang thực hiện** |
-| P0B   | Chưa bắt đầu       |
-| P1    | Chưa bắt đầu       |
-| P2    | Chưa bắt đầu       |
-| P3    | Chưa bắt đầu       |
-| P4    | Chưa bắt đầu       |
+| Phase | Trạng thái      |
+| ----- | --------------- |
+| P0A   | Hoàn tất local  |
+| P0B   | Sẵn sàng deploy |
+| P1    | Chưa bắt đầu    |
+| P2    | Chưa bắt đầu    |
+| P3    | Chưa bắt đầu    |
+| P4    | Chưa bắt đầu    |
 
 Foundation được triển khai sớm cho phase sau không thay thế dependency hoặc cổng nghiệm thu của
 phase đó.
@@ -42,9 +42,9 @@ phép có thể chạy song song, nhưng không được đưa provider vào cod
 ### PostgreSQL và RPC
 
 - Là source of truth cho invariant domain, idempotency, publication, route ranking và indexability.
-- Dữ liệu raw, staging, vận hành và analytics nằm ngoài schema expose.
+- Raw receipt và dữ liệu vận hành tối thiểu nằm trong schema `admin`, ngoài Data API expose.
 - Mọi bảng trong schema expose bật RLS trước khi cấp quyền.
-- Hàm đặc quyền đặt trong schema private, có `search_path` rõ ràng và quyền tối thiểu.
+- Hàm đặc quyền đặt trong schema `admin`, có `search_path` rõ ràng và quyền tối thiểu.
 
 ### Supabase Edge Functions
 
@@ -109,7 +109,7 @@ Lỗi không trả raw SQL, provider payload, stack trace, secret hoặc thông 
 | Môi trường | Dữ liệu                                   | Index                 | Bí mật          | Mục đích                               |
 | ---------- | ----------------------------------------- | --------------------- | --------------- | -------------------------------------- |
 | Local      | Fixture, mock provider, API thật giới hạn | Không                 | Local-only      | Phát triển và kiểm thử 90% hành vi     |
-| Staging    | Fixture hoặc snapshot đã sanitize         | Không                 | Staging-only    | Xác minh cloud, network, cache, deploy |
+| Staging    | OurAirports + Travelpayouts thật          | Luôn noindex          | Staging-only    | Xác minh cloud, network, cache, deploy |
 | Production | Nguồn đã phê duyệt                        | Theo publication gate | Production-only | Phục vụ người dùng thật                |
 
 Không dùng chung Supabase project, service-role key hoặc provider credential giữa staging và
@@ -154,12 +154,16 @@ Một phase chỉ hoàn tất khi:
 Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
 - Không provider call nào nằm trong page-render path; ingestion và publication tạo read model trước.
-- OurAirports cung cấp reference data; Travelpayouts adapter normalize content observations theo
-  `flight-content-observations.v1`.
+- OurAirports cung cấp reference data; Travelpayouts adapter normalize cached fares theo
+  `flight-content-observations.v1` và lưu ngắn hạn trong `flight_route_prices`.
 - City aggregation, region taxonomy, codeshare dedupe, frequency, confidence và indexability thuộc
   Tripways.
-- Observation được giữ tối đa 24 giờ, không lưu raw payload, không lưu lịch sử và được thay nguyên
+- Route price được giữ tối đa 7 ngày, không lưu raw payload, không lưu lịch sử và được thay nguyên
   batch. Cron kiểm tra mỗi ngày và chỉ fetch lại khi batch đã sang ngày thứ 6.
+- Base ingestion không tự publish read model. Price ingestion chỉ thay cache sau khi có route dùng
+  được, đồng bộ pSEO pages và publish một staging snapshot trong cùng transaction.
+- `admin.configure_ingestion_crons()` là installer duy nhất cho cả hai provider; staging readiness
+  được kiểm tra bằng `pnpm check:staging`.
 - Affiliate handoff chỉ ghép relative provider path với allowlisted Aviasales host ở server; client
   không truyền destination URL.
 - AeroDataBox/AirLabs không có credential, cron, adapter hoặc schema trong implementation hiện tại.
@@ -177,13 +181,10 @@ Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-comme
 - **Đã triển khai foundation local:** typed Homepage/City/Airport/Route content và FAQ tables,
   publication version, immutable read models, locale/source/review/freshness fields và route projection
   dùng chung.
-- Page payload dùng discriminated page type và chứa `identity`, `seo`, `modules`, `internal_links`,
-  `commercial`, `freshness`, `provenance` và `indexability`.
-- `modules` có type, stable key, display order, localized copy, data payload và explicit empty-state
-  policy. Frontend chỉ ánh xạ module type sang component.
-- Publication build phải fail khi JSON payload sai schema; request path chỉ đọc snapshot đã publish.
-- Airport payload dùng journey contract riêng và không nhúng route array. Verified flights gọi
-  `rpc_search_routes` bằng airport scope from/to, luôn direct-only.
+- Page payload là lean aggregate cho City/Airport/Route và dùng chung immutable route projection.
+- Request path chỉ đọc snapshot đã publish; staging publication luôn ép toàn bộ registry noindex.
+- `rpc_search_routes` hỗ trợ `global`, `origin_city`, `origin_airport` và `city_pair`; schedule-specific
+  filters chỉ được thêm khi có licensed schedule provider.
 
 ### P1
 

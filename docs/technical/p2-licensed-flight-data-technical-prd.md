@@ -6,12 +6,13 @@
 **Cập nhật:** 2026-08-12
 
 > Tài liệu schedule bên dưới là future design reference. Implementation hiện hành dùng OurAirports
-> cho reference data và Travelpayouts `flight-content-observations.v1` cho cached commercial content;
+> cho reference data và Travelpayouts `flight-content-observations.v1` cho `flight_route_prices`;
 > không map cached fares thành recurring schedules.
 
-Canonical route/service tables, 0–3-stop graph search, page read models và estimated-price schema
-được chuẩn bị sớm trong P0A. P2 chỉ bắt đầu sau P1 và chỉ được nghiệm thu bằng licensed provider,
-production rights, staging publication và remote evidence.
+Canonical route/service tables và 0–3-stop graph search chưa được triển khai. Implementation hiện
+tại chỉ có route-page identity, route-search read model và cached route prices. P2 chỉ bắt đầu sau
+P1 và chỉ được nghiệm thu bằng licensed provider, production rights, staging publication và remote
+evidence.
 
 ## 1. Kiến trúc
 
@@ -19,7 +20,7 @@ production rights, staging publication và remote evidence.
 Licensed schedule provider
   → provider adapter
     → P1 ingestion state machine
-      → canonical flight_routes + flight_content_observations
+      → future canonical schedule tables
         → refresh_route_options()
           → refresh_pseo_read_models()
             → versioned public read APIs
@@ -251,7 +252,7 @@ Tham chiếu `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
   inactive routes cùng codeshare duplication.
 - Acceptance mục tiêu: `>=95%` top-route endpoint accuracy, `>=90%` operating-day accuracy,
   `<3%` inactive route được publish active và `100%` codeshare trong mẫu có deterministic outcome.
-- Adapter phải map provider fields vào canonical DTO; raw payload chỉ nằm private schema.
+- Adapter phải map provider fields vào canonical DTO; raw payload chỉ nằm trong `admin` schema.
 - Publication phải tính lại city aggregation, frequency, facets và affected City Hub read models.
 - `seasonality_status` giữ `unknown` nếu contract không có dated evidence đủ điều kiện.
 - Page query không gọi AirLabs; cache/read model đọc publication hiện hành.

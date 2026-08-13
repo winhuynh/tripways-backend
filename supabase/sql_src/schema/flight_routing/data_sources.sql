@@ -86,5 +86,4 @@ CREATE TABLE admin.data_sources (
 );
 
 REVOKE ALL ON TABLE admin.data_sources FROM public, anon, authenticated;
-GRANT USAGE ON SCHEMA admin TO service_role;
 GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE admin.data_sources TO service_role;

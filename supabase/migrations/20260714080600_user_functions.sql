@@ -8,14 +8,14 @@
 -- >>> supabase/sql_src/functions/user/handle_new_auth_user.sql
 
 -- ============================================================================
--- Function: private.handle_new_auth_user
+-- Function: admin.handle_new_auth_user
 -- Feature: User authentication
 -- Purpose: Bootstrap a validated application profile after Auth creates an identity.
 -- Responsibilities: Normalize display name, enforce its contract, and insert one profile row.
 -- Notes: Signup metadata is input only and is never used for authorization.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION private.handle_new_auth_user()
+CREATE OR REPLACE FUNCTION admin.handle_new_auth_user()
 RETURNS TRIGGER
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -39,7 +39,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION private.handle_new_auth_user() FROM public, anon, authenticated;
+REVOKE ALL ON FUNCTION admin.handle_new_auth_user() FROM public, anon, authenticated;
 
 -- >>> supabase/sql_src/functions/user/rpc_get_user_profile.sql
 
@@ -255,7 +255,7 @@ BEGIN
     - ((extract(MINUTE FROM v_now)::INTEGER % 5) * INTERVAL '1 minute');
 
   -- STEP 02: Consume the fixed-window quota atomically across concurrent requests.
-  INSERT INTO private.auth_command_attempts (
+  INSERT INTO admin.auth_command_attempts (
     subject_hash,
     action,
     window_started_at,
@@ -265,12 +265,12 @@ BEGIN
   VALUES (p_subject_hash, p_action, v_window_started_at, 1, v_now)
   ON CONFLICT (subject_hash, action, window_started_at)
   DO UPDATE SET
-    attempt_count = private.auth_command_attempts.attempt_count + 1,
+    attempt_count = admin.auth_command_attempts.attempt_count + 1,
     updated_at = EXCLUDED.updated_at
   RETURNING attempt_count INTO v_attempt_count;
 
   -- STEP 03: Bound operational state without a separate cleanup worker at MVP scale.
-  DELETE FROM private.auth_command_attempts
+  DELETE FROM admin.auth_command_attempts
   WHERE window_started_at < v_now - INTERVAL '24 hours';
 
   RETURN jsonb_build_object(

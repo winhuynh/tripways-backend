@@ -55,12 +55,12 @@ Deno.test('users table is minimal, constrained, and self-readable only', async (
   assert.equal(includesSql(sql, 'for delete to authenticated'), false);
 });
 
-Deno.test('auth bootstrap validates display name in a private definer function', async () => {
+Deno.test('auth bootstrap validates display name in an admin definer function', async () => {
   const sql = await readSource(
     '../../../../sql_src/functions/user/handle_new_auth_user.sql',
   );
 
-  assert.ok(includesSql(sql, 'private.handle_new_auth_user()'));
+  assert.ok(includesSql(sql, 'admin.handle_new_auth_user()'));
   assert.ok(includesSql(sql, 'security definer'));
   assert.ok(includesSql(sql, "set search_path = ''"));
   assert.ok(includesSql(sql, "new.raw_user_meta_data ->> 'display_name'"));
@@ -75,7 +75,7 @@ Deno.test('auth bootstrap trigger runs only after user creation', async () => {
   );
 
   assert.ok(includesSql(sql, 'after insert on auth.users'));
-  assert.ok(includesSql(sql, 'execute function private.handle_new_auth_user()'));
+  assert.ok(includesSql(sql, 'execute function admin.handle_new_auth_user()'));
   assert.equal(includesSql(sql, 'after insert or update'), false);
 });
 
@@ -122,19 +122,19 @@ Deno.test('profile mutation is invoker-only and executable only by service role'
   );
 });
 
-Deno.test('auth command attempts store only bounded hashed subjects in private', async () => {
+Deno.test('auth command attempts store only bounded hashed subjects in admin', async () => {
   const sql = await readSource(
     '../../../../sql_src/schema/user/auth_command_attempts.sql',
   );
 
-  assert.ok(includesSql(sql, 'create table private.auth_command_attempts'));
+  assert.ok(includesSql(sql, 'create table admin.auth_command_attempts'));
   assert.ok(includesSql(sql, 'subject_hash text not null'));
   assert.ok(includesSql(sql, 'attempt_count integer not null'));
   assert.ok(includesSql(sql, 'auth_command_attempts_count_check'));
   assert.ok(
     includesSql(
       sql,
-      'revoke all on table private.auth_command_attempts from public, anon, authenticated',
+      'revoke all on table admin.auth_command_attempts from public, anon, authenticated',
     ),
   );
   assert.equal(includesSql(sql, 'ip_address'), false);

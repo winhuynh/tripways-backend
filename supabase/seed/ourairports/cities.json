@@ -9520,6 +9520,13 @@
     "longitude": null
   },
   {
+    "sourceId": "ourairports-city:in:in-mm:amravati",
+    "name": "Amravati",
+    "countryIso2": "IN",
+    "latitude": null,
+    "longitude": null
+  },
+  {
     "sourceId": "ourairports-city:in:in-mm:aurangabad",
     "name": "Aurangabad",
     "countryIso2": "IN",

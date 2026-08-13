@@ -113,62 +113,10 @@ VALUES
     'airline-q1'
   );
 
-INSERT INTO public.flight_routes (
-  id,
-  origin_airport_id,
-  destination_airport_id,
-  operating_airline_id,
-  status,
-  frequency_per_week,
-  seasonality,
-  confidence_score,
-  source_id,
-  source_record_id,
-  last_verified_at
-)
-VALUES
-  (
-    '00000000-0000-0000-0000-000000000007',
-    '00000000-0000-0000-0000-000000000004',
-    '00000000-0000-0000-0000-000000000005',
-    '00000000-0000-0000-0000-000000000006',
-    'verified_active',
-    35,
-    'year_round',
-    0.950,
-    '00000000-0000-0000-0000-000000000001',
-    'route-qaa-qab-q1',
-    now()
-  );
-
 DO $$
 BEGIN
-  BEGIN
-    INSERT INTO public.flight_routes (
-      origin_airport_id,
-      destination_airport_id,
-      status,
-      confidence_score,
-      source_id,
-      source_record_id,
-      last_verified_at
-    )
-    VALUES (
-      '00000000-0000-0000-0000-000000000004',
-      '00000000-0000-0000-0000-000000000004',
-      'unknown',
-      0.500,
-      '00000000-0000-0000-0000-000000000001',
-      'invalid-self-route',
-      now()
-    );
-    RAISE EXCEPTION 'Expected flight_routes_direction_check to reject a self-route';
-  EXCEPTION
-    WHEN check_violation THEN NULL;
-  END;
-
-  IF has_table_privilege('anon', 'public.flight_routes', 'select') THEN
-    RAISE EXCEPTION 'anon must not have SELECT on public.flight_routes';
+  IF has_table_privilege('anon', 'public.flight_route_prices', 'select') THEN
+    RAISE EXCEPTION 'anon must not have SELECT on public.flight_route_prices';
   END IF;
 END;
 $$;

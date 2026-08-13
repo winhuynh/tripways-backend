@@ -226,7 +226,7 @@ state and never becomes zero.
 - Shared boundary parsers reject unknown fields and unbounded values.
 - PostgreSQL revalidates domain invariants and never trusts the Edge transport.
 - Page and search RPCs are service-role-only; Edge functions are the public boundary.
-- Raw provider payloads remain private.
+- Raw provider payloads remain admin.
 - No `SECURITY DEFINER` function is placed in an exposed schema.
 - Every exposed table has RLS and least-privilege grants.
 - Errors remain stable `ERR_*` codes without provider or database details.
