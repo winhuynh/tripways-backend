@@ -90,6 +90,7 @@ emit_migration \
   "base data ingestion schema" \
   "supabase/sql_src/schema/ingestion/raw_import_batches.sql" \
   "supabase/sql_src/schema/ingestion/raw_base_data_records.sql" \
+  "supabase/sql_src/schema/ingestion/flight_route_cache_states.sql" \
   "supabase/sql_src/schema/ingestion/ourairports_denylist.sql"
 
 emit_migration \
@@ -152,9 +153,12 @@ emit_migration \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_get_ourairports_denylist.sql" \
-  "supabase/sql_src/operations/configure_ingestion_crons.sql" \
-  "supabase/sql_src/functions/ingestion/publish_price_estimate_batch.sql" \
-  "supabase/sql_src/functions/ingestion/rpc_publish_price_estimate_batch.sql"
+  "supabase/sql_src/functions/ingestion/rpc_get_flight_route_cache.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_claim_flight_route_cache_refresh.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_fail_flight_route_cache_refresh.sql" \
+  "supabase/sql_src/functions/ingestion/publish_flight_route_cache_scope.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_publish_flight_route_cache_scope.sql" \
+  "supabase/sql_src/operations/configure_ingestion_crons.sql"
 
 find "$source_root" -type f -name "*.sql" \
   | sed "s|$repo_root/||" \

@@ -11,53 +11,82 @@ export type TravelpayoutsNormalizationContext = {
 
 export type TravelpayoutsAdapterOptions = {
   token: string;
-  origins: readonly string[];
-  currencyCode: string;
-  marketCode: string;
-  locale: string;
+  maxRecords: number;
+  pageSize?: number;
+  timeoutMs?: number;
   endpoint?: string;
   fetcher?: typeof fetch;
   now?: () => Date;
 };
 
+export type TravelpayoutsLoadScope = {
+  origin: string;
+  destination: string | null;
+  currencyCode: string;
+  marketCode: string;
+  locale: string;
+};
+
 export function createTravelpayoutsAdapter(options: TravelpayoutsAdapterOptions): {
-  load(): Promise<FlightContentProviderResult>;
+  load(scope: TravelpayoutsLoadScope): Promise<FlightContentProviderResult>;
 } {
   const fetcher = options.fetcher ?? fetch;
   const endpoint = options.endpoint ??
     'https://api.travelpayouts.com/aviasales/v3/prices_for_dates';
   return {
-    async load(): Promise<FlightContentProviderResult> {
+    async load(scope: TravelpayoutsLoadScope): Promise<FlightContentProviderResult> {
       const observedAt = (options.now ?? (() => new Date()))().toISOString();
       const rows: unknown[] = [];
-      for (const origin of options.origins) {
+      const maxRecords = Math.min(Math.max(options.maxRecords, 1), 1000);
+      const pageSize = Math.min(Math.max(options.pageSize ?? 100, 1), 1000, maxRecords);
+      for (let page = 1; rows.length < maxRecords; page += 1) {
         const url = new URL(endpoint);
-        url.searchParams.set('origin', origin);
-        url.searchParams.set('currency', options.currencyCode);
-        url.searchParams.set('market', options.marketCode);
+        url.searchParams.set('origin', scope.origin);
+        if (scope.destination) url.searchParams.set('destination', scope.destination);
+        url.searchParams.set('currency', scope.currencyCode);
+        url.searchParams.set('market', scope.marketCode);
         url.searchParams.set('sorting', 'route');
         url.searchParams.set('unique', 'true');
-        url.searchParams.set('limit', '1000');
+        url.searchParams.set('limit', String(Math.min(pageSize, maxRecords - rows.length)));
+        url.searchParams.set('page', String(page));
         const response = await fetcher(url, {
-          headers: { 'X-Access-Token': options.token, Accept: 'application/json' },
+          headers: {
+            'X-Access-Token': options.token,
+            Accept: 'application/json',
+            'Accept-Encoding': 'gzip, deflate',
+          },
+          signal: AbortSignal.timeout(options.timeoutMs ?? 5000),
         });
         if (!response.ok) {
-          return { ok: false, issues: [{ code: 'ERR_PROVIDER_UNAVAILABLE', sourceKey: origin }] };
+          return {
+            ok: false,
+            issues: [{
+              code: response.status === 429
+                ? 'ERR_PROVIDER_RATE_LIMITED'
+                : 'ERR_PROVIDER_UNAVAILABLE',
+              sourceKey: scope.origin,
+            }],
+          };
         }
         const payload: unknown = await response.json();
         if (!isRecord(payload) || payload.success !== true || !Array.isArray(payload.data)) {
           return {
             ok: false,
-            issues: [{ code: 'ERR_INVALID_PROVIDER_PAYLOAD', sourceKey: origin }],
+            issues: [{ code: 'ERR_INVALID_PROVIDER_PAYLOAD', sourceKey: scope.origin }],
           };
         }
-        rows.push(...payload.data);
+        rows.push(...payload.data.slice(0, maxRecords - rows.length));
+        if (
+          payload.data.length < Math.min(pageSize, maxRecords - (rows.length - payload.data.length))
+        ) {
+          break;
+        }
       }
       return normalizeTravelpayoutsResponse({
         success: true,
-        currency: options.currencyCode,
-        data: rows,
-      }, { marketCode: options.marketCode, locale: options.locale, observedAt });
+        currency: scope.currencyCode,
+        data: rows.slice(0, maxRecords),
+      }, { marketCode: scope.marketCode, locale: scope.locale, observedAt });
     },
   };
 }
@@ -101,9 +130,15 @@ function normalizeRow(
   const destinationCode = upperCode(row.destination);
   const transfers = integerValue(row.transfers);
   return {
-    sourceId: `${originCode ?? 'unknown'}-${destinationCode ?? 'unknown'}-${
-      stringValue(row.departure_at) ?? index
-    }`,
+    sourceId: [
+      originCode ?? 'unknown',
+      destinationCode ?? 'unknown',
+      stringValue(row.departure_at) ?? index,
+      upperCode(row.airline) ?? 'unknown',
+      responseCurrency ?? 'unknown',
+      context.marketCode,
+      context.locale,
+    ].join('-'),
     observationType: 'cached_fare',
     originCode,
     destinationCode,

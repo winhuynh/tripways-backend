@@ -69,6 +69,16 @@ Deno.test('route page adds only fresh content observations', async () => {
   assert.ok(compact.includes("item.status='published'"));
   assert.ok(compact.includes('item.valid_until>now()'));
   assert.ok(sql.includes('item.observed_amount'));
+  assert.ok(sql.includes("'flight_data_state'"));
+  assert.ok(sql.includes("'available'"));
+  assert.ok(sql.includes("'loading'"));
+});
+
+Deno.test('city page treats missing flight cache as a valid loading state', async () => {
+  const sql = await read('functions/pseo/city/build_city_page_payload.sql');
+  assert.ok(sql.includes("'flight_data_state'"));
+  assert.ok(sql.includes("'available'"));
+  assert.ok(sql.includes("'loading'"));
 });
 
 Deno.test('publication refreshes one shared lean projection before all page read models', async () => {

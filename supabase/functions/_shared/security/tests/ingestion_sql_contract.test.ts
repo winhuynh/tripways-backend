@@ -162,7 +162,7 @@ Deno.test('OurAirports denylist is internal and readable only through a service-
   assert.equal(includesSql(rpcSql, 'to authenticated'), false);
 });
 
-Deno.test('one cron installer validates Vault and schedules both providers', async () => {
+Deno.test('one cron installer schedules base data and demanded day-six flight caches', async () => {
   const sql = await readSource('operations/configure_ingestion_crons.sql');
 
   assert.ok(includesSql(sql, 'create extension if not exists pg_cron'));
@@ -173,11 +173,21 @@ Deno.test('one cron installer validates Vault and schedules both providers', asy
   assert.ok(sql.includes("'/functions/v1/ingestion-base-data'"));
   assert.ok(sql.includes('vault.decrypted_secrets'));
   assert.ok(sql.includes("'ourairports'"));
-  assert.ok(sql.includes("'tripways-travelpayouts-content-daily-check'"));
+  assert.ok(sql.includes("'tripways-travelpayouts-demand-cache-daily'"));
   assert.ok(sql.includes("'20 2 * * *'"));
-  assert.ok(sql.includes("interval '6 days'"));
-  assert.ok(sql.includes("'/functions/v1/ingestion-price-estimates'"));
+  assert.ok(includesSql(sql, "interval '6 days'"));
+  assert.ok(sql.includes("'/functions/v1/flight-route-cache'"));
+  assert.ok(includesSql(sql, "last_requested_at > now() - interval '30 days'"));
+  assert.ok(sql.includes('LIMIT 50'));
+  assert.equal(sql.includes('TRAVELPAYOUTS_ORIGINS'), false);
   assert.ok(includesSql(sql, 'err_cron_vault_prerequisites_missing'));
+});
+
+Deno.test('route cache refresh claims enforce a server-side daily provider budget', async () => {
+  const sql = await readSource('functions/ingestion/rpc_claim_flight_route_cache_refresh.sql');
+  assert.ok(includesSql(sql, 'pg_advisory_xact_lock'));
+  assert.ok(includesSql(sql, "last_attempted_at >= date_trunc('day', now())"));
+  assert.ok(includesSql(sql, '>= 500'));
 });
 
 Deno.test('OurAirports source fixture records reviewed production and storage rights', async () => {
@@ -200,4 +210,40 @@ Deno.test('Travelpayouts source is configured for a replaceable seven-day cache'
   assert.ok(sql.includes("'travelpayouts'"));
   assert.ok(sql.includes('604800'));
   assert.match(sql, /no raw response archive/i);
+});
+
+Deno.test('on-demand route cache state is internal, bounded, and service-role only', async () => {
+  const sql = (await readSource('schema/ingestion/flight_route_cache_states.sql')).toLowerCase();
+  for (
+    const field of [
+      'cache_key',
+      'origin_iata',
+      'destination_iata',
+      'market_code',
+      'currency_code',
+      'locale',
+      'lease_token',
+      'lease_expires_at',
+      'next_refresh_at',
+      'last_requested_at',
+      'observation_count',
+    ]
+  ) assert.ok(sql.includes(field), field);
+  assert.ok(sql.includes('create table admin.flight_route_cache_states'));
+  assert.ok(sql.includes('alter table admin.flight_route_cache_states enable row level security'));
+  assert.ok(sql.includes('revoke all on table admin.flight_route_cache_states'));
+  assert.ok(sql.includes('to service_role'));
+});
+
+Deno.test('on-demand price publication is isolated to a canonical origin scope', async () => {
+  const sql = (await readSource('functions/ingestion/publish_flight_route_cache_scope.sql'))
+    .toLowerCase();
+  const compact = sql.replaceAll(/\s+/g, '');
+  assert.ok(sql.includes('p_origin_iata'));
+  assert.ok(sql.includes('p_lease_token'));
+  assert.ok(compact.includes('price.request_origin_iata=p_origin_iata'));
+  assert.ok(compact.includes('price.market_code=p_market_code'));
+  assert.ok(compact.includes('price.currency_code=p_currency_code'));
+  assert.ok(compact.includes('price.locale=p_locale'));
+  assert.equal(compact.includes('whereprice.source_id=v_source.id;'), false);
 });

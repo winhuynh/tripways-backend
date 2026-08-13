@@ -8,8 +8,8 @@
 - `INGESTION_WORKER_SECRET`
 - `PUBLICATION_SOURCE_TYPE=staging`
 - `TRAVELPAYOUTS_TOKEN`
-- `TRAVELPAYOUTS_ORIGINS`
-- Travelpayouts currency, market, and locale settings
+- `TRAVELPAYOUTS_MAX_ROUTES_PER_ORIGIN`
+- `TRAVELPAYOUTS_TIMEOUT_MS`
 
 Staging must never reuse production credentials.
 
@@ -20,10 +20,12 @@ Staging must never reuse production credentials.
 3. Configure Edge secrets with `PUBLICATION_SOURCE_TYPE=staging`.
 4. Call `admin.configure_ingestion_crons()` once with service-role database access.
 5. Trigger `ingestion-base-data` for OurAirports and wait for canonical publication.
-6. Trigger `ingestion-price-estimates` for Travelpayouts. This synchronizes pSEO source pages and
-   publishes the first current staging read model.
-7. Run `STAGING_DATABASE_URL=... pnpm check:staging`.
-8. Smoke-test page, route-search, homepage-statistics, sitemap, and affiliate-handoff endpoints.
+6. POST one browser request to `flight-route-cache`; verify a miss fills only that canonical scope
+   and publishes the first current staging read model.
+7. Repeat the same request and verify a cache hit. Request a second origin and verify the first
+   origin remains unchanged.
+8. Run `STAGING_DATABASE_URL=... pnpm check:staging`.
+9. Smoke-test page, route-search, homepage-statistics, sitemap, and affiliate-handoff endpoints.
 
 ## Required result
 

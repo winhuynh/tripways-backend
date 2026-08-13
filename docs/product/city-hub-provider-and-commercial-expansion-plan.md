@@ -28,17 +28,17 @@ provider mới phải qua rights review, adapter contract riêng và không thay
 
 ## 3. Data lifecycle
 
-1. Supabase Cron kiểm tra freshness mỗi ngày lúc 02:20 UTC.
-2. Nếu còn observation mới hơn 6 ngày, cron không gọi provider.
-3. Từ ngày thứ 6, Edge ingestion gọi Travelpayouts theo danh sách origin được cấu hình server-side.
+1. Page render reference content và skeleton mà không gọi provider trong SSR.
+2. Browser thật gọi `flight-route-cache`; cache hit trả ngay, cache miss mới gọi Travelpayouts.
+3. Cache scope gồm origin, destination tùy chọn, market, currency và locale; scope khác không bị xoá.
 4. Adapter normalize response thành `flight-content-observations.v1`; missing field giữ `null`.
-5. Transaction xoá tập observation cũ của source và publish tập mới.
-6. Mỗi row có `found_at`, `provider_expires_at`, `valid_until`; `valid_until` không quá 24 giờ.
-7. Raw provider payload không được lưu. Receipt chỉ giữ checksum, idempotency key và trạng thái batch.
-8. Nếu refresh lỗi, observation hết hạn tự biến mất khỏi public payload; page pSEO vẫn hoạt động.
+5. Cron 02:20 UTC chỉ refresh scope đã có demand trong 30 ngày và chạm ngày thứ 6.
+6. Mỗi row có `found_at`, `provider_expires_at`, `valid_until`; TTL không quá 7 ngày/provider expiry.
+7. Raw provider payload không được lưu; empty/error dùng cooldown và giữ cache cũ còn hạn.
+8. Crawler không kích hoạt provider; page pSEO vẫn hoạt động khi route cache thiếu hoặc lỗi.
 
-Chu kỳ fetch sáu ngày và TTL hiển thị 24 giờ là hai khái niệm khác nhau: cron kiểm soát chi phí/request,
-còn TTL bảo đảm Tripways không trình bày cache cũ như thông tin hiện tại.
+Chu kỳ refresh ngày thứ 6 và provider TTL là hai khái niệm khác nhau: cron chỉ phục vụ demand gần
+đây, còn `valid_until` bảo đảm Tripways không trình bày cache cũ như thông tin hiện tại.
 
 ## 4. Public contract
 

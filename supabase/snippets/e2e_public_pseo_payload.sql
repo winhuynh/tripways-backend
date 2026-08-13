@@ -31,12 +31,16 @@ BEGIN
 END;
 $$;
 
-SELECT admin.publish_price_estimate_batch(
+SELECT public.rpc_publish_flight_route_cache_scope(
+  public.rpc_claim_flight_route_cache_refresh('{
+    "origin":"SGN","destination":"SIN","market":"vn","currency":"USD","locale":"en-GB"
+  }'::JSONB)->>'leaseToken',
   'travelpayouts',
-  'public-payload-e2e',
-  repeat('f', 64),
-  'flight-content-observations.v1',
-  now(),
+  'SGN',
+  'SIN',
+  'vn',
+  'USD',
+  'en-GB',
   jsonb_build_array(jsonb_build_object(
     'sourceId', 'public-sgn-sin',
     'originCode', 'SGN',

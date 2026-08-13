@@ -5,6 +5,8 @@
 CREATE TABLE public.flight_route_prices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   public_reference TEXT NOT NULL DEFAULT ('obs_' || replace(gen_random_uuid()::TEXT, '-', '')),
+  cache_key TEXT NULL,
+  request_origin_iata TEXT NULL,
   origin_city_id UUID NOT NULL REFERENCES public.cities (id),
   destination_city_id UUID NOT NULL REFERENCES public.cities (id),
   origin_airport_id UUID NULL REFERENCES public.airports (id),
@@ -38,6 +40,10 @@ CREATE TABLE public.flight_route_prices (
   CONSTRAINT flight_route_prices_source_record_key UNIQUE (source_id, source_record_id),
   CONSTRAINT flight_route_prices_public_reference_key UNIQUE (public_reference),
   CONSTRAINT flight_route_prices_public_reference_check CHECK (public_reference ~ '^obs_[0-9a-f]{32}$'),
+  CONSTRAINT flight_route_prices_cache_key_check
+    CHECK (cache_key IS NULL OR cache_key ~ '^frc_[0-9a-f]{32}$'),
+  CONSTRAINT flight_route_prices_request_origin_check
+    CHECK (request_origin_iata IS NULL OR request_origin_iata ~ '^[A-Z0-9]{3}$'),
   CONSTRAINT flight_route_prices_direction_check CHECK (origin_city_id <> destination_city_id),
   CONSTRAINT flight_route_prices_type_check
     CHECK (observation_type IN ('popular_direction', 'cached_fare', 'special_offer', 'price_calendar')),
@@ -69,6 +75,9 @@ CREATE TABLE public.flight_route_prices (
 
 CREATE INDEX flight_route_prices_route_idx ON public.flight_route_prices
   (origin_city_id, destination_city_id, status, valid_until, market_code, currency_code);
+
+CREATE INDEX flight_route_prices_cache_idx
+ON public.flight_route_prices USING btree (cache_key, status, valid_until);
 
 ALTER TABLE public.flight_route_prices ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.flight_route_prices FROM anon, authenticated;

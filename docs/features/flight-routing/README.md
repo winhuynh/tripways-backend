@@ -13,8 +13,8 @@ Dependency order:
 
 `cities.iata_code` owns metro identity; stable city facts live on `cities`.
 `flight_route_prices` preserves provider airline IATA even when no canonical airline resolves and
-stores the current normalized estimated-price snapshot for at most seven days. Each successful
-provider publication replaces that provider's previous snapshot.
+stores normalized estimated prices for at most seven days. An on-demand publication replaces only
+its canonical origin/market/currency/locale cache scope; it never deletes another origin.
 
 All tables deny direct client access and are available only through reviewed RPC/Edge boundaries.
 A licensed schedule provider can add a separate schedule model later without changing these facts.

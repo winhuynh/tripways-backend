@@ -47,6 +47,22 @@ BEGIN
         'primary_language', v_city.primary_language
       ),
       'content', v_page.content,
+      'flight_data_state', CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM public.flight_route_options AS option
+          WHERE option.publication_version_id = v_version
+            AND option.origin_city_id = v_city.id
+        ) THEN 'available'
+        WHEN EXISTS (
+          SELECT 1
+          FROM admin.flight_route_cache_states AS cache
+          WHERE cache.origin_iata = v_city.iata_code
+            AND cache.status IN ('empty', 'failed')
+            AND cache.next_refresh_at > now()
+        ) THEN 'unavailable'
+        ELSE 'loading'
+      END,
       'routes', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,

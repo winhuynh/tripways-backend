@@ -38,7 +38,8 @@ BEGIN
     'password_changed',
     'password_recovered',
     'email_changed',
-    'delete_account'
+    'delete_account',
+    'flight_route_cache_refresh'
   ) THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_RATE_LIMIT_ACTION_INVALID';
   END IF;

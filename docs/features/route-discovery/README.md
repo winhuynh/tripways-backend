@@ -17,5 +17,5 @@ identity, and at most one fresh observed amount. It contains no schedule, recurr
 layover, live availability, or synthetic price range.
 
 Provider adapters publish the same observation contract, so changing provider does not change page
-or search consumers. A daily cron checks freshness and refreshes Travelpayouts on day six, or sooner
-when the provider expiry has already passed.
+or search consumers. No route-price cohort is preloaded. A browser cache miss fills one demanded
+scope; the daily cron refreshes only recently demanded scopes that reach day six.

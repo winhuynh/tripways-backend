@@ -704,120 +704,291 @@ FROM public, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.rpc_get_ourairports_denylist() TO service_role;
 
--- >>> supabase/sql_src/operations/configure_ingestion_crons.sql
+-- >>> supabase/sql_src/functions/ingestion/rpc_get_flight_route_cache.sql
 
 -- ============================================================================
--- Function: admin.configure_ingestion_crons
--- Purpose: Install the complete provider-ingestion schedule after Vault bootstrap.
--- Responsibilities: Validate prerequisites and replace both jobs idempotently.
+-- Function: public.rpc_get_flight_route_cache
+-- Purpose: Read one bounded, public-safe on-demand flight cache scope.
+-- Responsibilities: Enforce freshness and return an explicit cache state without internal IDs.
 -- ============================================================================
 
-CREATE EXTENSION IF NOT EXISTS pg_cron;
-CREATE EXTENSION IF NOT EXISTS pg_net;
+CREATE OR REPLACE FUNCTION public.rpc_get_flight_route_cache(p_input JSONB)
+RETURNS JSONB
+LANGUAGE sql
+STABLE
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+  WITH identity AS (
+    SELECT
+      upper(p_input->>'origin') AS origin_iata,
+      NULLIF(upper(p_input->>'destination'), '') AS destination_iata,
+      lower(p_input->>'market') AS market_code,
+      upper(p_input->>'currency') AS currency_code,
+      p_input->>'locale' AS locale,
+      'frc_' || md5(
+        upper(p_input->>'origin') || '|' ||
+        COALESCE(NULLIF(upper(p_input->>'destination'), ''), '*') || '|' ||
+        lower(p_input->>'market') || '|' ||
+        upper(p_input->>'currency') || '|' ||
+        (p_input->>'locale')
+      ) AS cache_key
+  ),
+  state AS (
+    SELECT cache.*
+    FROM admin.flight_route_cache_states AS cache
+    JOIN identity ON identity.cache_key = cache.cache_key
+  ),
+  routes AS (
+    SELECT jsonb_agg(
+      jsonb_build_object(
+        'from', origin_airport.iata,
+        'to', destination_airport.iata,
+        'airline', price.provider_airline_iata,
+        'direct', price.direct,
+        'transferCount', price.transfer_count,
+        'estimatedAmount', price.observed_amount,
+        'currency', price.currency_code,
+        'departureDate', price.departure_date,
+        'returnDate', price.return_date,
+        'observedAt', price.observed_at,
+        'validUntil', price.valid_until,
+        'observationRef', price.public_reference
+      )
+      ORDER BY price.observed_amount NULLS LAST, destination_airport.iata
+    ) AS items,
+    min(price.observed_at) AS observed_at,
+    min(price.valid_until) AS valid_until
+    FROM public.flight_route_prices AS price
+    JOIN identity ON identity.cache_key = price.cache_key
+    JOIN public.airports AS origin_airport ON origin_airport.id = price.origin_airport_id
+    JOIN public.airports AS destination_airport ON destination_airport.id = price.destination_airport_id
+    WHERE price.status = 'published'
+      AND price.valid_until > now()
+  )
+  SELECT jsonb_build_object(
+    'data', jsonb_build_object(
+      'status', CASE
+        WHEN routes.items IS NOT NULL THEN 'available'
+        WHEN state.status IN ('empty', 'failed') AND state.next_refresh_at > now() THEN 'unavailable'
+        ELSE 'loading'
+      END,
+      'origin', identity.origin_iata,
+      'destination', identity.destination_iata,
+      'routes', COALESCE(routes.items, '[]'::JSONB)
+    ),
+    'meta', jsonb_build_object(
+      'cache', CASE WHEN routes.items IS NULL THEN 'miss' ELSE 'hit' END,
+      'observedAt', routes.observed_at,
+      'validUntil', routes.valid_until
+    ),
+    'error', NULL
+  )
+  FROM identity
+  LEFT JOIN state ON TRUE
+  LEFT JOIN routes ON TRUE;
+$$;
 
-CREATE OR REPLACE FUNCTION admin.configure_ingestion_crons()
+REVOKE ALL ON FUNCTION public.rpc_get_flight_route_cache(JSONB)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_get_flight_route_cache(JSONB) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/rpc_claim_flight_route_cache_refresh.sql
+
+-- ============================================================================
+-- Function: public.rpc_claim_flight_route_cache_refresh
+-- Purpose: Atomically claim one provider refresh lease for a canonical cache scope.
+-- Responsibilities: Validate identity, deduplicate misses, and enforce cooldown.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_claim_flight_route_cache_refresh(p_input JSONB)
 RETURNS JSONB
 LANGUAGE plpgsql
-SECURITY DEFINER
+VOLATILE
+SECURITY INVOKER
 SET search_path = ''
 AS $$
 DECLARE
-  v_project_url       TEXT;
-  v_worker_secret     TEXT;
-  v_ourairports_job   BIGINT;
-  v_travelpayouts_job BIGINT;
+  v_origin_iata      TEXT := upper(p_input->>'origin');
+  v_destination_iata TEXT := NULLIF(upper(p_input->>'destination'), '');
+  v_market_code      TEXT := lower(p_input->>'market');
+  v_currency_code    TEXT := upper(p_input->>'currency');
+  v_locale           TEXT := p_input->>'locale';
+  v_cache_key         TEXT;
+  v_cache             admin.flight_route_cache_states%ROWTYPE;
+  v_lease_token       TEXT;
 BEGIN
-  SELECT secret.decrypted_secret
-  INTO v_project_url
-  FROM vault.decrypted_secrets AS secret
-  WHERE secret.name = 'project_url';
+  v_cache_key := 'frc_' || md5(
+    v_origin_iata || '|' || COALESCE(v_destination_iata, '*') || '|' ||
+    v_market_code || '|' || v_currency_code || '|' || v_locale
+  );
 
-  SELECT secret.decrypted_secret
-  INTO v_worker_secret
-  FROM vault.decrypted_secrets AS secret
-  WHERE secret.name = 'ingestion_worker_secret';
-
-  IF v_project_url IS NULL
-    OR v_project_url !~ '^https://'
-    OR v_worker_secret IS NULL
-    OR char_length(v_worker_secret) < 16
+  IF v_origin_iata !~ '^[A-Z0-9]{3}$'
+    OR (v_destination_iata IS NOT NULL AND v_destination_iata !~ '^[A-Z0-9]{3}$')
+    OR v_destination_iata = v_origin_iata
+    OR v_market_code !~ '^[a-z]{2}$'
+    OR v_currency_code !~ '^[A-Z]{3}$'
+    OR v_locale !~ '^[a-z]{2}(?:-[A-Z]{2})?$'
+    OR NOT EXISTS (
+      SELECT 1 FROM public.airports AS airport WHERE airport.iata = v_origin_iata
+      UNION ALL
+      SELECT 1 FROM public.cities AS city WHERE city.iata_code = v_origin_iata
+    )
+    OR (
+      v_destination_iata IS NOT NULL
+      AND NOT EXISTS (
+        SELECT 1 FROM public.airports AS airport WHERE airport.iata = v_destination_iata
+        UNION ALL
+        SELECT 1 FROM public.cities AS city WHERE city.iata_code = v_destination_iata
+      )
+    )
   THEN
-    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_CRON_VAULT_PREREQUISITES_MISSING';
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST';
   END IF;
 
-  PERFORM cron.unschedule(job.jobid)
-  FROM cron.job AS job
-  WHERE job.jobname IN (
-    'tripways-ourairports-daily',
-    'tripways-travelpayouts-content-daily-check'
-  );
-
-  SELECT cron.schedule(
-    'tripways-ourairports-daily',
-    '0 2 * * *',
-    $cron$SELECT net.http_post(
-        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-base-data',
-        headers := jsonb_build_object(
-          'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
-          'Idempotency-Key', 'ourairports-' || to_char(CURRENT_DATE, 'YYYY-MM-DD')
-        ),
-        body := jsonb_build_object('sourceCode', 'ourairports', 'providerMode', 'ourairports')
-      );$cron$
+  INSERT INTO admin.flight_route_cache_states (
+    cache_key,
+    origin_iata,
+    destination_iata,
+    market_code,
+    currency_code,
+    locale
   )
-  INTO v_ourairports_job;
-
-  SELECT cron.schedule(
-    'tripways-travelpayouts-content-daily-check',
-    '20 2 * * *',
-    $cron$SELECT net.http_post(
-        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-price-estimates',
-        headers := jsonb_build_object(
-          'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
-          'Idempotency-Key', 'travelpayouts-content-' || to_char(CURRENT_DATE, 'YYYY-MM-DD')
-        ),
-        body := jsonb_build_object('sourceCode', 'travelpayouts', 'providerKey', 'travelpayouts')
-      )
-      WHERE NOT EXISTS (
-        SELECT 1
-        FROM public.flight_route_prices AS price
-        JOIN admin.data_sources AS source ON source.id = price.source_id
-        WHERE source.code = 'travelpayouts'
-          AND price.status = 'published'
-          AND price.valid_until > now()
-          AND price.observed_at > now() - interval '6 days'
-      );$cron$
+  VALUES (
+    v_cache_key,
+    v_origin_iata,
+    v_destination_iata,
+    v_market_code,
+    v_currency_code,
+    v_locale
   )
-  INTO v_travelpayouts_job;
+  ON CONFLICT (cache_key)
+  DO UPDATE SET last_requested_at = now(), updated_at = now();
 
-  RETURN jsonb_build_object(
-    'ourairports_job_id', v_ourairports_job,
-    'travelpayouts_job_id', v_travelpayouts_job
+  SELECT cache.*
+  INTO v_cache
+  FROM admin.flight_route_cache_states AS cache
+  WHERE cache.cache_key = v_cache_key
+  FOR UPDATE;
+
+  IF v_cache.status = 'refreshing' AND v_cache.lease_expires_at > now() THEN
+    RETURN jsonb_build_object('action', 'wait');
+  END IF;
+
+  IF v_cache.status IN ('empty', 'failed') AND v_cache.next_refresh_at > now() THEN
+    RETURN jsonb_build_object('action', 'cooldown');
+  END IF;
+
+  IF v_cache.status = 'fresh' AND v_cache.valid_until > now() THEN
+    RETURN jsonb_build_object('action', 'wait');
+  END IF;
+
+  -- STEP 03: Serialize and enforce one hard provider-call budget across all public callers.
+  PERFORM pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended('tripways:flight-route-cache-daily-budget', 0)
   );
+  IF (
+    SELECT count(*)
+    FROM admin.flight_route_cache_states AS cache
+    WHERE cache.last_attempted_at >= date_trunc('day', now())
+  ) >= 500 THEN
+    RETURN jsonb_build_object('action', 'cooldown');
+  END IF;
+
+  v_lease_token := 'lease_' || replace(gen_random_uuid()::TEXT, '-', '');
+  UPDATE admin.flight_route_cache_states AS cache
+  SET
+    status = 'refreshing',
+    lease_token = v_lease_token,
+    lease_expires_at = now() + INTERVAL '2 minutes',
+    last_attempted_at = now(),
+    updated_at = now()
+  WHERE cache.cache_key = v_cache_key;
+
+  RETURN jsonb_build_object('action', 'refresh', 'leaseToken', v_lease_token);
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.configure_ingestion_crons()
+REVOKE ALL ON FUNCTION public.rpc_claim_flight_route_cache_refresh(JSONB)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin.configure_ingestion_crons() TO service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_claim_flight_route_cache_refresh(JSONB) TO service_role;
 
--- >>> supabase/sql_src/functions/ingestion/publish_price_estimate_batch.sql
+-- >>> supabase/sql_src/functions/ingestion/rpc_fail_flight_route_cache_refresh.sql
 
 -- ============================================================================
--- Function: admin.publish_price_estimate_batch
--- Purpose: Atomically replace one source's current short-lived flight-content observations.
--- Responsibilities: Validate rights/TTL, resolve references, publish current rows, and purge old rows.
--- Notes: The legacy function name remains during the compatibility window.
+-- Function: public.rpc_fail_flight_route_cache_refresh
+-- Purpose: Finalize one failed on-demand provider lease with bounded backoff.
+-- Responsibilities: Match the opaque lease and preserve existing unexpired observations.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION admin.publish_price_estimate_batch(
-  p_source_code       TEXT,
-  p_idempotency_key   TEXT,
-  p_checksum          TEXT,
-  p_provider_version  TEXT,
-  p_source_time       TIMESTAMPTZ,
-  p_observations      JSONB,
+CREATE OR REPLACE FUNCTION public.rpc_fail_flight_route_cache_refresh(
+  p_lease_token TEXT,
+  p_failure_code TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+VOLATILE
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_cache admin.flight_route_cache_states%ROWTYPE;
+BEGIN
+  IF p_lease_token !~ '^lease_[0-9a-f]{32}$'
+    OR p_failure_code !~ '^ERR_[A-Z0-9_]+$'
+  THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST';
+  END IF;
+
+  SELECT cache.*
+  INTO v_cache
+  FROM admin.flight_route_cache_states AS cache
+  WHERE cache.lease_token = p_lease_token
+  FOR UPDATE;
+
+  IF v_cache.cache_key IS NULL THEN
+    RETURN jsonb_build_object('status', 'ignored');
+  END IF;
+
+  UPDATE admin.flight_route_cache_states AS cache
+  SET
+    status = 'failed',
+    lease_token = NULL,
+    lease_expires_at = NULL,
+    consecutive_failures = cache.consecutive_failures + 1,
+    failure_code = p_failure_code,
+    next_refresh_at = now() + LEAST(
+      INTERVAL '6 hours',
+      INTERVAL '15 minutes' * power(2, LEAST(cache.consecutive_failures, 4))
+    ),
+    updated_at = now()
+  WHERE cache.cache_key = v_cache.cache_key;
+
+  RETURN jsonb_build_object('status', 'failed');
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.rpc_fail_flight_route_cache_refresh(TEXT, TEXT)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_fail_flight_route_cache_refresh(TEXT, TEXT) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/publish_flight_route_cache_scope.sql
+
+-- ============================================================================
+-- Function: admin.publish_flight_route_cache_scope
+-- Purpose: Atomically replace one demanded Travelpayouts cache scope.
+-- Responsibilities: Validate lease/rights, resolve canonical entities, and preserve other origins.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.publish_flight_route_cache_scope(
+  p_lease_token      TEXT,
+  p_source_code      TEXT,
+  p_origin_iata      TEXT,
+  p_destination_iata TEXT,
+  p_market_code      TEXT,
+  p_currency_code    TEXT,
+  p_locale           TEXT,
+  p_observations     JSONB,
   p_publication_source_type TEXT
 )
 RETURNS JSONB
@@ -826,39 +997,33 @@ SECURITY DEFINER
 SET search_path = ''
 AS $$
 DECLARE
-  v_source               admin.data_sources%ROWTYPE;
-  v_batch_id              UUID;
-  v_observation           JSONB;
-  v_origin_city           UUID;
-  v_destination_city      UUID;
-  v_origin_airport        UUID;
-  v_destination_airport   UUID;
-  v_airline               UUID;
-  v_found_at              TIMESTAMPTZ;
-  v_provider_expires_at   TIMESTAMPTZ;
-  v_valid_until           TIMESTAMPTZ;
-  v_count                 INTEGER := 0;
-  v_rejected              INTEGER := 0;
-  v_resolvable_count      INTEGER := 0;
-  v_read_publication      JSONB;
+  v_cache            admin.flight_route_cache_states%ROWTYPE;
+  v_source           admin.data_sources%ROWTYPE;
+  v_resolvable_count INTEGER;
+  v_inserted_count   INTEGER := 0;
+  v_valid_until      TIMESTAMPTZ;
 BEGIN
-  -- STEP 01: Reject malformed or unbounded publication requests.
-  IF p_provider_version <> 'flight-content-observations.v1'
-    OR p_checksum !~ '^[a-f0-9]{64}$'
-    OR char_length(p_idempotency_key) NOT BETWEEN 8 AND 128
+  -- STEP 01: Lock and validate the exact refresh lease and canonical scope.
+  SELECT cache.*
+  INTO v_cache
+  FROM admin.flight_route_cache_states AS cache
+  WHERE cache.lease_token = p_lease_token
+  FOR UPDATE;
+
+  IF v_cache.cache_key IS NULL
+    OR v_cache.lease_expires_at <= now()
+    OR v_cache.origin_iata <> p_origin_iata
+    OR v_cache.destination_iata IS DISTINCT FROM p_destination_iata
+    OR v_cache.market_code <> p_market_code
+    OR v_cache.currency_code <> p_currency_code
+    OR v_cache.locale <> p_locale
     OR jsonb_typeof(p_observations) <> 'array'
     OR jsonb_array_length(p_observations) > 1000
     OR p_publication_source_type NOT IN ('development_fixture', 'staging', 'production')
   THEN
-    RETURN jsonb_build_object(
-      'status', 'failed',
-      'acceptedCount', 0,
-      'rejectedCount', 0,
-      'errorCode', 'ERR_INGESTION_INVALID_REQUEST'
-    );
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST';
   END IF;
 
-  -- STEP 02: Require the complete content-publication rights set.
   SELECT source.*
   INTO v_source
   FROM admin.data_sources AS source
@@ -868,132 +1033,51 @@ BEGIN
     OR v_source.source_type <> 'content_observation'
     OR NOT v_source.storage_allowed
     OR NOT v_source.cache_allowed
-    OR NOT v_source.seo_allowed
     OR NOT v_source.production_display_allowed
     OR v_source.max_cache_ttl_seconds IS NULL
     OR v_source.max_cache_ttl_seconds > 604800
-    OR (
-      v_source.rights_effective_at IS NOT NULL
-      AND now() NOT BETWEEN v_source.rights_effective_at AND v_source.rights_expires_at
-    )
   THEN
-    RETURN jsonb_build_object(
-      'status', 'failed',
-      'acceptedCount', 0,
-      'rejectedCount', jsonb_array_length(p_observations),
-      'errorCode', 'ERR_INGESTION_SOURCE_NOT_ALLOWED'
-    );
+    RAISE EXCEPTION USING ERRCODE = '42501', MESSAGE = 'ERR_INGESTION_SOURCE_NOT_ALLOWED';
   END IF;
 
-  -- STEP 03: Make retries idempotent without retaining provider content in the receipt.
-  SELECT batch.id
-  INTO v_batch_id
-  FROM admin.raw_import_batches AS batch
-  WHERE batch.source_id = v_source.id
-    AND (
-      batch.checksum = p_checksum
-      OR batch.idempotency_key = p_idempotency_key
-    )
-  LIMIT 1;
-
-  IF v_batch_id IS NOT NULL THEN
-    RETURN jsonb_build_object(
-      'status', 'published',
-      'acceptedCount', 0,
-      'rejectedCount', 0,
-      'errorCode', 'ERR_INGESTION_BATCH_DUPLICATE',
-      'batchId', v_batch_id
-    );
-  END IF;
-
-  -- STEP 04: Preserve the current cache when the new batch cannot map any route.
-  SELECT count(*)::INTEGER
-  INTO v_resolvable_count
+  -- STEP 02: Resolve the whole candidate before replacing any current rows.
+  SELECT count(*)::INTEGER, min((item.value->>'validUntil')::TIMESTAMPTZ)
+  INTO v_resolvable_count, v_valid_until
   FROM jsonb_array_elements(p_observations) AS item(value)
   JOIN public.airports AS origin_airport
-    ON origin_airport.iata = COALESCE(
-      NULLIF(item.value->>'originAirportIata', ''),
-      item.value->>'originCode'
-    )
+    ON origin_airport.iata = item.value->>'originAirportIata'
   JOIN public.airports AS destination_airport
-    ON destination_airport.iata = COALESCE(
-      NULLIF(item.value->>'destinationAirportIata', ''),
-      item.value->>'destinationCode'
+    ON destination_airport.iata = item.value->>'destinationAirportIata'
+  WHERE origin_airport.city_id <> destination_airport.city_id
+    AND (item.value->>'originCode') = p_origin_iata
+    AND (
+      p_destination_iata IS NULL
+      OR (item.value->>'destinationCode') = p_destination_iata
     )
-  WHERE origin_airport.city_id <> destination_airport.city_id;
+    AND (item.value->>'marketCode') = p_market_code
+    AND (item.value->>'currencyCode') = p_currency_code
+    AND (item.value->>'locale') = p_locale
+    AND (item.value->>'validUntil')::TIMESTAMPTZ > now()
+    AND (item.value->>'validUntil')::TIMESTAMPTZ
+      <= (item.value->>'foundAt')::TIMESTAMPTZ + INTERVAL '7 days';
 
-  IF v_resolvable_count = 0 THEN
-    RETURN jsonb_build_object(
-      'status', 'failed',
-      'acceptedCount', 0,
-      'rejectedCount', jsonb_array_length(p_observations),
-      'errorCode', 'ERR_INGESTION_NO_USABLE_PRICES'
-    );
+  IF jsonb_array_length(p_observations) > 0 AND v_resolvable_count = 0 THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_INGESTION_NO_USABLE_PRICES';
   END IF;
 
-  INSERT INTO admin.raw_import_batches (
-    source_id,
-    provider_version,
-    checksum,
-    idempotency_key,
-    source_time,
-    status
-  )
-  VALUES (
-    v_source.id,
-    p_provider_version,
-    p_checksum,
-    p_idempotency_key,
-    p_source_time,
-    'validated'
-  )
-  RETURNING id
-  INTO v_batch_id;
-
-  -- STEP 05: Replace the current route-price set inside this transaction.
-  DELETE FROM public.flight_route_prices AS observation
-  WHERE observation.source_id = v_source.id;
-
-  FOR v_observation IN
-    SELECT item.value
-    FROM jsonb_array_elements(p_observations) AS item(value)
-  LOOP
-    v_found_at := (v_observation->>'foundAt')::TIMESTAMPTZ;
-    v_provider_expires_at := NULLIF(v_observation->>'providerExpiresAt', '')::TIMESTAMPTZ;
-    v_valid_until := (v_observation->>'validUntil')::TIMESTAMPTZ;
-
-    IF NULLIF(btrim(v_observation->>'sourceId'), '') IS NULL
-      OR v_valid_until <= v_found_at
-      OR v_valid_until > v_found_at + interval '7 days'
-      OR (v_provider_expires_at IS NOT NULL AND v_valid_until > v_provider_expires_at)
-      OR NULLIF(v_observation->>'affiliatePath', '') ~ '^https?://'
-    THEN
-      RAISE EXCEPTION USING
-        ERRCODE = '22023',
-        MESSAGE = 'ERR_INGESTION_VALIDATION_FAILED';
-    END IF;
-
-    SELECT airport.id, airport.city_id
-    INTO v_origin_airport, v_origin_city
-    FROM public.airports AS airport
-    WHERE airport.iata = COALESCE(NULLIF(v_observation->>'originAirportIata', ''),v_observation->>'originCode');
-
-    SELECT airport.id, airport.city_id
-    INTO v_destination_airport, v_destination_city
-    FROM public.airports AS airport
-    WHERE airport.iata = COALESCE(NULLIF(v_observation->>'destinationAirportIata', ''),v_observation->>'destinationCode');
-
-    SELECT airline.id
-    INTO v_airline
-    FROM public.airlines AS airline
-    WHERE airline.iata = NULLIF(v_observation->>'airlineIata', '');
-
-    IF v_origin_city IS NULL OR v_destination_city IS NULL THEN
-      v_rejected := v_rejected + 1;
-      CONTINUE;
-    END IF;
+  -- STEP 03: Replace only this cache key; never touch another demanded origin.
+  IF v_resolvable_count > 0 THEN
+    DELETE FROM public.flight_route_prices AS price
+    WHERE price.cache_key = v_cache.cache_key
+      AND price.source_id = v_source.id
+      AND price.request_origin_iata = p_origin_iata
+      AND price.market_code = p_market_code
+      AND price.currency_code = p_currency_code
+      AND price.locale = p_locale;
 
     INSERT INTO public.flight_route_prices (
+      cache_key,
+      request_origin_iata,
       origin_city_id,
       destination_city_id,
       origin_airport_id,
@@ -1022,108 +1106,113 @@ BEGIN
       status,
       data_version
     )
-    VALUES (
-      v_origin_city,
-      v_destination_city,
-      v_origin_airport,
-      v_destination_airport,
-      v_airline,
-      NULLIF(upper(v_observation->>'airlineIata'), ''),
-      v_observation->>'observationType',
-      v_observation->>'tripType',
-      (v_observation->>'direct')::BOOLEAN,
-      (v_observation->>'transferCount')::INTEGER,
-      (v_observation->>'amount')::NUMERIC,
-      NULLIF(v_observation->>'currencyCode', ''),
-      v_observation->>'marketCode',
-      v_observation->>'locale',
-      (v_observation->>'departureDate')::DATE,
-      (v_observation->>'returnDate')::DATE,
-      (v_observation->>'durationMinutes')::INTEGER,
+    SELECT
+      v_cache.cache_key,
+      p_origin_iata,
+      origin_airport.city_id,
+      destination_airport.city_id,
+      origin_airport.id,
+      destination_airport.id,
+      airline.id,
+      NULLIF(item.value->>'airlineIata', ''),
+      item.value->>'observationType',
+      item.value->>'tripType',
+      (item.value->>'direct')::BOOLEAN,
+      (item.value->>'transferCount')::INTEGER,
+      (item.value->>'amount')::NUMERIC,
+      item.value->>'currencyCode',
+      item.value->>'marketCode',
+      item.value->>'locale',
+      NULLIF(item.value->>'departureDate', '')::DATE,
+      NULLIF(item.value->>'returnDate', '')::DATE,
+      NULLIF(item.value->>'durationMinutes', '')::INTEGER,
       v_source.id,
       v_source.provider_code,
       v_source.provider_code,
-      v_observation->>'sourceId',
-      v_found_at,
-      v_provider_expires_at,
-      v_valid_until,
-      NULLIF(v_observation->>'affiliatePath', ''),
+      item.value->>'sourceId',
+      (item.value->>'foundAt')::TIMESTAMPTZ,
+      NULLIF(item.value->>'providerExpiresAt', '')::TIMESTAMPTZ,
+      (item.value->>'validUntil')::TIMESTAMPTZ,
+      NULLIF(item.value->>'affiliatePath', ''),
       'published',
-      v_batch_id
-    );
+      gen_random_uuid()
+    FROM jsonb_array_elements(p_observations) AS item(value)
+    JOIN public.airports AS origin_airport
+      ON origin_airport.iata = item.value->>'originAirportIata'
+    JOIN public.airports AS destination_airport
+      ON destination_airport.iata = item.value->>'destinationAirportIata'
+    LEFT JOIN public.airlines AS airline
+      ON airline.iata = NULLIF(item.value->>'airlineIata', '')
+    WHERE origin_airport.city_id <> destination_airport.city_id
+      AND (item.value->>'originCode') = p_origin_iata
+      AND (
+        p_destination_iata IS NULL
+        OR (item.value->>'destinationCode') = p_destination_iata
+      );
 
-    v_count := v_count + 1;
-  END LOOP;
-
-  -- STEP 06: Publish one complete page and route snapshot in the same transaction.
-  PERFORM admin.sync_provider_pseo_pages(p_publication_source_type);
-  v_read_publication := public.publish_read_model_version(p_publication_source_type);
-
-  IF v_read_publication #>> '{error,code}' IS NOT NULL THEN
-    RAISE EXCEPTION USING
-      ERRCODE = 'P0001',
-      MESSAGE = 'ERR_INGESTION_PUBLISH_FAILED';
+    GET DIAGNOSTICS v_inserted_count = ROW_COUNT;
   END IF;
 
-  -- STEP 07: Keep only bounded receipt metadata after publication.
-  UPDATE admin.raw_import_batches AS batch
-  SET status = 'published',
-      updated_at = now()
-  WHERE batch.id = v_batch_id;
+  -- STEP 04: Finalize freshness or a bounded empty-result cooldown.
+  UPDATE admin.flight_route_cache_states AS cache
+  SET
+    status = CASE WHEN v_inserted_count > 0 THEN 'fresh' ELSE 'empty' END,
+    lease_token = NULL,
+    lease_expires_at = NULL,
+    next_refresh_at = CASE
+      WHEN v_inserted_count > 0 THEN COALESCE(v_valid_until, now() + INTERVAL '7 days')
+      ELSE now() + INTERVAL '24 hours'
+    END,
+    last_succeeded_at = now(),
+    refreshed_at = now(),
+    valid_until = v_valid_until,
+    observation_count = v_inserted_count,
+    consecutive_failures = 0,
+    failure_code = NULL,
+    updated_at = now()
+  WHERE cache.cache_key = v_cache.cache_key;
 
-  DELETE FROM admin.raw_import_batches AS batch
-  WHERE batch.source_id = v_source.id
-    AND batch.id <> v_batch_id
-    AND batch.received_at < now() - make_interval(days => COALESCE(v_source.retention_days, 7));
+  IF v_inserted_count > 0 THEN
+    PERFORM admin.sync_provider_pseo_pages(p_publication_source_type);
+    PERFORM public.publish_read_model_version(p_publication_source_type);
+  END IF;
 
-  RETURN jsonb_build_object(
-    'status', 'published',
-    'acceptedCount', v_count,
-    'rejectedCount', v_rejected,
-    'errorCode', NULL,
-    'batchId', v_batch_id,
-    'dataVersion', v_read_publication #>> '{data,data_version}'
-  );
+  RETURN public.rpc_get_flight_route_cache(jsonb_build_object(
+    'origin', p_origin_iata,
+    'destination', p_destination_iata,
+    'market', p_market_code,
+    'currency', p_currency_code,
+    'locale', p_locale
+  ));
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.publish_price_estimate_batch(
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  TIMESTAMPTZ,
-  JSONB,
-  TEXT
+REVOKE ALL ON FUNCTION admin.publish_flight_route_cache_scope(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT
 )
 FROM public, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION admin.publish_price_estimate_batch(
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  TIMESTAMPTZ,
-  JSONB,
-  TEXT
+GRANT EXECUTE ON FUNCTION admin.publish_flight_route_cache_scope(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT
 )
 TO service_role;
 
--- >>> supabase/sql_src/functions/ingestion/rpc_publish_price_estimate_batch.sql
+-- >>> supabase/sql_src/functions/ingestion/rpc_publish_flight_route_cache_scope.sql
 
 -- ============================================================================
--- Function: public.rpc_publish_price_estimate_batch
--- Purpose: Expose the price-estimate publisher to the trusted ingestion service.
--- Responsibilities: Forward a validated service-role request to the admin publisher.
+-- Function: public.rpc_publish_flight_route_cache_scope
+-- Purpose: Expose origin-scoped publication to the trusted cache-aside Edge Function.
+-- Responsibilities: Forward one validated service-role request to the admin publisher.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.rpc_publish_price_estimate_batch(
-  p_source_code             TEXT,
-  p_idempotency_key         TEXT,
-  p_checksum                TEXT,
-  p_provider_version        TEXT,
-  p_source_time             TIMESTAMPTZ,
-  p_observations            JSONB,
+CREATE OR REPLACE FUNCTION public.rpc_publish_flight_route_cache_scope(
+  p_lease_token      TEXT,
+  p_source_code      TEXT,
+  p_origin_iata      TEXT,
+  p_destination_iata TEXT,
+  p_market_code      TEXT,
+  p_currency_code    TEXT,
+  p_locale           TEXT,
+  p_observations     JSONB,
   p_publication_source_type TEXT
 )
 RETURNS JSONB
@@ -1131,35 +1220,129 @@ LANGUAGE sql
 SECURITY INVOKER
 SET search_path = ''
 AS $$
-  SELECT admin.publish_price_estimate_batch(
+  SELECT admin.publish_flight_route_cache_scope(
+    p_lease_token,
     p_source_code,
-    p_idempotency_key,
-    p_checksum,
-    p_provider_version,
-    p_source_time,
+    p_origin_iata,
+    p_destination_iata,
+    p_market_code,
+    p_currency_code,
+    p_locale,
     p_observations,
     p_publication_source_type
   );
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_publish_price_estimate_batch(
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  TIMESTAMPTZ,
-  JSONB,
-  TEXT
+REVOKE ALL ON FUNCTION public.rpc_publish_flight_route_cache_scope(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT
 )
 FROM public, anon, authenticated;
-
-GRANT EXECUTE ON FUNCTION public.rpc_publish_price_estimate_batch(
-  TEXT,
-  TEXT,
-  TEXT,
-  TEXT,
-  TIMESTAMPTZ,
-  JSONB,
-  TEXT
+GRANT EXECUTE ON FUNCTION public.rpc_publish_flight_route_cache_scope(
+  TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT, JSONB, TEXT
 )
 TO service_role;
+
+-- >>> supabase/sql_src/operations/configure_ingestion_crons.sql
+
+-- ============================================================================
+-- Function: admin.configure_ingestion_crons
+-- Purpose: Install base ingestion and demand-only flight-cache refresh schedules.
+-- Responsibilities: Validate Vault and replace both jobs idempotently.
+-- ============================================================================
+
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+CREATE EXTENSION IF NOT EXISTS pg_net;
+
+CREATE OR REPLACE FUNCTION admin.configure_ingestion_crons()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_project_url       TEXT;
+  v_worker_secret     TEXT;
+  v_ourairports_job   BIGINT;
+  v_route_cache_job   BIGINT;
+BEGIN
+  SELECT secret.decrypted_secret
+  INTO v_project_url
+  FROM vault.decrypted_secrets AS secret
+  WHERE secret.name = 'project_url';
+
+  SELECT secret.decrypted_secret
+  INTO v_worker_secret
+  FROM vault.decrypted_secrets AS secret
+  WHERE secret.name = 'ingestion_worker_secret';
+
+  IF v_project_url IS NULL
+    OR v_project_url !~ '^https://'
+    OR v_worker_secret IS NULL
+    OR char_length(v_worker_secret) < 16
+  THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_CRON_VAULT_PREREQUISITES_MISSING';
+  END IF;
+
+  PERFORM cron.unschedule(job.jobid)
+  FROM cron.job AS job
+  WHERE job.jobname IN (
+    'tripways-ourairports-daily',
+    'tripways-travelpayouts-demand-cache-daily'
+  );
+
+  SELECT cron.schedule(
+    'tripways-ourairports-daily',
+    '0 2 * * *',
+    $cron$SELECT net.http_post(
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-base-data',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
+          'Idempotency-Key', 'ourairports-' || to_char(CURRENT_DATE, 'YYYY-MM-DD')
+        ),
+        body := jsonb_build_object('sourceCode', 'ourairports', 'providerMode', 'ourairports')
+      );$cron$
+  )
+  INTO v_ourairports_job;
+
+  SELECT cron.schedule(
+    'tripways-travelpayouts-demand-cache-daily',
+    '20 2 * * *',
+    $cron$SELECT net.http_post(
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/flight-route-cache',
+        headers := jsonb_build_object(
+          'Content-Type', 'application/json',
+          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
+          'User-Agent', 'Tripways-Cache-Refresh/1.0'
+        ),
+        body := jsonb_build_object(
+          'origin', due.origin_iata,
+          'destination', due.destination_iata,
+          'market', due.market_code,
+          'currency', due.currency_code,
+          'locale', due.locale
+        )
+      )
+      FROM (
+        SELECT cache.*
+        FROM admin.flight_route_cache_states AS cache
+        WHERE cache.status = 'fresh'
+          AND cache.last_requested_at > now() - INTERVAL '30 days'
+          AND cache.refreshed_at <= now() - INTERVAL '6 days'
+          AND cache.next_refresh_at <= now()
+        ORDER BY cache.last_requested_at DESC
+        LIMIT 50
+      ) AS due;$cron$
+  )
+  INTO v_route_cache_job;
+
+  RETURN jsonb_build_object(
+    'ourairports_job_id', v_ourairports_job,
+    'route_cache_job_id', v_route_cache_job
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.configure_ingestion_crons()
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.configure_ingestion_crons() TO service_role;

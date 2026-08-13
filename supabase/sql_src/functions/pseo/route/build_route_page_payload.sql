@@ -53,6 +53,29 @@ BEGIN
         )
       ),
       'content', v_page.content,
+      'flight_data_state', CASE
+        WHEN EXISTS (
+          SELECT 1
+          FROM public.flight_route_prices AS price
+          WHERE price.origin_city_id = v_page.origin_city_id
+            AND price.destination_city_id = v_page.destination_city_id
+            AND price.status = 'published'
+            AND price.valid_until > now()
+        ) THEN 'available'
+        WHEN EXISTS (
+          SELECT 1
+          FROM admin.flight_route_cache_states AS cache
+          JOIN public.cities AS origin_city
+            ON origin_city.id = v_page.origin_city_id
+           AND origin_city.iata_code = cache.origin_iata
+          JOIN public.cities AS destination_city
+            ON destination_city.id = v_page.destination_city_id
+           AND destination_city.iata_code = cache.destination_iata
+          WHERE cache.status IN ('empty', 'failed')
+            AND cache.next_refresh_at > now()
+        ) THEN 'unavailable'
+        ELSE 'loading'
+      END,
       'route_options', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,

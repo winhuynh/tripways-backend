@@ -153,15 +153,18 @@ Một phase chỉ hoàn tất khi:
 
 Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
-- Không provider call nào nằm trong page-render path; ingestion và publication tạo read model trước.
+- Không provider call nào nằm trong SSR/page-render path. Cache miss render skeleton; browser gọi
+  `flight-route-cache` sau hydration và backend chỉ fetch Travelpayouts cho scope có demand thật.
 - OurAirports cung cấp reference data; Travelpayouts adapter normalize cached fares theo
   `flight-content-observations.v1` và lưu ngắn hạn trong `flight_route_prices`.
 - City aggregation, region taxonomy, codeshare dedupe, frequency, confidence và indexability thuộc
   Tripways.
-- Route price được giữ tối đa 7 ngày, không lưu raw payload, không lưu lịch sử và được thay nguyên
-  batch. Cron kiểm tra mỗi ngày và chỉ fetch lại khi batch đã sang ngày thứ 6.
-- Base ingestion không tự publish read model. Price ingestion chỉ thay cache sau khi có route dùng
-  được, đồng bộ pSEO pages và publish một staging snapshot trong cùng transaction.
+- Route price được giữ tối đa 7 ngày, không lưu raw payload/lịch sử và được thay atomically theo
+  origin + destination tùy chọn + market + currency + locale. Không preload origin toàn cục.
+- Cache hit không gọi provider. Cache miss từ browser thật được dedupe bằng lease; crawler chỉ đọc
+  cache. Cron ngày thứ 6 chỉ refresh scope từng có demand trong 30 ngày gần nhất.
+- Base ingestion không tự publish read model. Một cache scope có route dùng được mới đồng bộ pSEO
+  pages và publish snapshot; refresh rỗng/lỗi giữ cache cũ còn hạn.
 - `admin.configure_ingestion_crons()` là installer duy nhất cho cả hai provider; staging readiness
   được kiểm tra bằng `pnpm check:staging`.
 - Affiliate handoff chỉ ghép relative provider path với allowlisted Aviasales host ở server; client

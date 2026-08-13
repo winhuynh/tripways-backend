@@ -22,7 +22,7 @@ BEGIN
       WHERE active
         AND jobname IN (
           'tripways-ourairports-daily',
-          'tripways-travelpayouts-content-daily-check'
+          'tripways-travelpayouts-demand-cache-daily'
         )) <> 2
   THEN
     RAISE EXCEPTION 'ERR_STAGING_CRON_INCOMPLETE';
