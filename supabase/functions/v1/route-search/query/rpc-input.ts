@@ -25,27 +25,14 @@ export type RouteSearchRpcInput = {
 };
 
 export function toRouteSearchRpcInput(input: RouteSearchRequest): RouteSearchRpcInput {
+  const filters: Record<string, unknown> = {};
+  if (input.filters.currency) filters.currency = input.filters.currency;
+  if (input.filters.priceMax !== null && input.filters.priceMax !== undefined) {
+    filters.max_amount = input.filters.priceMax;
+  }
   return {
     scope: input.scope,
-    filters: {
-      max_stops: input.filters.maxStops,
-      airlines: input.filters.airlines,
-      connection_airports: input.filters.connectionAirports,
-      departure_airports: input.filters.departureAirports,
-      destination_countries: input.filters.destinationCountries,
-      destination_regions: input.filters.destinationRegions,
-      counterpart_query: input.filters.counterpartQuery,
-      counterpart_countries: input.filters.counterpartCountries,
-      counterpart_regions: input.filters.counterpartRegions,
-      departure_time_buckets: input.filters.departureTimeBuckets,
-      route_type: input.filters.routeType,
-      max_duration_minutes: input.filters.maxDurationMinutes,
-      max_layover_minutes: input.filters.maxLayoverMinutes,
-      cabin: input.filters.cabin,
-      price_max: input.filters.priceMax,
-      currency: input.filters.currency,
-    },
+    filters: filters as RouteSearchRpcInput['filters'],
     page_size: input.pageSize,
-    after: input.after,
-  };
+  } as RouteSearchRpcInput;
 }
