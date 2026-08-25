@@ -13,6 +13,11 @@ pSEO vẫn là giá trị cốt lõi: URL canonical, nội dung hữu ích, taxo
 được build từ canonical/read model của Tripways. Dữ liệu provider chỉ làm giàu các module có freshness;
 Tripways không bán vé, không tuyên bố inventory trực tiếp và không xây kho lịch sử fare.
 
+Homepage dùng `From + To` để resolve entity canonical và chuyển traffic về Route Page đã xuất bản.
+Nó không gọi Travelpayouts trong lúc người dùng nhập, không render kết quả live, và không tạo page từ
+query. Nếu cặp chưa đủ điều kiện xuất bản, homepage trả fallback discovery thay vì suy đoán rằng route
+không tồn tại.
+
 ## 2. Phân vai dữ liệu
 
 | Thành phần                            | Nguồn hiện tại                   | Vai trò                                  |

@@ -12,6 +12,8 @@ không mang lại giá trị tìm kiếm. Quy mô URL là kết quả của qual
 ## 2. Phạm vi
 
 - Homepage discovery, City Hub direct flights, Airport departure guide và Route Page direct/indirect.
+- Homepage `From + To` là một nguồn internal referral và demand signal cho Route Page canonical;
+  query chưa resolve, route chưa xuất bản và kết quả date-search không thuộc inventory pSEO.
 - Completeness, uniqueness, search demand, freshness, provenance và rights score theo page/version.
 - Sitemap shard, rollout/rollback theo market, crawl/index monitoring và cost governance.
 - Content refresh và re-review theo SLO riêng cho schedule, price estimate và editorial facts.
@@ -21,6 +23,8 @@ không mang lại giá trị tìm kiếm. Quy mô URL là kết quả của qual
 - Chỉ page thuộc current publication version và vượt toàn bộ gate mới xuất hiện trong sitemap.
 - Page thiếu route, required module, source rights hoặc freshness tự động `noindex`.
 - Canonical, hreflang và internal links được validate trước publication.
+- Không URL nào được tạo hoặc đưa vào sitemap chỉ vì một lượt submit `From + To`; homepage chỉ link
+  tới Route Page đã vượt publication gate.
 - Rollout theo country/market cohort; mỗi cohort có holdout và rollback về publication version trước.
 - Dashboard phân biệt generated, published, crawlable, crawled, indexed và organic-landing pages.
 

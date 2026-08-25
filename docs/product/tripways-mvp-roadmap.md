@@ -14,6 +14,12 @@ chuyển tiếp an toàn tới đối tác liên kết.
 Tripways không phát hành vé, xử lý thanh toán đặt chỗ, quản lý hủy vé hoặc khẳng định tình trạng
 còn chỗ theo thời gian thực dựa trên dữ liệu lịch bay đã lưu.
 
+Homepage là điểm vào khám phá: người dùng chọn `From` để mở City Hub, hoặc chọn đủ `From` và `To`
+để đi tới Route Page canonical của city pair. Homepage không tự trở thành trang kết quả, không hiển
+thị lời hứa về toàn bộ lịch bay và không tạo URL pSEO từ query. Tìm theo ngày, giá live và availability
+là luồng thương mại riêng chỉ được bật ở P3 khi provider đã được phê duyệt; mọi URL kết quả của luồng
+đó đều `noindex`.
+
 ## 2. Nền tảng hiện tại
 
 Nguyên mẫu cục bộ hiện có:
@@ -77,6 +83,9 @@ candidate trên hạ tầng từ xa. P0 chỉ hoàn tất khi cả P0A và P0B �
 9. **Contract không mang hậu tố phiên bản:** Mỗi capability chỉ có một contract canonical đang hoạt
    động. Migration contract dùng compatibility window và deprecation plan, không duy trì lâu dài
    các cặp `rpc_*` và `rpc_*_v2` song song.
+10. **Homepage phân phối về canonical:** `From + To` được resolve bằng entity canonical phía máy
+    chủ và điều hướng đến Route Page đã xuất bản. Query chưa resolve, route chưa xuất bản và search
+    theo ngày không được sinh URL pSEO hay thay thế nội dung Route Page.
 
 ## 5. Thước đo thành công tổng thể
 
@@ -84,6 +93,8 @@ Lộ trình MVP thành công khi:
 
 - Người dùng có thể mở trang thành phố hoặc sân bay đã xuất bản và hiểu các mẫu tuyến bay thẳng hiện
   có.
+- Người dùng có thể chọn `From + To` trên homepage và đến đúng Route Page canonical, hoặc nhận
+  fallback hữu ích khi city pair chưa có trang được xuất bản.
 - Người dùng có thể tìm hành trình theo ngày và nhận kết quả đã chuẩn hóa từ nhà cung cấp.
 - Người dùng có thể chuyển tới đối tác liên kết trong danh sách cho phép mà Tripways không nhận URL
   chuyển hướng tùy ý.
@@ -135,6 +146,12 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Chọn một public page contract và một route-search contract không có hậu tố `_v2`.
 - Định nghĩa page read model cho Homepage, City Hub, Airport và Route gồm module order, UX copy,
   CTA, empty state, metadata, freshness, provenance và indexability.
+- Homepage resolve một origin hoặc city pair canonical: chỉ có `From` mở City Hub, còn `From + To`
+  mở Route Page. Không render danh sách kết quả route, không gọi provider và không tạo query URL
+  indexable tại homepage.
+- City Hub, Airport Page và Route Page dùng chung compact route switcher trong header. Control này
+  chỉ điều hướng đến City Hub/Route Page canonical hoặc fallback discovery; không prefill hay bắt đầu
+  dated live search, không thay hero và không tạo query URL.
 - Khoá Airport Page theo intent journey-first: orientation, arrival, transport, departure rồi mới
   đến verified direct flights hai chiều; không tái sử dụng featured-route payload cũ.
 - Fixture chỉ chứng minh contract và luôn `noindex`; không được xem là content coverage production.
@@ -142,6 +159,8 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 ### P1 — Content foundation và dữ liệu tham chiếu production
 
 - Nhập country, region, city, airport, timezone và city-airport grouping có quyền sử dụng rõ ràng.
+- Cấp dữ liệu canonical cho autocomplete `From`/`To` và resolver city pair; chọn airport phải được
+  quy về city hoặc airport-page identity đã được duyệt, không dựa vào fixture frontend ở production.
 - Xây workflow biên tập/kiểm duyệt cho airport orientation, arrival/departure steps, directional
   transport, parking, terminal/facility, lounge, notice, FAQ và internal link.
 - Tính content completeness theo page type; page thiếu dữ liệu không được tự động index.
@@ -150,6 +169,9 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 
 - Xuất bản route discovery từ canonical/reference data; chỉ hiển thị direct/connection facts khi có
   nguồn phù hợp, không suy luận schedule từ cached fare.
+- Homepage chỉ điều hướng `From + To` đến Route Page khi cặp canonical có URL đã xuất bản; route
+  thiếu evidence hoặc không đủ indexability phải trả fallback discovery, không phải một route page
+  được tạo theo query.
 - City Hub có thể hỗ trợ departure airport, geography, duration và estimated-price filters. Airport
   chỉ hỗ trợ counterpart query/geography, domestic/international và operating airline; không có
   connection, duration hoặc price filter.
@@ -162,6 +184,9 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Commercial module optional, có capability gate và kill switch; thiếu partner không làm hỏng page.
 - Affiliate handoff dùng partner host allowlist, disclosure và expiry. Live offer theo ngày chỉ được
   thêm bằng provider contract khác trong tương lai.
+- Khi live search được phê duyệt, homepage có thể mở luồng ngày đi/ngày về riêng với city pair đã
+  resolve; kết quả là bề mặt thương mại `noindex`, không phải Route Page và không làm thay đổi
+  canonical, sitemap hoặc organic facts.
 - Airport commercial module không thay thế arrival/transport/departure; live-search chỉ prefill từ
   verified direct row người dùng đã chọn.
 
@@ -171,4 +196,6 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Publication gate tự động `noindex` page mỏng, trùng lặp, stale, thiếu quyền nguồn hoặc không có route.
 - Theo dõi crawl/index coverage, organic landing quality, filter usage, affiliate conversion, ad impact,
   provider cost và stale-data SLO theo page cohort.
+- Đo funnel `homepage From`, `homepage From + To`, Route Page reached và fallback; dữ liệu demand
+  này chỉ dùng để đánh giá cohort pSEO, không tự tạo hoặc index URL từ mọi truy vấn.
 - Rollout theo country/market cohort và có rollback về publication version gần nhất.

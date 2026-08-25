@@ -38,13 +38,16 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 
 ## 4. Hành trình người dùng
 
-### Hành trình A: Từ trang chủ tới khám phá thành phố
+### Hành trình A: Từ trang chủ tới City Hub hoặc Route Page
 
 1. Người duyệt mở trang chủ staging.
-2. Người duyệt chọn một thành phố đang có dữ liệu.
-3. Trang thành phố tải thông tin định danh, sân bay, điểm đến bay thẳng, hãng bay, phân tích, câu hỏi
-   thường gặp và bản đồ tuyến bay.
-4. Người duyệt áp dụng bộ lọc được hỗ trợ và nhận kết quả ổn định hoặc trạng thái trống hữu ích.
+2. Người duyệt chọn `From`; chỉ có điểm đi thì homepage mở City Hub đang có dữ liệu.
+3. Người duyệt chọn thêm `To`; homepage resolve city pair và mở Route Page canonical khi trang đã
+   được xuất bản.
+4. Khi city pair chưa được xuất bản, người duyệt nhận fallback discovery hữu ích thay vì một route
+   result suy đoán hoặc URL query mới.
+5. City Hub hoặc Route Page tải nội dung định danh, route evidence đã có và các trạng thái trống có
+   giới hạn; homepage không gọi provider hay render kết quả tìm chuyến bay.
 
 ### Hành trình B: Từ trang chủ hoặc thành phố tới khám phá sân bay
 
@@ -124,6 +127,12 @@ Công cụ tìm kiếm và người dùng đại chúng không phải đối tư
 ### 5.5 Hành vi trang
 
 - Homepage, City, Airport và Route Page phải render trên desktop và mobile.
+- Homepage có autocomplete/validation giới hạn cho `From` và `To`. Submit chỉ điều hướng đến City
+  Hub hoặc Route Page canonical đang tồn tại; URL query, route chưa xuất bản và fixture không được
+  trở thành trang indexable hoặc trang kết quả.
+- Shared header trên City, Airport và Route Page có compact `From`/`To` route switcher với cùng
+  resolver. Nó không có ngày, hành khách, giá, provider call hoặc CTA live-search; page hero và
+  nội dung canonical vẫn là câu trả lời chính.
 - Airport Page phải ưu tiên nhu cầu tìm hiểu một sân bay cụ thể: định hướng, arrive, transport và
   depart. City Hub tiếp tục sở hữu intent khám phá chuyến bay theo thành phố.
 - Khối `Verified direct flights` của Airport Page được tải riêng sau phần journey chính, hỗ trợ cả

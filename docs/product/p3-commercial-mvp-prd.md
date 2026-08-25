@@ -49,11 +49,16 @@ P3. P3 chỉ bắt đầu sau khi P2 hoàn tất và live-search/affiliate agree
 
 ### Hành trình A: Bắt đầu tìm kiếm theo ngày
 
-1. Người dùng bắt đầu từ trang tuyến, City Hub, verified direct-flight row trên Airport Page hoặc ô
-   tìm kiếm trang chủ.
+1. Người dùng bắt đầu từ trang tuyến, City Hub, verified direct-flight row trên Airport Page hoặc
+   từ city pair đã được resolve tại homepage.
 2. Người dùng nhập điểm đi, điểm đến, ngày, số hành khách và hạng ghế.
 3. Tripways validation yêu cầu và bắt đầu tìm kiếm trung lập provider.
 4. Người dùng thấy tiến trình, kết quả hoàn tất, không có kết quả hoặc trạng thái lỗi có giới hạn.
+
+Homepage discovery `From + To` không phải là lượt tìm P3: trước khi người dùng nhập ngày, nó chỉ
+điều hướng về Route Page canonical. Sau khi P3 được bật, date-search từ homepage dùng city pair đã
+resolve nhưng trả bề mặt kết quả thương mại `noindex`, không thay canonical hoặc nội dung organic của
+Route Page.
 
 ### Hành trình B: So sánh kết quả
 
