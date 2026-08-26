@@ -42,7 +42,9 @@ BEGIN
         'name', v_airport.name,
         'slug', v_airport.slug,
         'image_path', v_airport.image_path,
-        'timezone', v_airport.timezone
+        'timezone', v_airport.timezone,
+        'latitude', v_airport.latitude,
+        'longitude', v_airport.longitude
       ),
       'content', v_page.content,
       'routes', COALESCE((

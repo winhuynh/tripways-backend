@@ -36,15 +36,35 @@ export function buildOurAirportsLocalDataset(input: {
 
   const countryCodeRows = rowsAsRecords(input.countryCodesCsv);
   const iso3ByIso2 = new Map<string, string>();
+  const countryMetaByIso2 = new Map<
+    string,
+    {
+      region: string | null;
+      subregion: string | null;
+      currencyCode: string | null;
+      primaryLanguage: string | null;
+    }
+  >();
   for (const row of countryCodeRows) {
     const iso2 = row['ISO3166-1-Alpha-2']?.trim().toUpperCase() ?? '';
     const iso3 = row['ISO3166-1-Alpha-3']?.trim().toUpperCase() ?? '';
-    if (/^[A-Z]{2}$/.test(iso2) && /^[A-Z]{3}$/.test(iso3)) iso3ByIso2.set(iso2, iso3);
+    const region = row['Region Name']?.trim() || null;
+    const subregion = row['Sub-region Name']?.trim() || null;
+    const currencyCode = row['ISO4217-currency_alphabetic_code']?.trim().toUpperCase() || null;
+    const languages = row['Languages']?.split(',') ?? [];
+    const primaryLanguage = languages[0]?.trim().slice(0, 5) || null;
+
+    if (/^[A-Z]{2}$/.test(iso2) && /^[A-Z]{3}$/.test(iso3)) {
+      iso3ByIso2.set(iso2, iso3);
+      countryMetaByIso2.set(iso2, { region, subregion, currencyCode, primaryLanguage });
+    }
   }
   for (const [iso2Value, iso3Value] of Object.entries(input.countryCodeOverrides ?? {})) {
     const iso2 = iso2Value.trim().toUpperCase();
     const iso3 = iso3Value.trim().toUpperCase();
-    if (/^[A-Z]{2}$/.test(iso2) && /^[A-Z]{3}$/.test(iso3)) iso3ByIso2.set(iso2, iso3);
+    if (/^[A-Z]{2}$/.test(iso2) && /^[A-Z]{3}$/.test(iso3)) {
+      iso3ByIso2.set(iso2, iso3);
+    }
   }
 
   const countries: CanonicalCountry[] = [];
@@ -57,7 +77,16 @@ export function buildOurAirportsLocalDataset(input: {
       if (/^[A-Z]{2}$/.test(iso2)) unresolvedCountryIso2.push(iso2);
       continue;
     }
-    if (name.length > 0) countries.push({ iso2, iso3, name });
+    const meta = countryMetaByIso2.get(iso2);
+    if (name.length > 0) {
+      countries.push({
+        iso2,
+        iso3,
+        name,
+        region: meta?.region ?? null,
+        subregion: meta?.subregion ?? null,
+      });
+    }
   }
   countries.sort((left, right) => left.iso2.localeCompare(right.iso2));
 
@@ -97,15 +126,28 @@ export function buildOurAirportsLocalDataset(input: {
       normalizeIdentityPart(location.region || 'unknown-region'),
       normalizeIdentityPart(location.municipality),
     ].join(':').slice(0, 160);
-    if (!cityBySourceId.has(citySourceId)) {
+
+    const countryMeta = countryMetaByIso2.get(airport.countryIso2);
+    const existingCity = cityBySourceId.get(citySourceId);
+    if (!existingCity) {
       cityBySourceId.set(citySourceId, {
         sourceId: citySourceId,
         name: location.municipality,
         countryIso2: airport.countryIso2,
-        latitude: null,
-        longitude: null,
+        currencyCode: countryMeta?.currencyCode ?? null,
+        primaryLanguage: countryMeta?.primaryLanguage ?? null,
+        latitude: airport.latitude,
+        longitude: airport.longitude,
       });
+    } else if (existingCity.latitude === null && airport.latitude !== null) {
+      existingCity.latitude = airport.latitude;
+      existingCity.longitude = airport.longitude;
+    } else if (airport.type === 'large_airport' && airport.latitude !== null) {
+      // Prioritize large airport coordinates for multi-airport city centers
+      existingCity.latitude = airport.latitude;
+      existingCity.longitude = airport.longitude;
     }
+
     return { ...airport, citySourceId };
   });
 

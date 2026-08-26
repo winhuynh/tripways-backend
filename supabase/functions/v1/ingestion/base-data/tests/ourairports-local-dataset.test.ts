@@ -31,23 +31,33 @@ Deno.test('local dataset joins ISO3, derives cities, and links eligible airports
   assert.equal(result.ok, true);
   if (!result.ok) return;
   assert.deepEqual(result.dataset.countries, [
-    { iso2: 'FR', iso3: 'FRA', name: 'France' },
-    { iso2: 'GB', iso3: 'GBR', name: 'United Kingdom' },
+    { iso2: 'FR', iso3: 'FRA', name: 'France', region: 'Europe', subregion: 'Western Europe' },
+    {
+      iso2: 'GB',
+      iso3: 'GBR',
+      name: 'United Kingdom',
+      region: 'Europe',
+      subregion: 'Northern Europe',
+    },
   ]);
   assert.deepEqual(result.dataset.cities, [
     {
       sourceId: 'ourairports-city:fr:fr-pac:nice',
       name: 'Nice',
       countryIso2: 'FR',
-      latitude: null,
-      longitude: null,
+      currencyCode: null,
+      primaryLanguage: null,
+      latitude: 43.6584,
+      longitude: 7.21587,
     },
     {
       sourceId: 'ourairports-city:gb:gb-eng:london',
       name: 'London',
       countryIso2: 'GB',
-      latitude: null,
-      longitude: null,
+      currencyCode: null,
+      primaryLanguage: null,
+      latitude: 51.4706,
+      longitude: -0.461941,
     },
   ]);
   assert.equal(result.dataset.airports.length, 3);
@@ -89,6 +99,6 @@ Deno.test('local dataset applies explicit non-ISO country overrides for local te
   if (!result.ok) return;
   assert.deepEqual(
     result.dataset.countries.find((country) => country.iso2 === 'XK'),
-    { iso2: 'XK', iso3: 'XKX', name: 'Kosovo' },
+    { iso2: 'XK', iso3: 'XKX', name: 'Kosovo', region: null, subregion: null },
   );
 });

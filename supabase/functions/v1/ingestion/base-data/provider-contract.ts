@@ -17,12 +17,18 @@ export type CanonicalCountry = {
   iso2: string;
   iso3: string;
   name: string;
+  region?: string | null;
+  subregion?: string | null;
 };
 
 export type CanonicalCity = {
   sourceId: string;
   name: string;
   countryIso2: string;
+  iataCode?: string | null;
+  currencyCode?: string | null;
+  primaryLanguage?: string | null;
+  timezone?: string | null;
   latitude: number | null;
   longitude: number | null;
 };
@@ -34,6 +40,8 @@ export type CanonicalAirport = {
   icao: string | null;
   citySourceId: string | null;
   countryIso2: string;
+  imagePath?: string | null;
+  timezone?: string | null;
   latitude: number | null;
   longitude: number | null;
   type: string;
@@ -159,7 +167,13 @@ export function parseCanonicalBaseDataBatch(payload: unknown): ProviderResult {
       continue;
     }
     countryKeys.add(iso2);
-    countries.push({ iso2: iso2.toUpperCase(), iso3: iso3.toUpperCase(), name });
+    countries.push({
+      iso2: iso2.toUpperCase(),
+      iso3: iso3.toUpperCase(),
+      name,
+      region: optionalString(raw.region),
+      subregion: optionalString(raw.subregion),
+    });
   }
 
   for (const raw of rawCities) {
@@ -177,7 +191,17 @@ export function parseCanonicalBaseDataBatch(payload: unknown): ProviderResult {
       continue;
     }
     cityKeys.add(sourceId);
-    cities.push({ sourceId, name, countryIso2: countryIso2.toUpperCase(), latitude, longitude });
+    cities.push({
+      sourceId,
+      name,
+      countryIso2: countryIso2.toUpperCase(),
+      iataCode: optionalString(raw.iataCode)?.toUpperCase() ?? null,
+      currencyCode: optionalString(raw.currencyCode)?.toUpperCase() ?? null,
+      primaryLanguage: optionalString(raw.primaryLanguage) ?? null,
+      timezone: optionalString(raw.timezone) ?? null,
+      latitude,
+      longitude,
+    });
   }
 
   for (const raw of rawAirports) {
@@ -203,6 +227,8 @@ export function parseCanonicalBaseDataBatch(payload: unknown): ProviderResult {
       icao: optionalString(raw.icao)?.toUpperCase() ?? null,
       citySourceId: optionalString(raw.citySourceId),
       countryIso2: countryIso2.toUpperCase(),
+      imagePath: optionalString(raw.imagePath) ?? null,
+      timezone: optionalString(raw.timezone) ?? null,
       latitude,
       longitude,
       type,

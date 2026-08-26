@@ -370,6 +370,8 @@ BEGIN
       iso3,
       name,
       slug,
+      region,
+      subregion,
       source_id,
       source_record_id
     )
@@ -378,6 +380,8 @@ BEGIN
       v_country ->> 'iso3',
       btrim(v_country ->> 'name'),
       v_slug,
+      NULLIF(btrim(v_country ->> 'region'), ''),
+      NULLIF(btrim(v_country ->> 'subregion'), ''),
       v_source_id,
       v_country ->> 'iso2'
     )
@@ -388,6 +392,8 @@ BEGIN
       iso3 = v_country ->> 'iso3',
       name = btrim(v_country ->> 'name'),
       slug = v_slug,
+      region = COALESCE(NULLIF(btrim(v_country ->> 'region'), ''), country.region),
+      subregion = COALESCE(NULLIF(btrim(v_country ->> 'subregion'), ''), country.subregion),
       updated_at = now()
     WHERE country.source_id = v_source_id
       AND country.source_record_id = v_country ->> 'iso2';
@@ -410,6 +416,9 @@ BEGIN
       country_id,
       name,
       slug,
+      iata_code,
+      currency_code,
+      primary_language,
       latitude,
       longitude,
       timezone,
@@ -420,9 +429,12 @@ BEGIN
       v_country_id,
       btrim(v_city ->> 'name'),
       v_slug,
+      NULLIF(btrim(v_city ->> 'iataCode'), ''),
+      NULLIF(btrim(v_city ->> 'currencyCode'), ''),
+      NULLIF(btrim(v_city ->> 'primaryLanguage'), ''),
       (v_city ->> 'latitude')::DOUBLE PRECISION,
       (v_city ->> 'longitude')::DOUBLE PRECISION,
-      NULL,
+      NULLIF(btrim(v_city ->> 'timezone'), ''),
       v_source_id,
       v_city ->> 'sourceId'
     )
@@ -433,9 +445,12 @@ BEGIN
       country_id = v_country_id,
       name = btrim(v_city ->> 'name'),
       slug = v_slug,
-      latitude = (v_city ->> 'latitude')::DOUBLE PRECISION,
-      longitude = (v_city ->> 'longitude')::DOUBLE PRECISION,
-      timezone = NULL,
+      iata_code = COALESCE(NULLIF(btrim(v_city ->> 'iataCode'), ''), city.iata_code),
+      currency_code = COALESCE(NULLIF(btrim(v_city ->> 'currencyCode'), ''), city.currency_code),
+      primary_language = COALESCE(NULLIF(btrim(v_city ->> 'primaryLanguage'), ''), city.primary_language),
+      latitude = COALESCE((v_city ->> 'latitude')::DOUBLE PRECISION, city.latitude),
+      longitude = COALESCE((v_city ->> 'longitude')::DOUBLE PRECISION, city.longitude),
+      timezone = COALESCE(NULLIF(btrim(v_city ->> 'timezone'), ''), city.timezone),
       updated_at = now()
     WHERE city.source_id = v_source_id
       AND city.source_record_id = v_city ->> 'sourceId';
@@ -506,6 +521,7 @@ BEGIN
       icao,
       name,
       slug,
+      image_path,
       city_id,
       country_id,
       latitude,
@@ -522,11 +538,12 @@ BEGIN
       NULLIF(v_airport ->> 'icao', ''),
       btrim(v_airport ->> 'name'),
       v_slug,
+      NULLIF(btrim(v_airport ->> 'imagePath'), ''),
       v_city_id,
       v_country_id,
       (v_airport ->> 'latitude')::DOUBLE PRECISION,
       (v_airport ->> 'longitude')::DOUBLE PRECISION,
-      NULL,
+      NULLIF(btrim(v_airport ->> 'timezone'), ''),
       v_airport ->> 'type',
       CASE WHEN v_is_production_source THEN 'active' ELSE 'unknown' END,
       v_source_id,
@@ -539,11 +556,12 @@ BEGIN
       icao = EXCLUDED.icao,
       name = EXCLUDED.name,
       slug = EXCLUDED.slug,
+      image_path = COALESCE(EXCLUDED.image_path, airports.image_path),
       city_id = EXCLUDED.city_id,
       country_id = EXCLUDED.country_id,
       latitude = EXCLUDED.latitude,
       longitude = EXCLUDED.longitude,
-      timezone = NULL,
+      timezone = COALESCE(EXCLUDED.timezone, airports.timezone),
       airport_type = EXCLUDED.airport_type,
       status = CASE WHEN v_is_production_source THEN 'active' ELSE 'unknown' END,
       last_verified_at = EXCLUDED.last_verified_at,

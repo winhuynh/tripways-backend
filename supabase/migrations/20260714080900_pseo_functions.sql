@@ -53,9 +53,9 @@ BEGIN
         'name', v_city.name,
         'slug', v_city.slug,
         'iata_code', v_city.iata_code,
-        'latitude', v_city.latitude,
-        'longitude', v_city.longitude,
-        'timezone', v_city.timezone,
+        'latitude', COALESCE(v_city.latitude, (SELECT a.latitude FROM public.airports a WHERE a.city_id = v_city.id AND a.latitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)),
+        'longitude', COALESCE(v_city.longitude, (SELECT a.longitude FROM public.airports a WHERE a.city_id = v_city.id AND a.longitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)),
+        'timezone', COALESCE(v_city.timezone, (SELECT a.timezone FROM public.airports a WHERE a.city_id = v_city.id AND a.timezone IS NOT NULL LIMIT 1)),
         'currency_code', v_city.currency_code,
         'primary_language', v_city.primary_language
       ),
@@ -63,7 +63,8 @@ BEGIN
         'name', v_country.name,
         'slug', v_country.slug,
         'iso2', v_country.iso2,
-        'region', COALESCE(v_country.region, 'Asia')
+        'region', COALESCE(v_country.region, 'Asia'),
+        'subregion', v_country.subregion
       ),
       'page', jsonb_build_object(
         'h1', COALESCE(v_page.content->'seo'->>'h1', 'Direct flights from ' || v_city.name),
@@ -250,7 +251,9 @@ BEGIN
         'name', v_airport.name,
         'slug', v_airport.slug,
         'image_path', v_airport.image_path,
-        'timezone', v_airport.timezone
+        'timezone', v_airport.timezone,
+        'latitude', v_airport.latitude,
+        'longitude', v_airport.longitude
       ),
       'content', v_page.content,
       'routes', COALESCE((
@@ -412,7 +415,9 @@ BEGIN
           SELECT jsonb_build_object(
             'name', city.name,
             'slug', city.slug,
-            'iata_code', city.iata_code
+            'iata_code', city.iata_code,
+            'latitude', COALESCE(city.latitude, (SELECT a.latitude FROM public.airports a WHERE a.city_id = city.id AND a.latitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)),
+            'longitude', COALESCE(city.longitude, (SELECT a.longitude FROM public.airports a WHERE a.city_id = city.id AND a.longitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1))
           )
           FROM public.cities AS city
           WHERE city.id = v_page.origin_city_id
@@ -421,7 +426,9 @@ BEGIN
           SELECT jsonb_build_object(
             'name', city.name,
             'slug', city.slug,
-            'iata_code', city.iata_code
+            'iata_code', city.iata_code,
+            'latitude', COALESCE(city.latitude, (SELECT a.latitude FROM public.airports a WHERE a.city_id = city.id AND a.latitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)),
+            'longitude', COALESCE(city.longitude, (SELECT a.longitude FROM public.airports a WHERE a.city_id = city.id AND a.longitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1))
           )
           FROM public.cities AS city
           WHERE city.id = v_page.destination_city_id
