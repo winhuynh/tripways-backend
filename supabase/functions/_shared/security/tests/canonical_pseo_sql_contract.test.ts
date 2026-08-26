@@ -91,15 +91,10 @@ Deno.test('publication refreshes one shared lean projection before all page read
   assert.ok(refresh.includes('public.route_page_read_models'));
 });
 
-Deno.test('homepage reads only the current flight route projection', async () => {
-  const sql = await read('functions/pseo/homepage/rpc_get_homepage_statistics.sql');
-  assert.ok(sql.includes('public.flight_route_options'));
-  assert.ok(sql.includes('public.publication_versions'));
-  assert.equal(sql.includes('public.route_search_options'), false);
+Deno.test('homepage statistics rpc is removed', async () => {
+  assert.equal(await read('functions/pseo/homepage/rpc_get_homepage_statistics.sql'), '');
   assert.equal(await read('functions/pseo/homepage/rpc_search_places.sql'), '');
   assert.equal(await read('functions/pseo/homepage/rpc_resolve_homepage_origin.sql'), '');
-  assert.ok(sql.includes("'v_' || md5"));
-  assert.equal(sql.includes("'data_version', version.id"), false);
 });
 
 Deno.test('public route search is read-only and service-role only', async () => {
