@@ -197,3 +197,30 @@ Deno.test('Travelpayouts source is configured for a replaceable seven-day cache'
   assert.ok(sql.includes('604800'));
   assert.match(sql, /no raw response archive/i);
 });
+
+Deno.test('direct flight routes ingestion functions enforce service_role and transaction safety', async () => {
+  const batchSql = await readSource('functions/ingestion/ingest_direct_flight_routes_batch.sql');
+  assert.ok(
+    includesSql(batchSql, 'create or replace function admin.ingest_direct_flight_routes_batch'),
+  );
+  assert.ok(includesSql(batchSql, 'insert into public.direct_flight_routes'));
+  assert.ok(includesSql(batchSql, 'on conflict (source_id, source_record_id) do update'));
+  assert.ok(
+    includesSql(
+      batchSql,
+      'grant execute on function admin.ingest_direct_flight_routes_batch(text, jsonb) to service_role',
+    ),
+  );
+
+  const rpcSql = await readSource('functions/ingestion/rpc_ingest_direct_flight_routes.sql');
+  assert.ok(
+    includesSql(rpcSql, 'create or replace function public.rpc_ingest_direct_flight_routes'),
+  );
+  assert.ok(includesSql(rpcSql, 'admin.ingest_direct_flight_routes_batch'));
+  assert.ok(
+    includesSql(
+      rpcSql,
+      'grant execute on function public.rpc_ingest_direct_flight_routes(text, jsonb) to service_role',
+    ),
+  );
+});

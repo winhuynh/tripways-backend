@@ -23,12 +23,14 @@ const expectedTables = [
   ['schema/flight_routing/cities.sql', 'public.cities'],
   ['schema/flight_routing/airports.sql', 'public.airports'],
   ['schema/flight_routing/airlines.sql', 'public.airlines'],
+  ['schema/flight_routing/direct_flight_routes.sql', 'public.direct_flight_routes'],
   ['schema/flight_routing/flight_route_prices.sql', 'public.flight_route_prices'],
 ] as const;
 
 Deno.test('flight routing keeps one table per schema source file', async () => {
   for (const [path, qualifiedTable] of expectedTables) {
     const sql = await readSource(path);
+
     assert.ok(
       includesSql(sql, `create table ${qualifiedTable}`),
       `${path} must define ${qualifiedTable}`,
@@ -75,7 +77,8 @@ Deno.test('airports enforce stable codes, coordinates, and supported source valu
   assert.ok(includesSql(sql, 'longitude between -180 and 180'));
   assert.ok(includesSql(sql, "'large_airport'"));
   assert.ok(includesSql(sql, "'medium_airport'"));
-  assert.ok(includesSql(sql, "'small_airport'"));
+  assert.ok(includesSql(sql, 'is_hub boolean not null default false'));
+  assert.ok(includesSql(sql, 'min_transit_minutes integer not null default 90'));
   assert.ok(includesSql(sql, 'image_path text null'));
   assert.ok(includesSql(sql, "image_path like 'airports/%'"));
   assert.ok(includesSql(sql, "image_path !~* '^[a-z][a-z0-9+.-]*://'"));
@@ -85,6 +88,7 @@ Deno.test('airlines classify constrained business models for derived airport sta
   const sql = await readSource('schema/flight_routing/airlines.sql');
 
   assert.ok(includesSql(sql, "business_model text not null default 'unknown'"));
+
   assert.ok(includesSql(sql, "'full_service'"));
   assert.ok(includesSql(sql, "'low_cost'"));
   assert.ok(includesSql(sql, "'hybrid'"));

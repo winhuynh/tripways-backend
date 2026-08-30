@@ -1,7 +1,7 @@
 -- ============================================================================
 -- Function: admin.build_route_page_payload
 -- Purpose: Compose one public-safe Route page payload for a publication candidate.
--- Responsibilities: Allowlist route identity, observations, options, and lifecycle metadata.
+-- Responsibilities: Allowlist route identity, observations, pre-computed route options, and metadata.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION admin.build_route_page_payload(p_input JSONB)
@@ -60,34 +60,29 @@ BEGIN
       'flight_data_state', CASE
         WHEN EXISTS (
           SELECT 1
-          FROM public.flight_route_prices AS price
-          WHERE price.origin_city_id = v_page.origin_city_id
-            AND price.destination_city_id = v_page.destination_city_id
-            AND price.status = 'published'
-            AND price.valid_until > now()
+          FROM public.flight_route_options AS option
+          WHERE option.publication_version_id = v_version
+            AND option.origin_city_id = v_page.origin_city_id
+            AND option.destination_city_id = v_page.destination_city_id
         ) THEN 'available'
-        WHEN EXISTS (
-          SELECT 1
-          FROM admin.flight_route_cache_states AS cache
-          JOIN public.cities AS origin_city
-            ON origin_city.id = v_page.origin_city_id
-           AND origin_city.iata_code = cache.origin_iata
-          JOIN public.cities AS destination_city
-            ON destination_city.id = v_page.destination_city_id
-           AND destination_city.iata_code = cache.destination_iata
-          WHERE cache.status IN ('empty', 'failed')
-            AND cache.next_refresh_at > now()
-        ) THEN 'unavailable'
         ELSE 'loading'
       END,
+
       'route_options', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,
           'to', option.destination_airport_iata,
-          'airline', option.provider_airline_iata,
-          'evidence_type', option.evidence_type,
+          'stops', option.stops,
+          'layover_airports', option.layover_airports,
+          'operating_airlines', option.operating_airlines,
+          'flight_numbers', option.flight_numbers,
+          'flight_durations_minutes', option.flight_durations_minutes,
+          'total_duration_minutes', option.total_duration_minutes,
+          'total_distance_km', option.total_distance_km,
+          'days_of_week', option.days_of_week,
+          'route_type', option.route_type,
           'confidence_score', option.confidence_score
-        ) ORDER BY option.confidence_score DESC)
+        ) ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id)
         FROM public.flight_route_options AS option
         WHERE option.publication_version_id = v_version
           AND option.origin_city_id = v_page.origin_city_id

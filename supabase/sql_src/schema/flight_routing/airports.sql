@@ -1,27 +1,29 @@
 -- Table: public.airports
 -- Feature: Flight Routing
 -- Purpose: Represent the airport nodes used by direct and one-stop route search.
--- Responsibilities: Enforce codes, location, operational state, and source lineage.
+-- Responsibilities: Enforce codes, location, operational state, hub status, and source lineage.
 
 CREATE TABLE public.airports (
-  id                UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
-  iata              TEXT              NULL,
-  icao              TEXT              NULL,
-  name              TEXT              NOT NULL,
-  slug              TEXT              NOT NULL UNIQUE,
-  image_path        TEXT              NULL,
-  city_id           UUID              NULL REFERENCES public.cities (id),
-  country_id        UUID              NOT NULL REFERENCES public.countries (id),
-  latitude          DOUBLE PRECISION  NULL,
-  longitude         DOUBLE PRECISION  NULL,
-  timezone          TEXT              NULL,
-  airport_type      TEXT              NOT NULL,
-  status            TEXT              NOT NULL DEFAULT 'unknown',
-  source_id         UUID              NOT NULL REFERENCES admin.data_sources (id),
-  source_record_id  TEXT              NOT NULL,
-  last_verified_at  TIMESTAMPTZ       NULL,
-  created_at        TIMESTAMPTZ       NOT NULL DEFAULT now(),
-  updated_at        TIMESTAMPTZ       NOT NULL DEFAULT now(),
+  id                  UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
+  iata                TEXT              NULL,
+  icao                TEXT              NULL,
+  name                TEXT              NOT NULL,
+  slug                TEXT              NOT NULL UNIQUE,
+  image_path          TEXT              NULL,
+  city_id             UUID              NULL REFERENCES public.cities (id),
+  country_id          UUID              NOT NULL REFERENCES public.countries (id),
+  latitude            DOUBLE PRECISION  NULL,
+  longitude           DOUBLE PRECISION  NULL,
+  timezone            TEXT              NULL,
+  airport_type        TEXT              NOT NULL,
+  status              TEXT              NOT NULL DEFAULT 'unknown',
+  is_hub              BOOLEAN           NOT NULL DEFAULT FALSE,
+  min_transit_minutes INTEGER           NOT NULL DEFAULT 90,
+  source_id           UUID              NOT NULL REFERENCES admin.data_sources (id),
+  source_record_id    TEXT              NOT NULL,
+  last_verified_at    TIMESTAMPTZ       NULL,
+  created_at          TIMESTAMPTZ       NOT NULL DEFAULT now(),
+  updated_at          TIMESTAMPTZ       NOT NULL DEFAULT now(),
 
   CONSTRAINT airports_source_record_key
     UNIQUE (source_id, source_record_id),
@@ -74,7 +76,10 @@ CREATE TABLE public.airports (
     ),
 
   CONSTRAINT airports_status_check
-    CHECK (status IN ('active', 'inactive', 'unknown'))
+    CHECK (status IN ('active', 'inactive', 'unknown')),
+
+  CONSTRAINT airports_transit_minutes_check
+    CHECK (min_transit_minutes >= 0)
 );
 
 CREATE UNIQUE INDEX airports_iata_key
@@ -90,6 +95,10 @@ ON public.airports USING btree (city_id);
 
 CREATE INDEX airports_country_id_idx
 ON public.airports USING btree (country_id);
+
+CREATE INDEX airports_hub_idx
+ON public.airports USING btree (iata)
+WHERE is_hub = TRUE;
 
 ALTER TABLE public.airports ENABLE ROW LEVEL SECURITY;
 

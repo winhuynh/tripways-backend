@@ -81,11 +81,12 @@ BEGIN
           'direct_destinations', (
             SELECT count(DISTINCT opt.destination_airport_iata)
             FROM public.flight_route_options opt
-            WHERE opt.origin_airport_iata = a.iata AND opt.publication_version_id = v_version
+            WHERE opt.origin_airport_iata = a.iata AND opt.publication_version_id = v_version AND opt.stops = 0
           ),
           'airlines', (
-            SELECT count(DISTINCT opt.provider_airline_iata)
-            FROM public.flight_route_options opt
+            SELECT count(DISTINCT al)
+            FROM public.flight_route_options opt,
+            LATERAL unnest(opt.operating_airlines) AS al
             WHERE opt.origin_airport_iata = a.iata AND opt.publication_version_id = v_version
           ),
           'hub_label', CASE WHEN a.iata = v_city.iata_code OR a.airport_type = 'large_airport' THEN 'Primary Hub' ELSE 'LCC Hub' END,
@@ -101,17 +102,18 @@ BEGIN
         'direct_destinations', COALESCE((
           SELECT count(DISTINCT opt.destination_city_id)
           FROM public.flight_route_options opt
-          WHERE opt.origin_city_id = v_city.id AND opt.publication_version_id = v_version
+          WHERE opt.origin_city_id = v_city.id AND opt.publication_version_id = v_version AND opt.stops = 0
         ), 0),
         'direct_countries', COALESCE((
           SELECT count(DISTINCT dest_city.country_id)
           FROM public.flight_route_options opt
           JOIN public.cities dest_city ON dest_city.id = opt.destination_city_id
-          WHERE opt.origin_city_id = v_city.id AND opt.publication_version_id = v_version
+          WHERE opt.origin_city_id = v_city.id AND opt.publication_version_id = v_version AND opt.stops = 0
         ), 0),
         'airlines', COALESCE((
-          SELECT count(DISTINCT opt.provider_airline_iata)
-          FROM public.flight_route_options opt
+          SELECT count(DISTINCT al)
+          FROM public.flight_route_options opt,
+          LATERAL unnest(opt.operating_airlines) AS al
           WHERE opt.origin_city_id = v_city.id AND opt.publication_version_id = v_version
         ), 0)
       ),
@@ -130,23 +132,15 @@ BEGIN
           ),
           'origin_airports', ARRAY[opt.origin_airport_iata],
           'destination_airports', ARRAY[opt.destination_airport_iata],
-          'airlines', ARRAY[opt.provider_airline_iata],
-          'frequency_per_week', 7,
-          'shortest_duration_minutes', 120,
-          'longest_duration_minutes', 150,
+          'airlines', opt.operating_airlines,
+          'stops', opt.stops,
+          'layover_airports', opt.layover_airports,
+          'duration_minutes', opt.total_duration_minutes,
           'route_path', opt.route_path,
-          'fare_estimate', CASE
-            WHEN opt.observed_amount IS NOT NULL THEN jsonb_build_object(
-              'min', opt.observed_amount,
-              'max', (opt.observed_amount * 1.5)::INT,
-              'currency', COALESCE(opt.currency_code, 'USD')
-            )
-            ELSE NULL
-          END,
-          'is_top_route', (row_number() OVER (ORDER BY opt.confidence_score DESC) = 1),
+          'is_top_route', (row_number() OVER (ORDER BY opt.stops ASC, opt.confidence_score DESC) = 1),
           'latitude', dest_c.latitude,
           'longitude', dest_c.longitude
-        ) ORDER BY opt.confidence_score DESC, opt.observed_amount NULLS LAST)
+        ) ORDER BY opt.stops ASC, opt.confidence_score DESC, opt.id)
         FROM public.flight_route_options opt
         JOIN public.cities dest_c ON dest_c.id = opt.destination_city_id
         JOIN public.countries dest_co ON dest_co.id = dest_c.country_id
@@ -160,27 +154,28 @@ BEGIN
           SELECT 1
           FROM public.flight_route_options AS option
           WHERE option.publication_version_id = v_version
-            AND option.origin_city_id = v_city.id
+            AND (
+              (v_direction = 'outbound' AND option.origin_city_id = v_city.id)
+              OR (v_direction = 'inbound' AND option.destination_city_id = v_city.id)
+            )
         ) THEN 'available'
-        WHEN EXISTS (
-          SELECT 1
-          FROM admin.flight_route_cache_states AS cache
-          WHERE cache.origin_iata = v_city.iata_code
-            AND cache.status IN ('empty', 'failed')
-            AND cache.next_refresh_at > now()
-        ) THEN 'unavailable'
         ELSE 'loading'
       END,
+
       'routes', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,
           'to', option.destination_airport_iata,
-          'airline', option.provider_airline_iata,
-          'observed_amount', option.observed_amount,
-          'currency_code', option.currency_code,
-          'valid_until', option.observation_valid_until,
+          'stops', option.stops,
+          'layover_airports', option.layover_airports,
+          'operating_airlines', option.operating_airlines,
+          'flight_numbers', option.flight_numbers,
+          'total_duration_minutes', option.total_duration_minutes,
+          'total_distance_km', option.total_distance_km,
+          'days_of_week', option.days_of_week,
+          'route_type', option.route_type,
           'route_path', option.route_path
-        ) ORDER BY option.confidence_score DESC, option.observed_amount NULLS LAST)
+        ) ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id)
         FROM public.flight_route_options AS option
         WHERE option.publication_version_id = v_version
           AND (
@@ -339,7 +334,7 @@ GRANT EXECUTE ON FUNCTION public.rpc_get_flight_affiliate_handoff(TEXT) TO servi
 -- ============================================================================
 -- Function: admin.build_route_page_payload
 -- Purpose: Compose one public-safe Route page payload for a publication candidate.
--- Responsibilities: Allowlist route identity, observations, options, and lifecycle metadata.
+-- Responsibilities: Allowlist route identity, observations, pre-computed route options, and metadata.
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION admin.build_route_page_payload(p_input JSONB)
@@ -398,34 +393,29 @@ BEGIN
       'flight_data_state', CASE
         WHEN EXISTS (
           SELECT 1
-          FROM public.flight_route_prices AS price
-          WHERE price.origin_city_id = v_page.origin_city_id
-            AND price.destination_city_id = v_page.destination_city_id
-            AND price.status = 'published'
-            AND price.valid_until > now()
+          FROM public.flight_route_options AS option
+          WHERE option.publication_version_id = v_version
+            AND option.origin_city_id = v_page.origin_city_id
+            AND option.destination_city_id = v_page.destination_city_id
         ) THEN 'available'
-        WHEN EXISTS (
-          SELECT 1
-          FROM admin.flight_route_cache_states AS cache
-          JOIN public.cities AS origin_city
-            ON origin_city.id = v_page.origin_city_id
-           AND origin_city.iata_code = cache.origin_iata
-          JOIN public.cities AS destination_city
-            ON destination_city.id = v_page.destination_city_id
-           AND destination_city.iata_code = cache.destination_iata
-          WHERE cache.status IN ('empty', 'failed')
-            AND cache.next_refresh_at > now()
-        ) THEN 'unavailable'
         ELSE 'loading'
       END,
+
       'route_options', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,
           'to', option.destination_airport_iata,
-          'airline', option.provider_airline_iata,
-          'evidence_type', option.evidence_type,
+          'stops', option.stops,
+          'layover_airports', option.layover_airports,
+          'operating_airlines', option.operating_airlines,
+          'flight_numbers', option.flight_numbers,
+          'flight_durations_minutes', option.flight_durations_minutes,
+          'total_duration_minutes', option.total_duration_minutes,
+          'total_distance_km', option.total_distance_km,
+          'days_of_week', option.days_of_week,
+          'route_type', option.route_type,
           'confidence_score', option.confidence_score
-        ) ORDER BY option.confidence_score DESC)
+        ) ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id)
         FROM public.flight_route_options AS option
         WHERE option.publication_version_id = v_version
           AND option.origin_city_id = v_page.origin_city_id

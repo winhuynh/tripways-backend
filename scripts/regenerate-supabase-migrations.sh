@@ -77,7 +77,9 @@ emit_migration \
   "supabase/sql_src/schema/flight_routing/cities.sql" \
   "supabase/sql_src/schema/flight_routing/airports.sql" \
   "supabase/sql_src/schema/flight_routing/airlines.sql" \
+  "supabase/sql_src/schema/flight_routing/direct_flight_routes.sql" \
   "supabase/sql_src/schema/flight_routing/flight_route_prices.sql"
+
 
 emit_migration \
   "20260714080300_route_discovery_schema.sql" \
@@ -129,9 +131,14 @@ emit_migration \
 emit_migration \
   "20260714080800_route_discovery_functions.sql" \
   "route discovery functions" \
+  "supabase/sql_src/functions/route_discovery/calculate_haversine_distance_km.sql" \
+  "supabase/sql_src/functions/route_discovery/calculate_route_schedule_intersection.sql" \
+  "supabase/sql_src/functions/route_discovery/calculate_connecting_duration_minutes.sql" \
+  "supabase/sql_src/functions/route_discovery/classify_route_connection_type.sql" \
   "supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql" \
   "supabase/sql_src/functions/route_discovery/rpc_search_routes.sql" \
   "supabase/sql_src/functions/route_discovery/rpc_suggest_locations.sql"
+
 
 
 emit_migration \
@@ -151,10 +158,13 @@ emit_migration \
 emit_migration \
   "20260714081000_ingestion_functions.sql" \
   "base data ingestion functions" \
+  "supabase/sql_src/functions/ingestion/ingest_direct_flight_routes_batch.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_ingest_direct_flight_routes.sql" \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_get_ourairports_denylist.sql" \
   "supabase/sql_src/operations/configure_ingestion_crons.sql"
+
 
 
 find "$source_root" -type f -name "*.sql" \
