@@ -1,8 +1,5 @@
 import { createQueryHandler } from '@shared/contracts/query-handler.ts';
-import {
-  parseLocationSuggestRequest,
-  type LocationSuggestRequest,
-} from './request.ts';
+import { type LocationSuggestRequest, parseLocationSuggestRequest } from './request.ts';
 
 export function createLocationSuggestHandler(
   query: (input: LocationSuggestRequest) => Promise<unknown>,

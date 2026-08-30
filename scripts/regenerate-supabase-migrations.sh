@@ -90,7 +90,6 @@ emit_migration \
   "base data ingestion schema" \
   "supabase/sql_src/schema/ingestion/raw_import_batches.sql" \
   "supabase/sql_src/schema/ingestion/raw_base_data_records.sql" \
-  "supabase/sql_src/schema/ingestion/flight_route_cache_states.sql" \
   "supabase/sql_src/schema/ingestion/ourairports_denylist.sql"
 
 emit_migration \
@@ -131,7 +130,9 @@ emit_migration \
   "20260714080800_route_discovery_functions.sql" \
   "route discovery functions" \
   "supabase/sql_src/functions/route_discovery/refresh_route_search_options.sql" \
-  "supabase/sql_src/functions/route_discovery/rpc_search_routes.sql"
+  "supabase/sql_src/functions/route_discovery/rpc_search_routes.sql" \
+  "supabase/sql_src/functions/route_discovery/rpc_suggest_locations.sql"
+
 
 emit_migration \
   "20260714080900_pseo_functions.sql" \
@@ -139,7 +140,6 @@ emit_migration \
   "supabase/sql_src/functions/pseo/city/build_city_page_payload.sql" \
   "supabase/sql_src/functions/pseo/airport/build_airport_page_payload.sql" \
   "supabase/sql_src/functions/pseo/shared/rpc_get_flight_affiliate_handoff.sql" \
-  "supabase/sql_src/functions/pseo/homepage/rpc_get_homepage_statistics.sql" \
   "supabase/sql_src/functions/pseo/route/build_route_page_payload.sql" \
   "supabase/sql_src/functions/pseo/shared/rpc_get_sitemap.sql" \
   "supabase/sql_src/functions/pseo/shared/refresh_page_read_models.sql" \
@@ -147,18 +147,15 @@ emit_migration \
   "supabase/sql_src/functions/pseo/shared/rpc_get_page.sql" \
   "supabase/sql_src/operations/sync_provider_pseo_pages.sql"
 
+
 emit_migration \
   "20260714081000_ingestion_functions.sql" \
   "base data ingestion functions" \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_get_ourairports_denylist.sql" \
-  "supabase/sql_src/functions/ingestion/rpc_get_flight_route_cache.sql" \
-  "supabase/sql_src/functions/ingestion/rpc_claim_flight_route_cache_refresh.sql" \
-  "supabase/sql_src/functions/ingestion/rpc_fail_flight_route_cache_refresh.sql" \
-  "supabase/sql_src/functions/ingestion/publish_flight_route_cache_scope.sql" \
-  "supabase/sql_src/functions/ingestion/rpc_publish_flight_route_cache_scope.sql" \
   "supabase/sql_src/operations/configure_ingestion_crons.sql"
+
 
 find "$source_root" -type f -name "*.sql" \
   | sed "s|$repo_root/||" \

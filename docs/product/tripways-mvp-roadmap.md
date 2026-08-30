@@ -1,7 +1,7 @@
 # Lộ trình sản phẩm MVP Tripways
 
-**Trạng thái:** Đang thực hiện — phase hiện tại P0A
-**Cập nhật:** 2026-08-05
+**Trạng thái:** P0A hoàn thành 100% (Local Release Candidate) — Chuẩn bị kích hoạt P0B (Remote Staging)  
+**Cập nhật:** 2026-08-29  
 **Phạm vi:** `tripways-backend` và `tripways-web`
 
 ## 1. Định hướng sản phẩm
@@ -33,26 +33,27 @@ Nguyên mẫu cục bộ hiện có:
 - Contract và primitive Next.js từ nguyên mẫu cũ được giữ lại để phục vụ rebuild; các page cũ đã
   được dọn khỏi frontend.
 - RLS, phân quyền tối thiểu, sử dụng khóa `service-role` phía máy chủ và kiểm thử hợp đồng.
+- 100% test suites ở cả backend (Deno) và frontend (Vitest) đều pass sạch sẽ.
 
 Nguyên mẫu hiện chưa có:
 
-- Môi trường staging từ xa ổn định.
-- Pipeline nhập dữ liệu production hoặc nguồn dữ liệu production đã được phê duyệt.
-- Nhà cung cấp dữ liệu tuyến bay hoặc lịch bay có bản quyền.
-- Kết quả chuyến bay và giá theo ngày.
+- Môi trường staging từ xa ổn định (P0B).
+- Pipeline nhập dữ liệu production hoặc nguồn dữ liệu production đã được phê duyệt (P1).
+- Nhà cung cấp dữ liệu tuyến bay hoặc lịch bay có bản quyền (P2).
+- Kết quả chuyến bay và giá theo ngày (P3).
 - Chuyển hướng liên kết và phân tích hành vi sản phẩm.
-- Xuất bản sitemap production hoặc quy trình ra mắt production.
+- Xuất bản sitemap production hoặc quy trình ra mắt production (P4).
 
 ## 3. Các giai đoạn bàn giao
 
-| Giai đoạn | Trạng thái         | Kết quả sản phẩm                                                                     | Điều kiện hoàn tất                                                                       |
-| --------- | ------------------ | ------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| P0A       | **Đang thực hiện** | Local release candidate hoàn thành phần lớn hành vi sản phẩm và pipeline dữ liệu nhỏ | Toàn bộ hành vi không phụ thuộc cloud chạy end-to-end ở local và đạt cổng chất lượng P0A |
-| P0B       | Chưa bắt đầu       | Sản phẩm staging ổn định, riêng tư và `noindex`                                      | Cùng release candidate hoạt động từ xa; chỉ còn khác biệt hạ tầng, bí mật và vận hành    |
-| P1        | Chưa bắt đầu       | Có thể nhập và kiểm duyệt dữ liệu nền thật một cách an toàn                          | Dữ liệu quốc gia, thành phố và sân bay thật được xuất bản qua pipeline có thể kiểm toán  |
-| P2        | Chưa bắt đầu       | Dữ liệu tuyến bay và lịch bay có bản quyền vận hành lớp khám phá đáng tin cậy        | Khám phá tuyến bay và pSEO sử dụng dữ liệu production mới, có bản quyền                  |
-| P3        | Chưa bắt đầu       | Người dùng có thể tìm chuyến bay theo ngày; quảng cáo và affiliate hoạt động an toàn | MVP production đáp ứng cổng thương mại, bảo mật, disclosure, phân tích và độ tin cậy     |
-| P4        | Chưa bắt đầu       | Mở rộng pSEO có kiểm soát từ tập thị trường đã chứng minh giá trị                    | Coverage, quality, indexability, cost và freshness gate hoạt động ở quy mô production    |
+| Giai đoạn | Trạng thái         | Kết quả sản phẩm                                                                            | Điều kiện hoàn tất                                                                             |
+| --------- | ------------------ | ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| P0A       | **Đã hoàn thành**  | Local release candidate hoàn tất 100% hành vi sản phẩm, build production và tests           | Toàn bộ hành vi không phụ thuộc cloud chạy end-to-end ở local và đạt 100% cổng chất lượng      |
+| P0B       | **Kế tiếp**        | Sản phẩm staging ổn định trên Cloudflare + Supabase Cloud, riêng tư và `noindex`            | Cùng release candidate hoạt động từ xa; chỉ còn khác biệt hạ tầng, bí mật và vận hành          |
+| P1        | Kế hoạch song hành | Có thể nhập và kiểm duyệt dữ liệu nền thật một cách an toàn                                 | Dữ liệu quốc gia, thành phố và sân bay thật được xuất bản qua pipeline OurAirports             |
+| P2        | Kế hoạch song hành | Dữ liệu tuyến bay & đồ thị kết nối (AeroDataBox/API.market) vận hành Route Explorer và pSEO | Mạng lưới chặng bay thẳng (Direct Routes) và kết nối 1–3 stops kiểu FlightConnections sẵn sàng |
+| P3        | Chưa bắt đầu       | Tích hợp giá vé quan sát và Affiliate Handoff an toàn (Travelpayouts/Aviasales)             | MVP production đáp ứng cổng thương mại, affiliate CTA, disclosure và phân tích chuyển đổi      |
+| P4        | Chưa bắt đầu       | Mở rộng pSEO có kiểm soát từ tập thị trường đã chứng minh giá trị                           | Coverage, quality, indexability, cost và freshness gate hoạt động ở quy mô production          |
 
 Một số schema, contract và read model phục vụ P1–P3 có thể được chuẩn bị trong P0A để tránh thiết kế
 lại. Những foundation đó không làm thay đổi trạng thái phase và không phải bằng chứng nghiệm thu.
@@ -92,12 +93,11 @@ candidate trên hạ tầng từ xa. P0 chỉ hoàn tất khi cả P0A và P0B �
 Lộ trình MVP thành công khi:
 
 - Người dùng có thể mở trang thành phố hoặc sân bay đã xuất bản và hiểu các mẫu tuyến bay thẳng hiện
-  có.
-- Người dùng có thể chọn `From + To` trên homepage và đến đúng Route Page canonical, hoặc nhận
-  fallback hữu ích khi city pair chưa có trang được xuất bản.
-- Người dùng có thể tìm hành trình theo ngày và nhận kết quả đã chuẩn hóa từ nhà cung cấp.
-- Người dùng có thể chuyển tới đối tác liên kết trong danh sách cho phép mà Tripways không nhận URL
-  chuyển hướng tùy ý.
+  có (Route Explorer).
+- Người dùng có thể chọn `From + To` trên homepage và đến đúng Route Page canonical (hiển thị bay thẳng
+  hoặc các trạm nối chuyến 1–2 stops), hoặc nhận fallback hữu ích khi city pair chưa có trang được xuất bản.
+- Người dùng có thể xem giá vé ước tính gần đây và chuyển tiếp an toàn tới đối tác liên kết
+  (Travelpayouts/Aviasales) để hoàn tất đặt chỗ.
 - Mọi khẳng định công khai đều truy vết được về nguồn và trạng thái độ mới đã phê duyệt.
 - Nhóm sản phẩm đo được lượt dùng trang, lượt tìm kiếm, không có kết quả, lỗi nhà cung cấp và lượt rời
   qua liên kết mà không lưu dữ liệu hành khách không cần thiết.
@@ -123,19 +123,15 @@ Lộ trình MVP thành công khi:
   từ xa hoặc cấp bí mật đều cần chủ sở hữu phê duyệt rõ ràng.
 - Thay đổi phạm vi đáng kể phải cập nhật PRD tương ứng trước khi triển khai.
 
-## 8. Kế hoạch mở rộng City Hub và commercial content
+## 8. Kế hoạch phân tầng dữ liệu và mở rộng Route Explorer
 
 Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
-- P0A/P0B giữ provider-neutral contract, fixture và staging `noindex`.
-- P1 dùng OurAirports cho reference data có provenance và quyền rõ ràng.
-- P2 dùng Travelpayouts/Aviasales Data API làm nguồn content observation ngắn hạn cho filter và
-  commercial CTA; không xem đây là schedule DB hoặc live booking API.
-- Cron kiểm tra hằng ngày, refresh từ ngày thứ 6; mỗi observation tự hết hạn tối đa sau 24 giờ và
-  batch mới thay thế batch cũ.
-- AeroDataBox/AirLabs không nằm trong implementation hiện tại. Schedule enrichment vẫn là adapter
-  optional trong tương lai nếu có business case và rights review riêng.
-- Module fare/affiliate luôn optional; City Hub và pSEO core vẫn render được khi provider bị tắt.
+- **P0A/P0B**: Giữ provider-neutral contract, fixture và staging `noindex`.
+- **P1 (Reference Data)**: Dùng OurAirports cho reference data (country, city, airport, coordinates) có provenance và quyền rõ ràng.
+- **P2 (Route Explorer & Schedule Graph)**: Dùng **AeroDataBox (qua API.market)** theo cơ chế Batch Ingestion định kỳ để nạp mạng lưới đường bay thẳng (`/airports/iata/{iata}/routes/direct`) và lịch bay định kỳ. Postgres xây dựng đồ thị kết nối 0–3 stops phục vụ ma trận trang pSEO (Airport Hub, City Hub, Route A $\to$ B) theo phong cách FlightConnections.
+- **P3 (Commercial & Fare Observation)**: Dùng **Travelpayouts/Aviasales Data API** làm nguồn quan sát giá vé gần đây (cached fares) và luồng Affiliate Handoff an toàn; không dùng Travelpayouts làm nguồn xây dựng mạng lưới đường bay.
+- Module fare/affiliate luôn optional; City Hub, Airport Hub và pSEO core vẫn render đầy đủ đồ thị tuyến bay khi commercial module vắng mặt.
 
 ## 9. Bổ sung phạm vi pSEO theo phase
 
@@ -165,30 +161,24 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
   transport, parking, terminal/facility, lounge, notice, FAQ và internal link.
 - Tính content completeness theo page type; page thiếu dữ liệu không được tự động index.
 
-### P2 — Route content và observed affiliate fare
+### P2 — Route Explorer, Schedule Graph và pSEO Matrix
 
-- Xuất bản route discovery từ canonical/reference data; chỉ hiển thị direct/connection facts khi có
-  nguồn phù hợp, không suy luận schedule từ cached fare.
-- Homepage chỉ điều hướng `From + To` đến Route Page khi cặp canonical có URL đã xuất bản; route
-  thiếu evidence hoặc không đủ indexability phải trả fallback discovery, không phải một route page
-  được tạo theo query.
-- City Hub có thể hỗ trợ departure airport, geography, duration và estimated-price filters. Airport
-  chỉ hỗ trợ counterpart query/geography, domestic/international và operating airline; không có
-  connection, duration hoặc price filter.
-- Fare là observation đơn có source, market, found-at và expiry; không tạo range, không gọi là giá
-  trực tiếp và không lưu lịch sử sâu.
+- Ingest mạng lưới chặng bay thẳng (Direct Routes) từ AeroDataBox (qua API.market) hoặc OpenFlights vào Postgres `public.direct_flight_routes`.
+- Xây dựng Route Graph Engine trong Postgres hỗ trợ tìm kiếm:
+  1. Bay thẳng (0-stop) kèm hãng khai thác (operating airlines) và lịch bay định kỳ.
+  2. Nối chuyến 1–2 điểm dừng (1-stop, 2-stops connection hubs) kèm thời gian bay ước tính.
+- Tự động sinh và tối ưu ma trận trang pSEO chuẩn FlightConnections:
+  - **Airport Hub Page**: Tất cả các điểm đến bay thẳng từ sân bay, phân nhóm theo quốc gia/khu vực.
+  - **Route Page (A $\to$ B)**: Chi tiết chặng bay thẳng, các phương án nối chuyến qua Hubs, lịch bay trong tuần.
+  - **City Hub Page**: Tổng hợp các sân bay phục vụ thành phố và mạng lưới điểm đến.
+- Đảm bảo chất lượng SEO: Page chỉ index khi có dữ liệu route thật, provenance rõ ràng và canonical identity.
 
-### P3 — Advertisement, affiliate handoff và live-search upgrade
+### P3 — Tích hợp thương mại và quan sát giá vé (Travelpayouts)
 
-- Advertisement slot, sponsored module, affiliate offer, CTA và disclosure được cấu hình từ backend.
-- Commercial module optional, có capability gate và kill switch; thiếu partner không làm hỏng page.
-- Affiliate handoff dùng partner host allowlist, disclosure và expiry. Live offer theo ngày chỉ được
-  thêm bằng provider contract khác trong tương lai.
-- Khi live search được phê duyệt, homepage có thể mở luồng ngày đi/ngày về riêng với city pair đã
-  resolve; kết quả là bề mặt thương mại `noindex`, không phải Route Page và không làm thay đổi
-  canonical, sitemap hoặc organic facts.
-- Airport commercial module không thay thế arrival/transport/departure; live-search chỉ prefill từ
-  verified direct row người dùng đã chọn.
+- Tích hợp Travelpayouts / Aviasales Data API làm tầng dữ liệu thương mại (Monetization Layer).
+- Cơ chế On-demand Cache-aside: Lưu giá vé quan sát gần nhất (`observed_amount`) vào `public.flight_route_prices` mà không làm chậm SSR hay vỡ trang khi API lỗi.
+- Triển khai luồng Affiliate Handoff an toàn: Tạo link CTA dẫn sang Aviasales/Travelpayouts kèm Partner Marker & SubID để người dùng kiểm tra giá thực tế và đặt vé.
+- Bật kill switch cho commercial module: Nếu Travelpayouts gặp sự cố, toàn bộ đồ thị Route Explorer và trang pSEO vẫn hoạt động bình thường.
 
 ### P4 — Mở rộng pSEO có kiểm soát
 
@@ -199,3 +189,51 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Đo funnel `homepage From`, `homepage From + To`, Route Page reached và fallback; dữ liệu demand
   này chỉ dùng để đánh giá cohort pSEO, không tự tạo hoặc index URL từ mọi truy vấn.
 - Rollout theo country/market cohort và có rollback về publication version gần nhất.
+
+## 10. Chiến lược kiểm soát rủi ro cốt lõi (Core Risk Mitigations)
+
+Nhằm đảm bảo sản phẩm vượt qua các rủi ro vận hành và thuật toán tìm kiếm, Tripways áp dụng 5 biện pháp phòng vệ:
+
+1. **Chống Thin Content & Đáp ứng chuẩn Google Helpful Content (HCU)**:
+   - Không sinh trang rỗng/trùng lặp. Mỗi trang Route Page được làm giàu bằng **dữ liệu định lượng độc đáo**:
+     - Khoảng cách bay thực tế ($km$), thời gian bay trung bình, số chuyến/tuần.
+     - Lịch bay chi tiết theo ngày trong tuần (Day-of-Week matrix).
+     - So sánh chi tiết giữa các lựa chọn: Hãng bay thẳng vs Các phương án nối chuyến qua Hubs.
+   - **Quality Gate**: Tự động đánh dấu `noindex` những trang thiếu dữ liệu lịch bay hoặc có độ tin cậy thấp.
+
+2. **Tối ưu hiệu năng Graph & Chống nghẽn Database**:
+   - Mạng lưới ~70.000 chặng bay thẳng được lập chỉ mục (B-Tree + Compound Index trên `origin_iata`, `destination_iata`).
+   - Thuật toán nối chuyến 1–2 stops được tối ưu hóa: Chỉ tìm điểm quá cảnh qua **Top 50 Major Global Hubs** (DOH, SIN, DXB, BKK, IST, HND, LHR, FRA...).
+   - **Pre-computed Read Models**: Materialize sẵn kết quả cho các cặp thành phố phổ biến vào bảng `flight_route_options` để thời gian phản hồi luôn $< 10\text{ms}$.
+
+3. **Tối ưu tỷ lệ chuyển đổi Affiliate (Handoff CTR)**:
+   - Chuyển đổi từ mô hình đặt 1 nút CTA duy nhất sang **Contextual In-line CTAs**: Gắn nút _"Kiểm tra giá hãng này"_ bên cạnh từng phương án bay thẳng và từng trạm dừng nối chuyến.
+   - Hiển thị rõ giá tham khảo quan sát gần nhất (`observed_amount`) để kích thích người dùng click kiểm tra giá live trên Aviasales.
+
+4. **Đồng bộ chu kỳ đổi mùa bay IATA (Seasonality Sync)**:
+   - Ngành hàng không thay đổi lịch bay 2 lần/năm: Mùa hè (Cuối tháng 3) và Mùa đông (Cuối tháng 10).
+   - Ingestion cron chạy định kỳ **1 tháng / 1 lần** (Batch Ingestion cho top 500 sân bay) và kích hoạt **Full Sync bổ sung vào tuần cuối tháng 3 và tháng 10** để cập nhật kịp thời đường bay mùa vụ.
+
+5. **Chiến lược dữ liệu Hybrid tối ưu chi phí ($5 - $20/tháng)**:
+   - **OurAirports (Free 100%)**: Làm chân đế cho toàn bộ phân cấp địa lý (Country $\to$ Region $\to$ City $\to$ Airport).
+   - **AeroDataBox (API.market)**: Dành trọn vẹn 100% quota API cho Direct Routes & Schedules. Tuyệt đối không lãng phí quota vào việc lấy thông tin sân bay/tọa độ đã có trong OurAirports.
+
+## 11. Mô hình Doanh thu 4 Tầng (Monetization Engine — RPM $25 – $40+)
+
+Thay vì chỉ dựa vào hoa hồng vé máy bay mỏng (1%–1.5%), Tripways triển khai tháp doanh thu 4 tầng:
+
+1. **Flight Affiliate (Volume)**: Travelpayouts / Aviasales, Skyscanner, Trip.com (\$1 – \$3 / booking).
+2. **Airport Ground Transfers (High Margin)**: Welcome Pickups, GetYourGuide, Klook, 12Go (**8% – 12%** giá trị đơn, \$4 – \$10 / cuốc xe) trên Airport Hub & Route Planning Grid.
+3. **Travel Essentials (High EPC)**: Airalo / Nomad (eSIM: 15% – 25%), Priority Pass / Plaza Premium (Lounge: \$5 – \$12 / pass), SafetyWing (Bảo hiểm du lịch) trên module `SponsoredTravelServices` và `LoungeUtility`.
+4. **Programmatic Display Ads**: Mediavine Journey / Raptive khi đạt mốc traffic (\$15 – \$35 RPM) tại các vị trí Sticky Sidebar, In-feed Native Cards, và Mobile Sticky Bottom.
+
+## 12. Chiến lược Tăng trưởng pSEO & Cỗ máy Backlink B2B2C
+
+1. **3 Định dạng trang pSEO mở rộng**:
+   - **Hub-to-Region (`/flights-from/{city}/to/{region}`)**: vd: `/flights-from/bangkok/to/europe` phục vụ intent tìm kiếm khu vực điểm đến.
+   - **Airline Hub Matrix (`/airlines-at/{airport}/{airline}`)**: vd: `/airlines-at/bkk/emirates` phục vụ khách trung thành liên minh bay.
+   - **Airport Layover Guides (`/airports/{airport}/transit-guide`)**: vd: `/airports/doh/layover-guide` tối ưu chuyển đổi phòng chờ và tour trung chuyển.
+2. **Embed Route Map Widget (Zero-cost Backlinks Engine)**:
+   - Cung cấp iframe nhúng bản đồ mạng bay tương tác cho travel bloggers, khách sạn và báo chí kèm backlink do-follow tự nhiên: _"Interactive Flight Map provided by Tripways"_.
+3. **Tính năng Viral "Weekend Direct Getaways"**:
+   - Bộ lọc khám phá: _"Từ thành phố của tôi, có thể bay thẳng đi đâu dưới 3 tiếng với giá ước tính dưới $100?"_.

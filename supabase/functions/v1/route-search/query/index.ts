@@ -5,7 +5,16 @@ const handleRequest = createRouteSearchHandler(async (input) => {
   const { data, error } = await getServiceRoleClient().rpc('rpc_search_routes', {
     p_input: input,
   });
-  if (error) throw new Error('ERR_ROUTE_SEARCH_QUERY_FAILED');
+  if (error) {
+    const err = new Error('ERR_ROUTE_SEARCH_QUERY_FAILED');
+    Object.assign(err, {
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      originalMessage: error.message,
+    });
+    throw err;
+  }
   return data;
 });
 

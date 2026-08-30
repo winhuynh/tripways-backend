@@ -1,28 +1,30 @@
-# PRD P2: Dữ liệu chuyến bay có bản quyền
+# PRD P2: Tuyến bay & Đồ thị Lịch trình (Route Explorer & Schedule Graph)
 
-**Trạng thái:** Hoãn schedule-provider scope; commercial content đi theo Travelpayouts plan
-**Cập nhật:** 2026-08-12
+**Trạng thái:** Kế hoạch triển khai — Sử dụng AeroDataBox (qua API.market) & OpenFlights
+**Cập nhật:** 2026-08-27
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
 
-> Quyết định hiện hành: P2 không tích hợp AirLabs/AeroDataBox. Các phần schedule-provider bên dưới
-> được giữ làm yêu cầu tương lai, không phải dependency để ra mắt pSEO/affiliate MVP. Contract hiện
-> tại là short-lived Travelpayouts content observations theo kế hoạch City Hub.
+> Quyết định cập nhật: P2 tập trung xây dựng **Cơ sở dữ liệu đồ thị mạng lưới đường bay (Route Graph)**
+> và **Lịch bay định kỳ (Schedules/Timetables)** phục vụ tính năng **Route Explorer** và ma trận trang **pSEO**
+> theo mô hình của FlightConnections. Dữ liệu được nạp định kỳ (Batch Ingestion) từ **AeroDataBox (qua API.market)**
+> hoặc OpenFlights vào PostgreSQL. Tầng giá vé thương mại và affiliate handoff được tách biệt hoàn toàn sang P3 (Travelpayouts).
 
 ## 1. Vấn đề
 
-Dữ liệu định danh sân bay và thành phố không đủ để trả lời người dùng thường có thể bay đi đâu.
-Tripways cần dữ liệu tuyến bay và lịch bay định kỳ có bản quyền, đủ mới và đủ quyền để vận hành khám
-phá tuyến và pSEO mà không mô tả lịch bay đã lưu như tình trạng còn chỗ trực tiếp.
-
-Dữ liệu tuyến mẫu và các read-model foundation 0–3 stops chứng minh được hành vi kỹ thuật nhưng không
-thể công bố như sự thật production và không có nghĩa P2 đã bắt đầu.
+Dữ liệu định danh sân bay và thành phố từ OurAirports không đủ để trả lời người dùng có thể bay từ đâu đến đâu.
+Tripways cần dữ liệu tuyến bay (Direct Routes) và lịch bay định kỳ (Operating Days, Timetables, Airlines) có bản quyền,
+đủ bao phủ và cập nhật để vận hành công cụ Route Explorer và tạo hàng trăm ngàn trang pSEO chất lượng cao mà không cần
+dữ liệu thời gian thực (live inventory).
 
 ## 2. Mục tiêu
 
-Nhập và xuất bản tuyến bay có hướng cùng dịch vụ bay định kỳ có bản quyền, tái dựng read model tuyến
-từ không đến ba điểm dừng, đồng thời cung cấp Homepage, City, Airport và Route Page đáng tin cậy với độ
-mới, độ tin cậy và điều kiện lập chỉ mục dựa trên nguồn rõ ràng.
+Nhập và xuất bản mạng lưới tuyến bay có hướng cùng lịch bay định kỳ từ AeroDataBox (API.market) / OpenFlights,
+xây dựng Route Graph Engine trong PostgreSQL để tính toán:
+
+1. Tuyến bay thẳng (0-stop) kèm hãng khai thác và lịch bay trong tuần.
+2. Các phương án nối chuyến 1–2 điểm dừng (1–2 stops) qua các Transit Hubs phổ biến (ví dụ: SIN, DOH, DXB, BKK, IST...).
+3. Tự động sinh nội dung cho Airport Hub, City Hub và Route Pages (A $\to$ B) phục vụ pSEO.
 
 ## 3. Người dùng mục tiêu
 
@@ -191,51 +193,40 @@ P2 chỉ được nghiệm thu khi:
 - Index toàn cầu trước khi đo chất lượng trên kho ban đầu.
 - Hành vi riêng của provider trong hợp đồng sản phẩm public.
 
-## 11. Rủi ro
+## 11. Quản lý Rủi ro & Biện pháp kiểm soát
 
-- Quyền provider có thể cấm SEO, TTL cache dài hoặc graph tuyến phái sinh.
-- Snapshot lịch bay có thể khác hoạt động thực tế theo ngày.
-- Tuyến nhiều điểm dừng có thể tương thích về lý thuyết nhưng không bán được về thương mại.
-- Dữ liệu codeshare có thể bị hiểu nhầm thành vé chung hoặc kết nối được bảo vệ, dù codeshare chỉ mô
-  tả quan hệ marketing/khai thác của một chặng bay.
-- Kho dữ liệu lớn có thể tạo trang mỏng hoặc trùng lặp.
+- **Rủi ro Thin Content / Google HCU**: Kho dữ liệu lớn tự động sinh hàng ngàn trang có thể bị Google đánh giá thấp nếu thiếu giá trị độc đáo.
+  - _Kiểm soát_: Mỗi trang Route Page bắt buộc chứa các dữ liệu tính toán định lượng (khoảng cách $km$, thời gian bay, ma trận ngày bay trong tuần, so sánh bay thẳng vs nối chuyến qua Hubs). Áp dụng cổng chất lượng `noindex` đối với các trang thiếu dữ liệu lịch bay.
+- **Rủi ro hiệu năng truy vấn đồ thị**: Thuật toán tìm kiếm nối chuyến 1–2 stops có thể gây chậm database.
+  - _Kiểm soát_: Giới hạn đồ thị trung chuyển qua Top 50 Hubs toàn cầu; Pre-compute và Materialize các tuyến phổ biến vào bảng `flight_route_options`.
+- **Rủi ro thay đổi lịch bay mùa vụ (IATA Seasonality)**: Lịch bay thực tế thay đổi theo mùa hè/mùa đông.
+  - _Kiểm soát_: Cron Batch Ingestion chạy hàng tháng, kết hợp Full Sync bổ sung vào cuối tháng 3 và cuối tháng 10.
+- **Rủi ro lãng phí hạn ngạch API**: Gọi API lấy thông tin sân bay làm cạn kiệt quota AeroDataBox.
+  - _Kiểm soát_: Sử dụng OurAirports làm chân đế miễn phí cho danh mục Sân bay/Thành phố (P1); dành 100% quota AeroDataBox cho tuyến bay và lịch trình (P2).
 
-Các rủi ro được kiểm soát bằng review hợp đồng, khẳng định an toàn, cổng độ tin cậy và độ mới, quy
-tắc tối đa ba điểm dừng có giới hạn, kho ban đầu được review và tách biệt khám phá tuyến khỏi kết quả trực
-tiếp trong tương lai.
-
-## 12. AirLabs POC và City Hub capability gate
+## 12. AeroDataBox (API.market) Ingestion & Capability Gate
 
 Kế hoạch đầy đủ nằm tại `docs/product/city-hub-provider-and-commercial-expansion-plan.md`.
 
-AirLabs là ứng viên P2 cho route, recurring schedule, airport, city, country, airline và timezone.
-Trước tích hợp production phải chạy POC 14–30 ngày, xác minh API version/package, coverage,
-operating-day accuracy, codeshare semantics, freshness, full-refresh cost và quyền production/SEO/
-cache/snapshot/derived data.
+**AeroDataBox (qua API.market)** là nguồn chính của P2 cho direct routes và flight schedules:
 
-P2 có thể bật trên City Hub:
+- **Batch Ingestion**: Chạy script định kỳ (hàng tuần hoặc hàng tháng) gọi endpoint `/airports/iata/{iata}/routes/direct` cho top 500 sân bay thương mại lớn.
+- **Tiết kiệm chi phí**: Với gói $5 - $20/tháng trên API.market, toàn bộ dữ liệu được lưu vào `public.direct_flight_routes` trong Postgres để phục vụ truy vấn nội bộ tốc độ cao (<10ms).
+- **Graph Traversal**: Postgres RPC tính toán các chặng nối chuyến 1–2 stops (Hub connections) dựa trên bảng chặng bay thẳng.
+
+P2 có thể bật trên City Hub, Airport Hub và Route Pages:
 
 - Direct destinations, map, airport/country-region/airline/duration/route-type filters.
-- Operating days, frequency đã dedupe, freshness và provenance.
+- Operating days, flight numbers, aircraft type, operating airlines, provenance.
 - City-level aggregation và route groups do Tripways tính.
 
-P2 không được bật chỉ từ AirLabs:
+P2 độc lập với dữ liệu giá vé (giá vé và affiliate CTA do P3 / Travelpayouts đảm nhiệm):
 
-- Estimated fare, price filter, cheapest month hoặc price trend.
-- Live availability, booking hoặc affiliate CTA dựa trên offer.
-- Year-round/seasonal claim khi thiếu effective date range hoặc lịch sử đủ tin cậy.
+- Trang vẫn hiển thị đầy đủ bản đồ tuyến bay, hãng bay, lịch trình ngay cả khi không có giá vé hoặc Travelpayouts gặp lỗi.
 
-City Hub P2 phải render đúng khi toàn bộ price và commercial module vắng mặt.
+## 13. Page capability sau khi có dữ liệu P2
 
-## 13. Page capability sau khi có dữ liệu licensed
-
-- City Hub tập trung khám phá direct destinations theo city; Route Page hỗ trợ direct và hành trình
-  có tối đa ba điểm dừng. Airport Page tập trung arrive/depart logistics, với verified direct routes
-  hai chiều là utility phụ.
-- City discovery có thể dùng departure-airport, destination geography, duration và price facet khi
-  capability tương ứng được phê duyệt. Không áp các facet đó mặc định cho Airport Page.
-- Estimated fare trên City/Route discovery phải ghi rõ range, currency, method, confidence, sample
-  window, expiry và trạng thái unavailable. Airport Page không đưa estimated airfare vào verified
-  flights block; estimated transport cost vẫn được phép khi có source và freshness.
-- Read model không duy trì standalone airline section chỉ vì provider có airline data; airline chỉ
-  xuất hiện khi giúp so sánh route hoặc làm filter.
+- **City Hub**: Tập trung khám phá direct destinations theo city và các sân bay phục vụ.
+- **Airport Page**: Orientation/travel guide kết hợp bảng **Direct Flight Routes** hai chiều (From & To) do hãng nào bay.
+- **Route Page (A $\to$ B)**: Hiển thị các hãng bay thẳng, lịch bay trong tuần, và các phương án nối chuyến 1–2 stops qua các Hubs quốc tế lớn.
+- **Travelpayouts Integration (P3)**: Gắn thêm widget/giá vé tham khảo gần nhất và nút CTA dẫn sang Aviasales để hoàn tất đặt vé.

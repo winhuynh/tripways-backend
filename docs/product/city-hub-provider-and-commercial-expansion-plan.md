@@ -1,7 +1,7 @@
 # City Hub provider và commercial expansion plan
 
-**Trạng thái:** Travelpayouts test integration
-**Cập nhật:** 2026-08-12
+**Trạng thái:** AeroDataBox (API.market) + Travelpayouts integration plan
+**Cập nhật:** 2026-08-27
 
 ## 1. Mục tiêu sản phẩm
 
@@ -20,16 +20,16 @@ không tồn tại.
 
 ## 2. Phân vai dữ liệu
 
-| Thành phần                            | Nguồn hiện tại                   | Vai trò                                  |
-| ------------------------------------- | -------------------------------- | ---------------------------------------- |
-| Country/city/airport và mã tham chiếu | OurAirports + editorial          | Canonical identity và filter taxonomy    |
-| Route/content observation ngắn hạn    | Travelpayouts/Aviasales Data API | Gợi ý route, cached fare, CTA            |
-| Nội dung độc đáo                      | Tripways/editorial               | SEO value, hướng dẫn và contextual facts |
-| Availability và giá cuối cùng         | Aviasales sau handoff            | Xác nhận ở booking partner               |
-| Recurring schedule/live shopping      | Chưa chọn provider               | Ngoài phạm vi hiện tại                   |
+| Thành phần                            | Nguồn                            | Vai trò                                                           |
+| ------------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| Country/city/airport và mã tham chiếu | OurAirports + editorial          | Canonical identity và filter taxonomy                             |
+| Direct Routes & Lịch bay định kỳ      | AeroDataBox (qua API.market)     | Đồ thị mạng lưới đường bay, lịch bay, hubs nối chuyến (0–3 stops) |
+| Nội dung độc đáo                      | Tripways/editorial               | SEO value, hướng dẫn và contextual facts                          |
+| Giá vé quan sát & Affiliate CTA       | Travelpayouts/Aviasales Data API | Gợi ý giá vé gần nhất (cached fare), Affiliate Handoff            |
+| Availability và giá cuối cùng         | Aviasales sau handoff            | Xác nhận và thanh toán ở booking partner                          |
 
-AeroDataBox và AirLabs không nằm trong implementation hiện tại. Nếu cần schedule enrichment sau này,
-provider mới phải qua rights review, adapter contract riêng và không thay đổi page contract.
+AeroDataBox (qua API.market) chịu trách nhiệm cung cấp mạng lưới chặng bay thẳng (Direct routes) và lịch trình định kỳ.
+Travelpayouts chịu trách nhiệm cung cấp giá vé quan sát và luồng chuyển hướng affiliate. Hai nguồn hoạt động độc lập và bổ trợ cho nhau.
 
 ## 3. Data lifecycle
 

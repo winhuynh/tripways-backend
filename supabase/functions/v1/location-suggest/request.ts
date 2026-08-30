@@ -13,9 +13,15 @@ export function parseLocationSuggestRequest(payload: unknown): LocationSuggestRe
   }
 
   const query = typeof payload.query === 'string' ? payload.query.trim() : undefined;
-  const origin_iata = typeof payload.origin_iata === 'string' ? payload.origin_iata.trim().toUpperCase() : undefined;
-  const radius_km = typeof payload.radius_km === 'number' && Number.isFinite(payload.radius_km) ? payload.radius_km : undefined;
-  const limit = typeof payload.limit === 'number' && Number.isInteger(payload.limit) ? payload.limit : undefined;
+  const origin_iata = typeof payload.origin_iata === 'string'
+    ? payload.origin_iata.trim().toUpperCase()
+    : undefined;
+  const radius_km = typeof payload.radius_km === 'number' && Number.isFinite(payload.radius_km)
+    ? payload.radius_km
+    : undefined;
+  const limit = typeof payload.limit === 'number' && Number.isInteger(payload.limit)
+    ? payload.limit
+    : undefined;
 
   if (origin_iata !== undefined && !/^[A-Z]{3}$/.test(origin_iata)) {
     throw new Error('ERR_LOCATION_SUGGEST_INVALID_REQUEST');

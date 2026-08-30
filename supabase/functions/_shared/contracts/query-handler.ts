@@ -5,6 +5,7 @@ import {
   jsonResponse,
   readJson,
 } from '@shared/edge.ts';
+import { extractRequestId, logEdgeInfo } from '@shared/logger.ts';
 import { mapRpcEnvelope } from './rpc-envelope.ts';
 
 export type QueryHandlerDependencies<TInput> = {
@@ -19,15 +20,39 @@ export function createQueryHandler<TInput>(
   dependencies: QueryHandlerDependencies<TInput>,
 ): (request: Request) => Promise<Response> {
   return async (request) => {
-    const methodError = assertMethod(request, ['POST']);
+    const requestId = extractRequestId(request);
+    const startTime = performance.now();
+    const url = new URL(request.url);
+    const logContext = {
+      requestId,
+      path: url.pathname,
+      method: request.method,
+    };
+
+    const methodError = assertMethod(request, ['POST'], logContext);
     if (methodError) return methodError;
+
     try {
       const input = dependencies.parse(await readJson(request));
       const result = await dependencies.query(input);
       const envelope = mapRpcEnvelope(result, dependencies.contractErrorCode);
-      return dependencies.cacheable ? cacheableJsonResponse(envelope) : jsonResponse(envelope);
+      const durationMs = Math.round(performance.now() - startTime);
+
+      logEdgeInfo('EDGE_QUERY_SUCCESS', {
+        ...logContext,
+        durationMs,
+      });
+
+      const extraHeaders = { 'x-request-id': requestId };
+      return dependencies.cacheable
+        ? cacheableJsonResponse(envelope, 200, extraHeaders)
+        : jsonResponse(envelope, 200, extraHeaders);
     } catch (error) {
-      return errorResponse(error);
+      const durationMs = Math.round(performance.now() - startTime);
+      return errorResponse(error, {
+        ...logContext,
+        durationMs,
+      });
     }
   };
 }
