@@ -10,33 +10,16 @@ export type RateLimitConsumer = (
 ) => Promise<RateLimitDecision>;
 
 export async function buildRateLimitSubjectHashes(
-  userId: string,
+  subjectId: string,
   request: Request,
 ): Promise<[string, string]> {
   const forwardedFor = request.headers.get('x-forwarded-for');
   const clientIp = forwardedFor?.split(',')[0]?.trim() || 'local-unknown';
 
   return [
-    await sha256(`user:${userId}`),
+    await sha256(`subject:${subjectId}`),
     await sha256(`ip:${clientIp}`),
   ];
-}
-
-export async function enforceSensitiveCommandRateLimit(input: {
-  request: Request;
-  userId: string;
-  action: string;
-  consume: RateLimitConsumer;
-}): Promise<RateLimitDecision[]> {
-  const subjects = await buildRateLimitSubjectHashes(input.userId, input.request);
-  const decisions = await Promise.all(
-    subjects.map((subject) => input.consume(subject, input.action)),
-  );
-
-  if (decisions.some((decision) => !decision.allowed)) {
-    throw new Error('ERR_RATE_LIMITED');
-  }
-  return decisions;
 }
 
 async function sha256(value: string): Promise<string> {

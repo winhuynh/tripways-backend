@@ -44,9 +44,50 @@ BEGIN
         'image_path', v_airport.image_path,
         'timezone', v_airport.timezone,
         'latitude', v_airport.latitude,
-        'longitude', v_airport.longitude
+        'longitude', v_airport.longitude,
+        'city', (
+          SELECT jsonb_build_object('name', c.name, 'slug', c.slug)
+          FROM public.cities c WHERE c.id = v_airport.city_id
+        ),
+        'country', (
+          SELECT jsonb_build_object('name', co.name, 'slug', co.slug)
+          FROM public.countries co WHERE co.id = v_airport.country_id
+        )
       ),
       'content', v_page.content,
+      'seo', COALESCE(v_page.content->'seo', jsonb_build_object(
+        'h1', v_airport.name,
+        'subheadline', 'Airport guide and transport',
+        'title', v_airport.name || ' (' || v_airport.iata || ') Guide',
+        'meta_description', 'Plan your journey through ' || v_airport.name
+      )),
+      'orientation', COALESCE(v_page.content->'orientation', jsonb_build_object(
+        'intro', 'Airport guide for ' || v_airport.name,
+        'summary', 'Key travel and transit information.',
+        'city_distance_km', NULL,
+        'terminal_count', 1
+      )),
+      'quick_answers', COALESCE(v_page.content->'quick_answers', jsonb_build_object(
+        'default_transport', NULL,
+        'city_distance_km', NULL,
+        'terminal_count', 1
+      )),
+      'arrival', COALESCE(v_page.content->'arrival', jsonb_build_object('summary', '', 'steps', '[]'::JSONB)),
+      'departure', COALESCE(v_page.content->'departure', jsonb_build_object('summary', '', 'steps', '[]'::JSONB)),
+      'transport', COALESCE(v_page.content->'transport', '[]'::JSONB),
+      'parking', v_page.content->'parking',
+      'terminals', COALESCE(v_page.content->'terminals', '[]'::JSONB),
+      'facilities', COALESCE(v_page.content->'facilities', '[]'::JSONB),
+      'lounges', COALESCE(v_page.content->'lounges', '[]'::JSONB),
+      'notices', COALESCE(v_page.content->'notices', '[]'::JSONB),
+      'faqs', COALESCE(v_page.content->'faqs', '[]'::JSONB),
+      'internal_link_groups', COALESCE(v_page.content->'internal_link_groups', '[]'::JSONB),
+      'provenance', jsonb_build_object(
+        'last_editorial_review', v_page.content_reviewed_at,
+        'source_freshness_at', v_registry.source_freshness_at,
+        'route_data_refreshed_at', now(),
+        'data_version', 'v_' || md5(v_version::TEXT)
+      ),
       'routes', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,

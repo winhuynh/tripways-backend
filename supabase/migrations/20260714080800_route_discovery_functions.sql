@@ -344,13 +344,17 @@ BEGIN
   v_max_stops := NULLIF(p_input #>> '{filters,max_stops}', '')::INTEGER;
   v_max_duration_minutes := NULLIF(p_input #>> '{filters,max_duration_minutes}', '')::INTEGER;
 
-  IF v_scope_type NOT IN ('global', 'origin_city', 'origin_airport', 'city_pair')
+  IF v_scope_type NOT IN ('global', 'origin_city', 'origin_airport', 'airport', 'city_pair')
     OR v_page_size NOT BETWEEN 1 AND 100
     OR (v_max_stops IS NOT NULL AND v_max_stops NOT IN (0, 1))
     OR (v_max_duration_minutes IS NOT NULL AND v_max_duration_minutes <= 0)
     OR (
-      v_scope_type IN ('origin_city', 'origin_airport')
+      v_scope_type IN ('origin_city', 'origin_airport', 'airport')
       AND NULLIF(btrim(COALESCE(v_scope_key, '')), '') IS NULL
+    )
+    OR (
+      v_scope_type = 'airport'
+      AND (p_input #>> '{scope,direction}') NOT IN ('from', 'to')
     )
     OR (
       v_scope_type = 'city_pair'
@@ -379,6 +383,13 @@ BEGIN
     WHERE option.publication_version_id = v_version_id
       AND (v_scope_type <> 'origin_city' OR option.origin_city_slug = v_scope_key)
       AND (v_scope_type <> 'origin_airport' OR option.origin_airport_iata = upper(v_scope_key))
+      AND (
+        v_scope_type <> 'airport'
+        OR (
+          (p_input #>> '{scope,direction}' = 'from' AND option.origin_airport_iata = upper(v_scope_key))
+          OR (p_input #>> '{scope,direction}' = 'to' AND option.destination_airport_iata = upper(v_scope_key))
+        )
+      )
       AND (
         v_scope_type <> 'city_pair'
         OR (

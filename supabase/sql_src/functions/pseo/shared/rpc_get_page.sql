@@ -54,8 +54,12 @@ BEGIN
     INNER JOIN public.publication_versions version
       ON version.id = model.publication_version_id
       AND version.is_current = TRUE
-    WHERE model.canonical_slug = lower(v_entity_key)
-      AND model.locale = v_locale;
+    WHERE (
+      model.canonical_slug = lower(v_entity_key)
+      OR replace(model.canonical_slug, '-to-', '-') = replace(lower(v_entity_key), '-to-', '-')
+    )
+      AND model.locale = v_locale
+    LIMIT 1;
   END IF;
 
   IF v_payload IS NULL THEN

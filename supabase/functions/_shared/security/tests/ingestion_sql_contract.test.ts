@@ -91,22 +91,15 @@ Deno.test('provider registry remains in admin and redundant log tables are remov
 
   for (
     const field of [
-      'provider_code',
-      'storage_allowed',
-      'retention_days',
-      'production_display_allowed',
-      'cache_allowed',
-      'max_cache_ttl_seconds',
-      'attribution_text',
-      'attribution_url',
-      'rights_effective_at',
-      'rights_expires_at',
+      'code',
+      'name',
+      'created_at',
+      'updated_at',
     ]
   ) {
     assert.ok(sql.includes(field), `data_sources must define ${field}`);
   }
-  assert.ok(includesSql(sql, 'unique (provider_code, code)'));
-  assert.ok(includesSql(sql, 'rights_effective_at < rights_expires_at'));
+  assert.ok(includesSql(sql, 'code text not null unique'));
   assert.equal(await readSource('schema/ingestion/ingestion_runs.sql'), '');
   assert.equal(await readSource('schema/ingestion/ingestion_issues.sql'), '');
 });
@@ -144,7 +137,7 @@ Deno.test('publication is internal, atomic, idempotent, and unknown-safe', async
   assert.ok(includesSql(sql, "status = 'active'"));
   assert.ok(includesSql(sql, 'pg_advisory_xact_lock'));
   assert.equal(includesSql(sql, 'public.publish_read_model_version'), false);
-  assert.ok(includesSql(sql, 'make_interval(days => coalesce(source.retention_days, 30))'));
+  assert.ok(includesSql(sql, "batch.received_at < now() - interval '30 days'"));
   assert.ok(includesSql(sql, 'revoke all on function admin.publish_base_data_batch'));
   assert.ok(includesSql(sql, 'grant execute on function admin.publish_base_data_batch'));
 });
@@ -176,26 +169,22 @@ Deno.test('one cron installer schedules base data ingestion', async () => {
   assert.ok(includesSql(sql, 'err_cron_vault_prerequisites_missing'));
 });
 
-Deno.test('OurAirports source fixture records reviewed production and storage rights', async () => {
+Deno.test('OurAirports source fixture records lean source configuration', async () => {
   const sql = await Deno.readTextFile(
     new URL('../../../../seed/ourairports_source.sql', import.meta.url),
   );
 
   assert.ok(sql.includes("'ourairports'"));
-  assert.ok(sql.includes("'https://ourairports.com'"));
-  assert.ok(includesSql(sql, "'production'"));
-  assert.ok(includesSql(sql, 'TRUE'));
+  assert.ok(sql.includes("'OurAirports'"));
   assert.doesNotMatch(sql, /openflights/i);
 });
 
-Deno.test('Travelpayouts source is configured for a replaceable seven-day cache', async () => {
+Deno.test('Travelpayouts source is configured cleanly', async () => {
   const sql = await Deno.readTextFile(
     new URL('../../../../seed/travelpayouts_source.sql', import.meta.url),
   );
-  assert.ok(sql.includes("'content_observation'"));
   assert.ok(sql.includes("'travelpayouts'"));
-  assert.ok(sql.includes('604800'));
-  assert.match(sql, /no raw response archive/i);
+  assert.ok(sql.includes('Travelpayouts'));
 });
 
 Deno.test('direct flight routes ingestion functions enforce service_role and transaction safety', async () => {

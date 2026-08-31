@@ -5,8 +5,6 @@
 CREATE TABLE public.flight_route_prices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   public_reference TEXT NOT NULL DEFAULT ('obs_' || replace(gen_random_uuid()::TEXT, '-', '')),
-  cache_key TEXT NULL,
-  request_origin_iata TEXT NULL,
   origin_city_id UUID NOT NULL REFERENCES public.cities (id),
   destination_city_id UUID NOT NULL REFERENCES public.cities (id),
   origin_airport_id UUID NULL REFERENCES public.airports (id),
@@ -25,25 +23,17 @@ CREATE TABLE public.flight_route_prices (
   return_date DATE NULL,
   duration_minutes INTEGER NULL,
   source_id UUID NOT NULL REFERENCES admin.data_sources (id),
-  data_source TEXT NOT NULL,
   provider_code TEXT NOT NULL,
   source_record_id TEXT NOT NULL,
   observed_at TIMESTAMPTZ NOT NULL,
-  provider_expires_at TIMESTAMPTZ NULL,
   valid_until TIMESTAMPTZ NOT NULL,
   affiliate_path TEXT NULL,
   status TEXT NOT NULL DEFAULT 'draft',
-  data_version UUID NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT flight_route_prices_source_record_key UNIQUE (source_id, source_record_id),
   CONSTRAINT flight_route_prices_public_reference_key UNIQUE (public_reference),
   CONSTRAINT flight_route_prices_public_reference_check CHECK (public_reference ~ '^obs_[0-9a-f]{32}$'),
-  CONSTRAINT flight_route_prices_cache_key_check
-    CHECK (cache_key IS NULL OR cache_key ~ '^frc_[0-9a-f]{32}$'),
-  CONSTRAINT flight_route_prices_request_origin_check
-    CHECK (request_origin_iata IS NULL OR request_origin_iata ~ '^[A-Z0-9]{3}$'),
   CONSTRAINT flight_route_prices_direction_check CHECK (origin_city_id <> destination_city_id),
   CONSTRAINT flight_route_prices_type_check
     CHECK (observation_type IN ('popular_direction', 'cached_fare', 'special_offer', 'price_calendar')),
@@ -57,9 +47,7 @@ CREATE TABLE public.flight_route_prices (
     ),
   CONSTRAINT flight_route_prices_airline_check CHECK (provider_airline_iata IS NULL OR provider_airline_iata ~ '^[A-Z0-9]{2,3}$'),
   CONSTRAINT flight_route_prices_market_check CHECK (market_code ~ '^[a-z]{2}$'),
-  CONSTRAINT flight_route_prices_data_source_check CHECK (data_source ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
   CONSTRAINT flight_route_prices_provider_check CHECK (provider_code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
-  CONSTRAINT flight_route_prices_source_consistency_check CHECK (data_source = provider_code),
   CONSTRAINT flight_route_prices_locale_check CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
   CONSTRAINT flight_route_prices_dates_check CHECK (return_date IS NULL OR departure_date IS NULL OR return_date >= departure_date),
   CONSTRAINT flight_route_prices_duration_check CHECK (duration_minutes IS NULL OR duration_minutes > 0),
@@ -67,7 +55,6 @@ CREATE TABLE public.flight_route_prices (
     CHECK (
       valid_until > observed_at
       AND valid_until <= observed_at + interval '7 days'
-      AND (provider_expires_at IS NULL OR valid_until <= provider_expires_at)
     ),
   CONSTRAINT flight_route_prices_affiliate_check CHECK (affiliate_path IS NULL OR (affiliate_path LIKE '/%' AND affiliate_path NOT LIKE '//%')),
   CONSTRAINT flight_route_prices_status_check CHECK (status IN ('draft', 'published', 'expired'))
@@ -75,9 +62,6 @@ CREATE TABLE public.flight_route_prices (
 
 CREATE INDEX flight_route_prices_route_idx ON public.flight_route_prices
   (origin_city_id, destination_city_id, status, valid_until, market_code, currency_code);
-
-CREATE INDEX flight_route_prices_cache_idx
-ON public.flight_route_prices USING btree (cache_key, status, valid_until);
 
 ALTER TABLE public.flight_route_prices ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.flight_route_prices FROM anon, authenticated;

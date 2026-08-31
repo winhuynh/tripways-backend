@@ -36,7 +36,6 @@ DECLARE
   v_previous_eligible_count INTEGER;
   v_eligible_count  INTEGER;
   v_deactivation_count INTEGER;
-  v_is_production_source BOOLEAN;
 
   -- Publication
   v_country         JSONB;
@@ -69,31 +68,9 @@ BEGIN
   SELECT source.id
   INTO v_source_id
   FROM admin.data_sources AS source
-  WHERE source.code = p_source_code
-    AND source.source_type IN ('base_data', 'development_fixture');
+  WHERE source.code = p_source_code;
 
   IF v_source_id IS NULL THEN
-    RETURN jsonb_build_object(
-      'status', 'failed',
-      'errorCode', 'ERR_INGESTION_SOURCE_NOT_ALLOWED'
-    );
-  END IF;
-
-  SELECT source.environment_scope = 'production'
-  INTO v_is_production_source
-  FROM admin.data_sources AS source
-  WHERE source.id = v_source_id;
-
-  IF v_is_production_source AND NOT EXISTS (
-    SELECT 1
-    FROM admin.data_sources AS source
-    WHERE source.id = v_source_id
-      AND source.production_allowed
-      AND source.storage_allowed
-      AND source.production_display_allowed
-      AND (source.rights_effective_at IS NULL OR source.rights_effective_at <= now())
-      AND (source.rights_expires_at IS NULL OR source.rights_expires_at > now())
-  ) THEN
     RETURN jsonb_build_object(
       'status', 'failed',
       'errorCode', 'ERR_INGESTION_SOURCE_NOT_ALLOWED'
@@ -219,7 +196,7 @@ BEGIN
       WHERE candidate ->> 'sourceId' = airport.source_record_id
     );
 
-  IF v_is_production_source
+  IF p_source_code = 'ourairports'
     AND v_previous_eligible_count > 0
     AND (
       v_eligible_count < v_previous_eligible_count * 0.95
@@ -530,8 +507,7 @@ BEGIN
       airport_type,
       status,
       source_id,
-      source_record_id,
-      last_verified_at
+      source_record_id
     )
     VALUES (
       NULLIF(v_airport ->> 'iata', ''),
@@ -545,10 +521,9 @@ BEGIN
       (v_airport ->> 'longitude')::DOUBLE PRECISION,
       NULLIF(btrim(v_airport ->> 'timezone'), ''),
       v_airport ->> 'type',
-      CASE WHEN v_is_production_source THEN 'active' ELSE 'unknown' END,
+      'active',
       v_source_id,
-      v_airport ->> 'sourceId',
-      p_source_time
+      v_airport ->> 'sourceId'
     )
     ON CONFLICT (source_id, source_record_id)
     DO UPDATE SET
@@ -563,12 +538,11 @@ BEGIN
       longitude = EXCLUDED.longitude,
       timezone = COALESCE(EXCLUDED.timezone, airports.timezone),
       airport_type = EXCLUDED.airport_type,
-      status = CASE WHEN v_is_production_source THEN 'active' ELSE 'unknown' END,
-      last_verified_at = EXCLUDED.last_verified_at,
+      status = 'active',
       updated_at = now();
   END LOOP;
 
-  IF v_is_production_source THEN
+  IF p_source_code = 'ourairports' THEN
     UPDATE public.airports AS airport
     SET
       status = 'inactive',
@@ -591,11 +565,9 @@ BEGIN
 
   -- STEP 08: Bound receipt retention independently from read-model publication.
   DELETE FROM admin.raw_import_batches AS batch
-  USING admin.data_sources AS source
-  WHERE batch.source_id = source.id
-    AND source.id = v_source_id
+  WHERE batch.source_id = v_source_id
     AND batch.id <> v_batch_id
-    AND batch.received_at < now() - make_interval(days => COALESCE(source.retention_days, 30));
+    AND batch.received_at < now() - interval '30 days';
 
   RETURN jsonb_build_object(
     'status', 'published',

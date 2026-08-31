@@ -99,14 +99,16 @@ BEGIN
           'valid_until', item.valid_until
         ) ORDER BY item.observed_amount NULLS LAST, item.observed_at DESC)
         FROM public.flight_route_prices AS item
-        JOIN admin.data_sources AS source
-          ON source.id = item.source_id
         WHERE item.origin_city_id = v_page.origin_city_id
           AND item.destination_city_id = v_page.destination_city_id
           AND item.status = 'published'
           AND item.valid_until > now()
-          AND source.production_display_allowed
       ), '[]'::JSONB),
+      'travel_facts', COALESCE(v_page.content->'travel_facts', '[]'::JSONB),
+      'editorial_sections', COALESCE(v_page.content->'editorial_sections', '[]'::JSONB),
+      'faqs', COALESCE(v_page.content->'faqs', '[]'::JSONB),
+      'affiliate', COALESCE(v_page.content->'affiliate', jsonb_build_object('offers', '[]'::JSONB)),
+      'internal_link_groups', COALESCE(v_page.content->'internal_link_groups', '[]'::JSONB),
       'disclosure', 'Cached observations are not live offers; final price and availability are confirmed by the booking partner.'
     ),
     'meta', jsonb_build_object(

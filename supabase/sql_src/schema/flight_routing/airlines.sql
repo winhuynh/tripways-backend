@@ -16,7 +16,6 @@ CREATE TABLE public.airlines (
   status            TEXT         NOT NULL DEFAULT 'unknown',
   source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
   source_record_id  TEXT         NOT NULL,
-  last_verified_at  TIMESTAMPTZ  NULL,
   created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
 

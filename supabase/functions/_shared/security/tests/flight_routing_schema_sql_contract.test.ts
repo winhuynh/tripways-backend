@@ -56,12 +56,9 @@ Deno.test('data sources remain in admin with the denylist', async () => {
   const sql = await readSource('schema/flight_routing/data_sources.sql');
   const adminSchema = await readSource('schema/_platform/admin.sql');
 
-  assert.ok(includesSql(sql, 'environment_scope text not null'));
-  assert.ok(includesSql(sql, "check (environment_scope in ('development', 'production'))"));
-  assert.ok(includesSql(sql, 'production_allowed boolean not null default false'));
-  assert.ok(includesSql(sql, 'seo_allowed boolean not null default false'));
-  assert.ok(includesSql(sql, 'derived_data_allowed boolean not null default false'));
   assert.ok(includesSql(sql, 'create table admin.data_sources'));
+  assert.ok(includesSql(sql, 'code text not null unique'));
+  assert.ok(includesSql(sql, 'name text not null'));
   assert.ok(includesSql(adminSchema, 'grant usage on schema admin to service_role'));
   assert.equal(includesSql(sql, 'grant usage on schema admin to service_role'), false);
   assert.equal(await readSource('schema/ingestion/ingestion_runs.sql'), '');

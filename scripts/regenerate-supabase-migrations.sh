@@ -59,12 +59,6 @@ emit_migration \
   "supabase/sql_src/schema/_platform/admin.sql"
 
 emit_migration \
-  "20260714080100_user_schema.sql" \
-  "user schema" \
-  "supabase/sql_src/schema/user/auth_command_attempts.sql" \
-  "supabase/sql_src/schema/user/users.sql"
-
-emit_migration \
   "20260714080150_storage.sql" \
   "public media storage" \
   "supabase/sql_src/schema/storage/media_bucket.sql"
@@ -114,19 +108,6 @@ emit_migration \
   "20260714080500_system_functions.sql" \
   "system functions" \
   "supabase/sql_src/functions/system/health_check.sql"
-
-emit_migration \
-  "20260714080600_user_functions.sql" \
-  "user functions" \
-  "supabase/sql_src/functions/user/handle_new_auth_user.sql" \
-  "supabase/sql_src/functions/user/rpc_get_user_profile.sql" \
-  "supabase/sql_src/functions/user/update_user_profile.sql" \
-  "supabase/sql_src/functions/user/consume_auth_command_attempt.sql"
-
-emit_migration \
-  "20260714080700_user_triggers.sql" \
-  "user triggers" \
-  "supabase/sql_src/triggers/user/trg_handle_new_auth_user.sql"
 
 emit_migration \
   "20260714080800_route_discovery_functions.sql" \

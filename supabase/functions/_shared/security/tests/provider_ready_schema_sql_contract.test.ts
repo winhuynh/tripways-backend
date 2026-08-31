@@ -46,15 +46,12 @@ Deno.test('flight route prices are short-lived and distinct from live offers', a
       'departure_date',
       'return_date',
       'duration_minutes',
-      'data_source',
       'provider_code',
       'source_record_id',
       'observed_at',
-      'provider_expires_at',
       'valid_until',
       'affiliate_path',
       'public_reference',
-      'data_version',
     ]
   ) {
     assert.ok(sql.includes(field), `flight route prices must define ${field}`);

@@ -9,89 +9,21 @@
 
 -- Table: admin.data_sources
 -- Feature: Flight Routing
--- Purpose: Record data provenance and permitted usage before domain data is published.
--- Responsibilities: Identify sources, separate environments, and preserve license capabilities.
+-- Purpose: Record data provenance for canonical flight and geographic entities.
+-- Responsibilities: Identify sources simply and reliably.
 
 CREATE TABLE admin.data_sources (
-  id                    UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-  code                  TEXT         NOT NULL UNIQUE,
-  provider_code         TEXT         NOT NULL DEFAULT 'internal',
-  name                  TEXT         NOT NULL,
-  source_type           TEXT         NOT NULL,
-  environment_scope     TEXT         NOT NULL,
-  production_allowed    BOOLEAN      NOT NULL DEFAULT FALSE,
-  seo_allowed           BOOLEAN      NOT NULL DEFAULT FALSE,
-  derived_data_allowed  BOOLEAN      NOT NULL DEFAULT FALSE,
-  storage_allowed       BOOLEAN      NOT NULL DEFAULT FALSE,
-  retention_days        INTEGER      NULL,
-  production_display_allowed BOOLEAN NOT NULL DEFAULT FALSE,
-  cache_allowed         BOOLEAN      NOT NULL DEFAULT FALSE,
-  max_cache_ttl_seconds INTEGER      NULL,
-  attribution_text      TEXT         NULL,
-  attribution_url       TEXT         NULL,
-  rights_effective_at   TIMESTAMPTZ  NULL,
-  rights_expires_at     TIMESTAMPTZ  NULL,
-  license_notes         TEXT         NULL,
-  created_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
-  updated_at            TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+  code        TEXT         NOT NULL UNIQUE,
+  name        TEXT         NOT NULL,
+  created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
+  updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
   CONSTRAINT data_sources_code_check
     CHECK (code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
 
-  CONSTRAINT data_sources_provider_code_key
-    UNIQUE (provider_code, code),
-
-  CONSTRAINT data_sources_provider_code_check
-    CHECK (provider_code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
-
   CONSTRAINT data_sources_name_trimmed_check
-    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
-
-  CONSTRAINT data_sources_type_check
-    CHECK (source_type IN ('base_data', 'content_observation', 'schedule', 'development_fixture')),
-
-  CONSTRAINT data_sources_environment_check
-    CHECK (environment_scope IN ('development', 'production')),
-
-  CONSTRAINT data_sources_retention_check
-    CHECK (
-      (storage_allowed = FALSE AND retention_days IS NULL)
-      OR (storage_allowed = TRUE AND retention_days > 0)
-    ),
-
-  CONSTRAINT data_sources_cache_check
-    CHECK (
-      (cache_allowed = FALSE AND max_cache_ttl_seconds IS NULL)
-      OR (cache_allowed = TRUE AND max_cache_ttl_seconds > 0)
-    ),
-
-  CONSTRAINT data_sources_attribution_check
-    CHECK (
-      (attribution_text IS NULL) = (attribution_url IS NULL)
-      AND (
-        attribution_url IS NULL
-        OR attribution_url ~ '^https://'
-      )
-    ),
-
-  CONSTRAINT data_sources_rights_window_check
-    CHECK (
-      (rights_effective_at IS NULL) = (rights_expires_at IS NULL)
-      AND (
-        rights_effective_at IS NULL
-        OR rights_effective_at < rights_expires_at
-      )
-    ),
-
-  CONSTRAINT data_sources_development_rights_check
-    CHECK (
-      environment_scope = 'production'
-      OR (
-        production_allowed = FALSE
-        AND production_display_allowed = FALSE
-        AND seo_allowed = FALSE
-      )
-    )
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120)
 );
 
 REVOKE ALL ON TABLE admin.data_sources FROM public, anon, authenticated;
@@ -225,7 +157,6 @@ CREATE TABLE public.airports (
   min_transit_minutes INTEGER           NOT NULL DEFAULT 90,
   source_id           UUID              NOT NULL REFERENCES admin.data_sources (id),
   source_record_id    TEXT              NOT NULL,
-  last_verified_at    TIMESTAMPTZ       NULL,
   created_at          TIMESTAMPTZ       NOT NULL DEFAULT now(),
   updated_at          TIMESTAMPTZ       NOT NULL DEFAULT now(),
 
@@ -329,7 +260,6 @@ CREATE TABLE public.airlines (
   status            TEXT         NOT NULL DEFAULT 'unknown',
   source_id         UUID         NOT NULL REFERENCES admin.data_sources (id),
   source_record_id  TEXT         NOT NULL,
-  last_verified_at  TIMESTAMPTZ  NULL,
   created_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at        TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
@@ -481,8 +411,6 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.direct_flight_routes TO ser
 CREATE TABLE public.flight_route_prices (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   public_reference TEXT NOT NULL DEFAULT ('obs_' || replace(gen_random_uuid()::TEXT, '-', '')),
-  cache_key TEXT NULL,
-  request_origin_iata TEXT NULL,
   origin_city_id UUID NOT NULL REFERENCES public.cities (id),
   destination_city_id UUID NOT NULL REFERENCES public.cities (id),
   origin_airport_id UUID NULL REFERENCES public.airports (id),
@@ -501,25 +429,17 @@ CREATE TABLE public.flight_route_prices (
   return_date DATE NULL,
   duration_minutes INTEGER NULL,
   source_id UUID NOT NULL REFERENCES admin.data_sources (id),
-  data_source TEXT NOT NULL,
   provider_code TEXT NOT NULL,
   source_record_id TEXT NOT NULL,
   observed_at TIMESTAMPTZ NOT NULL,
-  provider_expires_at TIMESTAMPTZ NULL,
   valid_until TIMESTAMPTZ NOT NULL,
   affiliate_path TEXT NULL,
   status TEXT NOT NULL DEFAULT 'draft',
-  data_version UUID NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
   CONSTRAINT flight_route_prices_source_record_key UNIQUE (source_id, source_record_id),
   CONSTRAINT flight_route_prices_public_reference_key UNIQUE (public_reference),
   CONSTRAINT flight_route_prices_public_reference_check CHECK (public_reference ~ '^obs_[0-9a-f]{32}$'),
-  CONSTRAINT flight_route_prices_cache_key_check
-    CHECK (cache_key IS NULL OR cache_key ~ '^frc_[0-9a-f]{32}$'),
-  CONSTRAINT flight_route_prices_request_origin_check
-    CHECK (request_origin_iata IS NULL OR request_origin_iata ~ '^[A-Z0-9]{3}$'),
   CONSTRAINT flight_route_prices_direction_check CHECK (origin_city_id <> destination_city_id),
   CONSTRAINT flight_route_prices_type_check
     CHECK (observation_type IN ('popular_direction', 'cached_fare', 'special_offer', 'price_calendar')),
@@ -533,9 +453,7 @@ CREATE TABLE public.flight_route_prices (
     ),
   CONSTRAINT flight_route_prices_airline_check CHECK (provider_airline_iata IS NULL OR provider_airline_iata ~ '^[A-Z0-9]{2,3}$'),
   CONSTRAINT flight_route_prices_market_check CHECK (market_code ~ '^[a-z]{2}$'),
-  CONSTRAINT flight_route_prices_data_source_check CHECK (data_source ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
   CONSTRAINT flight_route_prices_provider_check CHECK (provider_code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
-  CONSTRAINT flight_route_prices_source_consistency_check CHECK (data_source = provider_code),
   CONSTRAINT flight_route_prices_locale_check CHECK (locale ~ '^[a-z]{2}(?:-[A-Z]{2})?$'),
   CONSTRAINT flight_route_prices_dates_check CHECK (return_date IS NULL OR departure_date IS NULL OR return_date >= departure_date),
   CONSTRAINT flight_route_prices_duration_check CHECK (duration_minutes IS NULL OR duration_minutes > 0),
@@ -543,7 +461,6 @@ CREATE TABLE public.flight_route_prices (
     CHECK (
       valid_until > observed_at
       AND valid_until <= observed_at + interval '7 days'
-      AND (provider_expires_at IS NULL OR valid_until <= provider_expires_at)
     ),
   CONSTRAINT flight_route_prices_affiliate_check CHECK (affiliate_path IS NULL OR (affiliate_path LIKE '/%' AND affiliate_path NOT LIKE '//%')),
   CONSTRAINT flight_route_prices_status_check CHECK (status IN ('draft', 'published', 'expired'))
@@ -551,9 +468,6 @@ CREATE TABLE public.flight_route_prices (
 
 CREATE INDEX flight_route_prices_route_idx ON public.flight_route_prices
   (origin_city_id, destination_city_id, status, valid_until, market_code, currency_code);
-
-CREATE INDEX flight_route_prices_cache_idx
-ON public.flight_route_prices USING btree (cache_key, status, valid_until);
 
 ALTER TABLE public.flight_route_prices ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON TABLE public.flight_route_prices FROM anon, authenticated;

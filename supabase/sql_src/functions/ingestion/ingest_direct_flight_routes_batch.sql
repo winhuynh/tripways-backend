@@ -33,13 +33,11 @@ BEGIN
   WHERE code = p_source_code;
 
   IF v_source_id IS NULL THEN
-    -- Fallback: auto-register licensed provider data source if not present
+    -- Fallback: auto-register provider data source if not present
     INSERT INTO admin.data_sources (
-      id, code, name, source_type, environment_scope,
-      production_allowed, production_display_allowed, seo_allowed, license_notes
+      id, code, name
     ) VALUES (
-      gen_random_uuid(), p_source_code, 'AeroDataBox Flight Routes',
-      'licensed_feed', 'production', TRUE, TRUE, TRUE, 'Licensed route schedule provider.'
+      gen_random_uuid(), p_source_code, 'AeroDataBox Flight Routes'
     ) RETURNING id INTO v_source_id;
   END IF;
 
