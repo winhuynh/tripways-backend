@@ -51,12 +51,16 @@ BEGIN
         SELECT jsonb_agg(jsonb_build_object(
           'from', option.origin_airport_iata,
           'to', option.destination_airport_iata,
-          'airline', option.provider_airline_iata,
-          'observed_amount', option.observed_amount,
-          'currency_code', option.currency_code,
-          'valid_until', option.observation_valid_until,
+          'stops', option.stops,
+          'layover_airports', option.layover_airports,
+          'operating_airlines', option.operating_airlines,
+          'flight_numbers', option.flight_numbers,
+          'total_duration_minutes', option.total_duration_minutes,
+          'total_distance_km', option.total_distance_km,
+          'days_of_week', option.days_of_week,
+          'route_type', option.route_type,
           'route_path', option.route_path
-        ) ORDER BY option.confidence_score DESC, option.observed_amount NULLS LAST)
+        ) ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id)
         FROM public.flight_route_options AS option
         WHERE option.publication_version_id = v_version
           AND (

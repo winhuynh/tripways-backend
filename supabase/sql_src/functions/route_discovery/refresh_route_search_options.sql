@@ -53,7 +53,7 @@ BEGIN
     admin.calculate_route_schedule_intersection(r.days_of_week, NULL),
     admin.classify_route_connection_type(r.airline_iata, NULL),
     1.000,
-    registry.canonical_path
+    COALESCE(registry.canonical_path, '/flights/' || origin_city.slug || '-to-' || destination_city.slug)
   FROM public.direct_flight_routes r
   JOIN public.airports origin_airport ON origin_airport.id = r.origin_airport_id
   JOIN public.cities origin_city ON origin_city.id = origin_airport.city_id
@@ -98,7 +98,7 @@ BEGIN
     admin.calculate_route_schedule_intersection(r1.days_of_week, r2.days_of_week),
     admin.classify_route_connection_type(r1.airline_iata, r2.airline_iata),
     0.950,
-    registry.canonical_path
+    COALESCE(registry.canonical_path, '/flights/' || origin_city.slug || '-to-' || destination_city.slug)
   FROM public.direct_flight_routes r1
   JOIN public.airports hub_airport ON hub_airport.id = r1.destination_airport_id AND hub_airport.is_hub = TRUE
   JOIN public.direct_flight_routes r2 ON r2.origin_airport_id = hub_airport.id

@@ -111,32 +111,52 @@ BEGIN
       'featured_destinations', COALESCE((
         SELECT jsonb_agg(jsonb_build_object(
           'city', jsonb_build_object(
-            'name', dest_c.name,
-            'slug', dest_c.slug,
-            'latitude', dest_c.latitude,
-            'longitude', dest_c.longitude
+            'name', fd.city_name,
+            'slug', fd.city_slug,
+            'latitude', fd.latitude,
+            'longitude', fd.longitude
           ),
           'country', jsonb_build_object(
-            'name', dest_co.name,
-            'slug', dest_co.slug,
-            'region', COALESCE(dest_co.subregion, dest_co.region, 'Asia')
+            'name', fd.country_name,
+            'slug', fd.country_slug,
+            'region', fd.region
           ),
-          'origin_airports', ARRAY[opt.origin_airport_iata],
-          'destination_airports', ARRAY[opt.destination_airport_iata],
-          'airlines', opt.operating_airlines,
-          'stops', opt.stops,
-          'layover_airports', opt.layover_airports,
-          'duration_minutes', opt.total_duration_minutes,
-          'route_path', opt.route_path,
-          'is_top_route', (row_number() OVER (ORDER BY opt.stops ASC, opt.confidence_score DESC) = 1),
-          'latitude', dest_c.latitude,
-          'longitude', dest_c.longitude
-        ) ORDER BY opt.stops ASC, opt.confidence_score DESC, opt.id)
-        FROM public.flight_route_options opt
-        JOIN public.cities dest_c ON dest_c.id = opt.destination_city_id
-        JOIN public.countries dest_co ON dest_co.id = dest_c.country_id
-        WHERE opt.publication_version_id = v_version
-          AND opt.origin_city_id = v_city.id
+          'origin_airports', fd.origin_airports,
+          'destination_airports', fd.destination_airports,
+          'airlines', fd.airlines,
+          'stops', fd.stops,
+          'layover_airports', fd.layover_airports,
+          'duration_minutes', fd.duration_minutes,
+          'route_path', fd.route_path,
+          'is_top_route', (fd.rn = 1),
+          'latitude', fd.latitude,
+          'longitude', fd.longitude
+        ) ORDER BY fd.stops ASC, fd.confidence_score DESC, fd.opt_id)
+        FROM (
+          SELECT
+            opt.id AS opt_id,
+            opt.stops,
+            opt.confidence_score,
+            dest_c.name AS city_name,
+            dest_c.slug AS city_slug,
+            dest_c.latitude,
+            dest_c.longitude,
+            dest_co.name AS country_name,
+            dest_co.slug AS country_slug,
+            COALESCE(dest_co.subregion, dest_co.region, 'Asia') AS region,
+            ARRAY[opt.origin_airport_iata] AS origin_airports,
+            ARRAY[opt.destination_airport_iata] AS destination_airports,
+            opt.operating_airlines AS airlines,
+            opt.layover_airports,
+            opt.total_duration_minutes AS duration_minutes,
+            opt.route_path,
+            row_number() OVER (ORDER BY opt.stops ASC, opt.confidence_score DESC) AS rn
+          FROM public.flight_route_options opt
+          JOIN public.cities dest_c ON dest_c.id = opt.destination_city_id
+          JOIN public.countries dest_co ON dest_co.id = dest_c.country_id
+          WHERE opt.publication_version_id = v_version
+            AND opt.origin_city_id = v_city.id
+        ) fd
       ), '[]'::JSONB),
       'faqs', COALESCE(v_page.content->'faqs', '[]'::JSONB),
       'internal_link_groups', COALESCE(v_page.content->'internal_link_groups', '[]'::JSONB),

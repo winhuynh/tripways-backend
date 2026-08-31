@@ -101,7 +101,7 @@ import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/page/query/index.ts"
 
 [functions.homepage-statistics]
-enabled = true
+enabled = false
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/homepage/statistics/index.ts"
@@ -119,7 +119,7 @@ import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/flight/affiliate-handoff/index.ts"
 
 [functions.flight-route-cache]
-enabled = true
+enabled = false
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/flight/route-cache/index.ts"
