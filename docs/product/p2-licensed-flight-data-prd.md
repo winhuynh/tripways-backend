@@ -229,4 +229,4 @@ P2 độc lập với dữ liệu giá vé (giá vé và affiliate CTA do P3 / T
 - **City Hub**: Tập trung khám phá direct destinations theo city và các sân bay phục vụ.
 - **Airport Page**: Orientation/travel guide kết hợp bảng **Direct Flight Routes** hai chiều (From & To) do hãng nào bay.
 - **Route Page (A $\to$ B)**: Hiển thị các hãng bay thẳng, lịch bay trong tuần, và các phương án nối chuyến 1–2 stops qua các Hubs quốc tế lớn.
-- **Travelpayouts Integration (P3)**: Gắn thêm widget/giá vé tham khảo gần nhất và nút CTA dẫn sang Aviasales để hoàn tất đặt vé.
+- **Travelpayouts Integration (P3)**: Gắn thêm widget/giá vé tham khảo gần nhất từ Travelpayouts Data API v3 và nút CTA chuyển tiếp an toàn (Affiliate Handoff) dẫn sang Aviasales để hoàn tất đặt vé.

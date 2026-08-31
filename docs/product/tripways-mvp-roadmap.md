@@ -52,8 +52,9 @@ Nguyên mẫu hiện chưa có:
 | P0B       | **Kế tiếp**        | Sản phẩm staging ổn định trên Cloudflare + Supabase Cloud, riêng tư và `noindex`            | Cùng release candidate hoạt động từ xa; chỉ còn khác biệt hạ tầng, bí mật và vận hành          |
 | P1        | Kế hoạch song hành | Có thể nhập và kiểm duyệt dữ liệu nền thật một cách an toàn                                 | Dữ liệu quốc gia, thành phố và sân bay thật được xuất bản qua pipeline OurAirports             |
 | P2        | Kế hoạch song hành | Dữ liệu tuyến bay & đồ thị kết nối (AeroDataBox/API.market) vận hành Route Explorer và pSEO | Mạng lưới chặng bay thẳng (Direct Routes) và kết nối 1–3 stops kiểu FlightConnections sẵn sàng |
-| P3        | Chưa bắt đầu       | Tích hợp giá vé quan sát và Affiliate Handoff an toàn (Travelpayouts/Aviasales)             | MVP production đáp ứng cổng thương mại, affiliate CTA, disclosure và phân tích chuyển đổi      |
+| P3        | Chưa bắt đầu       | Tích hợp giá vé quan sát và Affiliate Handoff an toàn (Travelpayouts Data API)              | MVP production đáp ứng cổng thương mại, affiliate CTA sang Aviasales, disclosure và analytics |
 | P4        | Chưa bắt đầu       | Mở rộng pSEO có kiểm soát từ tập thị trường đã chứng minh giá trị                           | Coverage, quality, indexability, cost và freshness gate hoạt động ở quy mô production          |
+| P5        | Kế hoạch tương lai | Tích hợp Live Metasearch Engine đa nhà cung cấp (Yêu cầu traffic ≥ 50.000 MAU)              | Tích hợp Aviasales/Kiwi Search API khi website đủ điều kiện traffic và được cấp quyền live API |
 
 Một số schema, contract và read model phục vụ P1–P3 có thể được chuẩn bị trong P0A để tránh thiết kế
 lại. Những foundation đó không làm thay đổi trạng thái phase và không phải bằng chứng nghiệm thu.
@@ -130,7 +131,7 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - **P0A/P0B**: Giữ provider-neutral contract, fixture và staging `noindex`.
 - **P1 (Reference Data)**: Dùng OurAirports cho reference data (country, city, airport, coordinates) có provenance và quyền rõ ràng.
 - **P2 (Route Explorer & Schedule Graph)**: Dùng **AeroDataBox (qua API.market)** theo cơ chế Batch Ingestion định kỳ để nạp mạng lưới đường bay thẳng (`/airports/iata/{iata}/routes/direct`) và lịch bay định kỳ. Postgres xây dựng đồ thị kết nối 0–3 stops phục vụ ma trận trang pSEO (Airport Hub, City Hub, Route A $\to$ B) theo phong cách FlightConnections.
-- **P3 (Commercial & Fare Observation)**: Dùng **Travelpayouts/Aviasales Data API** làm nguồn quan sát giá vé gần đây (cached fares) và luồng Affiliate Handoff an toàn; không dùng Travelpayouts làm nguồn xây dựng mạng lưới đường bay.
+- **P3 (Commercial & Fare Observation)**: Dùng **Travelpayouts Data API v3** làm nguồn quan sát giá vé gần đây (cached fares 2–7 ngày) và luồng Affiliate Handoff an toàn sang chiến dịch Aviasales; không dùng Travelpayouts làm nguồn xây dựng mạng lưới đường bay.
 - Module fare/affiliate luôn optional; City Hub, Airport Hub và pSEO core vẫn render đầy đủ đồ thị tuyến bay khi commercial module vắng mặt.
 
 ## 9. Bổ sung phạm vi pSEO theo phase
@@ -154,31 +155,32 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 
 ### P1 — Content foundation và dữ liệu tham chiếu production
 
-- Nhập country, region, city, airport, timezone và city-airport grouping có quyền sử dụng rõ ràng.
+- Nhập country, region, city, airport, timezone và city-airport grouping có quyền sử dụng rõ ràng từ OurAirports.
 - Cấp dữ liệu canonical cho autocomplete `From`/`To` và resolver city pair; chọn airport phải được
-  quy về city hoặc airport-page identity đã được duyệt, không dựa vào fixture frontend ở production.
+  quy về city hoặc airport-page identity đã được duyệt.
 - Xây workflow biên tập/kiểm duyệt cho airport orientation, arrival/departure steps, directional
   transport, parking, terminal/facility, lounge, notice, FAQ và internal link.
 - Tính content completeness theo page type; page thiếu dữ liệu không được tự động index.
 
 ### P2 — Route Explorer, Schedule Graph và pSEO Matrix
 
-- Ingest mạng lưới chặng bay thẳng (Direct Routes) từ AeroDataBox (qua API.market) hoặc OpenFlights vào Postgres `public.direct_flight_routes`.
+- Ingest mạng lưới chặng bay thẳng (Direct Routes) từ AeroDataBox (qua API.market) vào Postgres `public.direct_flight_routes`.
 - Xây dựng Route Graph Engine trong Postgres hỗ trợ tìm kiếm:
   1. Bay thẳng (0-stop) kèm hãng khai thác (operating airlines) và lịch bay định kỳ.
-  2. Nối chuyến 1–2 điểm dừng (1-stop, 2-stops connection hubs) kèm thời gian bay ước tính.
+  2. Nối chuyến 1–2 điểm dừng (1-stop, 2-stops connection hubs qua Top 50 Hubs) kèm thời gian bay ước tính.
 - Tự động sinh và tối ưu ma trận trang pSEO chuẩn FlightConnections:
   - **Airport Hub Page**: Tất cả các điểm đến bay thẳng từ sân bay, phân nhóm theo quốc gia/khu vực.
   - **Route Page (A $\to$ B)**: Chi tiết chặng bay thẳng, các phương án nối chuyến qua Hubs, lịch bay trong tuần.
   - **City Hub Page**: Tổng hợp các sân bay phục vụ thành phố và mạng lưới điểm đến.
 - Đảm bảo chất lượng SEO: Page chỉ index khi có dữ liệu route thật, provenance rõ ràng và canonical identity.
 
-### P3 — Tích hợp thương mại và quan sát giá vé (Travelpayouts)
+### P3 — Tích hợp thương mại và quan sát giá vé (Travelpayouts Data API)
 
-- Tích hợp Travelpayouts / Aviasales Data API làm tầng dữ liệu thương mại (Monetization Layer).
-- Cơ chế On-demand Cache-aside: Lưu giá vé quan sát gần nhất (`observed_amount`) vào `public.flight_route_prices` mà không làm chậm SSR hay vỡ trang khi API lỗi.
-- Triển khai luồng Affiliate Handoff an toàn: Tạo link CTA dẫn sang Aviasales/Travelpayouts kèm Partner Marker & SubID để người dùng kiểm tra giá thực tế và đặt vé.
+- Tích hợp **Travelpayouts Data API v3** làm tầng dữ liệu thương mại (Monetization Layer).
+- Cơ chế On-demand Cache-aside: Lưu giá vé quan sát gần nhất (`observed_amount`) vào `public.flight_route_prices` (TTL tối đa 7 ngày, cron refresh ngày thứ 6) mà không làm chậm SSR hay vỡ trang khi API lỗi.
+- Triển khai luồng Affiliate Handoff an toàn: Tạo link CTA dẫn sang trang đối tác Aviasales (`https://www.aviasales.com/search/...`) kèm Partner Marker & SubID để người dùng kiểm tra giá thực tế và đặt vé.
 - Bật kill switch cho commercial module: Nếu Travelpayouts gặp sự cố, toàn bộ đồ thị Route Explorer và trang pSEO vẫn hoạt động bình thường.
+- Tuyệt đối không yêu cầu live booking polling hoặc live metasearch trong phase này.
 
 ### P4 — Mở rộng pSEO có kiểm soát
 
@@ -189,6 +191,13 @@ Kế hoạch chi tiết nằm tại `docs/product/city-hub-provider-and-commerci
 - Đo funnel `homepage From`, `homepage From + To`, Route Page reached và fallback; dữ liệu demand
   này chỉ dùng để đánh giá cohort pSEO, không tự tạo hoặc index URL từ mọi truy vấn.
 - Rollout theo country/market cohort và có rollback về publication version gần nhất.
+
+### P5 — Live Metasearch Engine (Kế hoạch tương lai)
+
+- Điều kiện tiên quyết: Website đạt tối thiểu **50.000 MAU** và được phê duyệt cấp phép **Aviasales Search API** hoặc **Kiwi Search API**.
+- Tích hợp Live Search orchestration, polling kết quả tìm kiếm thời gian thực theo ngày cụ thể (`/api/live-flights/search`).
+- Tách bạch rõ vé nối chuyến tự bảo vệ (`protected connection`) vs tự chuyển chặng (`self_transfer`) từ dữ liệu provider thời gian thực.
+- URL tìm kiếm live luôn được gắn cờ `noindex`, hoàn toàn tách biệt với các trang pSEO tĩnh.
 
 ## 10. Chiến lược kiểm soát rủi ro cốt lõi (Core Risk Mitigations)
 

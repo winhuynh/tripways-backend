@@ -67,8 +67,8 @@ graph TD
    - **Nguồn:** _AeroDataBox_ (qua API.market) hoặc _OpenFlights_.
    - **Nhiệm vụ:** Cung cấp danh sách các chặng bay thẳng (`origin_iata -> destination_iata`), hãng khai thác (`airline_iata`), thời gian bay trung bình, ngày bay trong tuần (`days_of_week`). Chạy Batch Ingest 1 tháng/lần và đồng bộ vào chu kỳ đổi mùa IATA (cuối tháng 3 & cuối tháng 10).
 3. **Tầng 3 — Thương mại & Handoff (Monetization Layer)**:
-   - **Nguồn:** _Travelpayouts / Aviasales_.
-   - **Nhiệm vụ:** Không dùng để tìm đường bay, mà chỉ dùng để tạo liên kết chuyển tiếp an toàn (Affiliate Handoff kèm Marker & SubID). Khi người dùng nhấn nút _"Kiểm tra giá hãng này"_, hệ thống ký URL chuyển tiếp người dùng sang Aviasales để hoàn tất giao dịch đặt vé.
+   - **Nguồn:** _Travelpayouts Data API v3_ (cung cấp giá vé quan sát gần nhất đã cache) & _Travelpayouts Affiliate Campaign (Aviasales Campaign)_.
+   - **Nhiệm vụ:** Không dùng để tìm đường bay hay metasearch thời gian thực (Aviasales Search API yêu cầu tối thiểu 50.000 MAU và được chuyển sang P5). Tầng 3 ở MVP chỉ dùng để hiển thị mức giá tham khảo quan sát gần đây (`observed_amount`) và tạo liên kết chuyển tiếp an toàn (Affiliate Handoff kèm Marker & SubID). Khi người dùng nhấn nút _"Kiểm tra giá hãng này"_, hệ thống ký URL chuyển tiếp người dùng sang Aviasales (`https://www.aviasales.com/search/...`) để hoàn tất giao dịch đặt vé.
 
 ---
 

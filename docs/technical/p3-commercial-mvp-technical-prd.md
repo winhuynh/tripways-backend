@@ -1,24 +1,75 @@
-# PRD kỹ thuật P3: Commercial MVP
+# PRD kỹ thuật P3: Commercial MVP (Travelpayouts Data API & Affiliate Handoff)
 
 **PRD sản phẩm liên quan:** `docs/product/p3-commercial-mvp-prd.md`  
-**Phụ thuộc:** P2 hoàn tất, live-search và affiliate agreements được phê duyệt
-**Trạng thái:** Affiliate-first foundation đang triển khai; live offer orchestration chưa bắt đầu
-**Cập nhật:** 2026-08-12
+**Phụ thuộc:** P2 hoàn tất, tài khoản đối tác Travelpayouts được kết nối  
+**Trạng thái:** Triển khai tầng giá quan sát (Data API) và Affiliate Handoff; Live Search tách riêng sang P5  
+**Cập nhật:** 2026-08-31  
 
-> Foundation hiện hành publish route price tối đa 7 ngày, refresh từ ngày thứ 6 và handoff qua
-> allowlisted Aviasales host. Kiến trúc live-search bên dưới vẫn là upgrade độc lập.
+> [!IMPORTANT]
+> **Định vị phạm vi P3 vs P5:**
+> - **P3 (Commercial MVP hiện tại):** Sử dụng **Travelpayouts Data API v3** để nạp và lưu trữ ngắn hạn giá vé quan sát (`observed_amount`, TTL 2–7 ngày) và thực hiện **Affiliate Handoff** an toàn sang đối tác đặt vé Aviasales (`https://www.aviasales.com/search/...`). Không yêu cầu điều kiện traffic tối thiểu.
+> - **P5 (Future Phase — Live Metasearch Engine):** Chỉ kích hoạt khi website đạt tối thiểu **50.000 MAU** và được phê duyệt cấp phép **Aviasales Search API** hoặc **Kiwi Search API**. Kiến trúc tìm kiếm live, polling và connection protection chi tiết nằm ở Phần II của tài liệu này.
 
-`flight_route_prices` và price ingestion foundation hiện tại không phải offer search, search state,
-affiliate handoff hoặc P3 acceptance. Live offer luôn là short-lived provider result với expiry và
-server-owned outbound reference riêng.
+---
 
-## 1. Kiến trúc
+# PHẦN I: ĐẶC TẢ KỸ THUẬT P3 (COMMERCIAL MVP)
+
+## 1. Kiến trúc luồng thương mại P3
+
+```text
+Trang Route Page / City Hub (Next.js SSR)
+  → Đọc read model tĩnh từ Postgres (Zero provider dependency lúc render)
+  → Client Hydration: Browser gọi Edge Function (khi cần cache miss)
+      → Edge Function: /v1/flight/route-cache
+          → Travelpayouts Data API v3 (Lấy giá quan sát gần nhất)
+          → Lưu atomic vào public.flight_route_prices (TTL tối đa 7 ngày)
+
+Người dùng click nút CTA: "Kiểm tra giá hãng này"
+  → Gọi Edge Function: /v1/flight/affiliate-handoff
+      → Xác thực observation_id, kiểm tra hạn TTL
+      → Ký và tạo liên kết chuyển tiếp an toàn kèm Partner Marker & SubID
+      → Chuyển hướng (302 Redirect) sang https://www.aviasales.com/search/...
+```
+
+## 2. Mô hình lưu trữ giá quan sát (`flight_route_prices`)
+
+Bảng `public.flight_route_prices` lưu trữ kết quả quan sát giá vé theo cơ chế On-demand Cache-aside:
+- Lưu trữ các trường: `origin_iata`, `destination_iata`, `observed_amount`, `currency`, `found_at`, `valid_until` (tối đa 7 ngày), `affiliate_path`.
+- **Zero Provider Call trong SSR**: Không gọi provider khi render trang. Đọc từ PostgreSQL read models cục bộ.
+- **On-demand Cache Miss**: Khi browser thật truy vấn và cache miss, Edge Function gọi Travelpayouts Data API v3.
+- **Cron Day 6**: Cron định kỳ chỉ làm mới các route có truy vấn thật trong 30 ngày qua.
+- **Tính trung thực dữ liệu**: Không có giá thì để `null` hoặc trạng thái không khả dụng, không tự tạo range giá.
+
+## 3. Bảo mật chuyển tiếp liên kết (Affiliate Handoff Security)
+
+- Allowlist Host: Chỉ cho phép redirect tới host đã được phê duyệt ở server: `https://www.aviasales.com`.
+- Trình duyệt chỉ gửi `observation_id`, server phân giải và ký chuyển hướng kèm Partner Marker & SubID.
+- Chống tuyệt đối open redirect và URL tùy ý từ phía người dùng.
+- CTA hiển thị affiliate disclosure minh bạch.
+
+## 4. Cổng nghiệm thu P3 (Commercial MVP)
+
+- [ ] Ingestion từ Travelpayouts Data API v3 hoạt động ổn định.
+- [ ] Schema `flight_route_prices` lưu trữ đúng TTL 7 ngày, cron refresh ngày thứ 6 chỉ chạy cho active demand.
+- [ ] Edge Function `/v1/flight/affiliate-handoff` chuyển tiếp đúng sang `https://www.aviasales.com` kèm Partner Marker & SubID.
+- [ ] Tự động hóa kiểm thử chặn toàn bộ open redirect và URL giả mạo.
+- [ ] Kill switch tắt bật commercial module mà không ảnh hưởng đến đồ thị đường bay và trang pSEO.
+
+---
+
+# PHẦN II: ĐẶC TẢ KỸ THUẬT P5: LIVE METASEARCH (FUTURE PHASE)
+
+> [!WARNING]
+> **Điều kiện tiên quyết để kích hoạt P5:**
+> Website Tripways đạt tối thiểu **50.000 MAU** và được Aviasales hoặc Kiwi phê duyệt cấp phép **Flight Search API**. Phần này không nằm trong phạm vi nghiệm thu của P3.
+
+## 1. Kiến trúc tìm kiếm thời gian thực
 
 ```text
 Next.js search UI
   → Next.js live-search Route Handler
     → live-search orchestration service
-      → provider adapter
+      → provider adapter (Aviasales Search API / Kiwi)
         → normalized short-lived offers
 
 Offer selection
@@ -228,9 +279,9 @@ limit và sampling policy nếu cần.
 - Bounded launch cohort/markets.
 - Production domain chỉ gắn sau launch review.
 
-## 15. Cổng nghiệm thu
+## 15. Cổng nghiệm thu P5 (Live Metasearch)
 
-- Provider agreements được phê duyệt.
+- Provider agreements (Search API) được phê duyệt (≥ 50.000 MAU).
 - Search/poll/normalize/redirect E2E pass ở staging.
 - Không open redirect hoặc client-controlled price.
 - Rate/cost/timeout/kill-switch đã kiểm chứng.

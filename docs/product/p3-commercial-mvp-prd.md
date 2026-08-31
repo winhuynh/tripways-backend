@@ -1,26 +1,25 @@
-# PRD P3: MVP thương mại
+# PRD P3: MVP thương mại (Travelpayouts Data API & Affiliate Handoff)
 
-**Trạng thái:** Đang triển khai affiliate-first foundation; live shopping vẫn hoãn
-**Cập nhật:** 2026-08-12
-**Chủ sở hữu:** Tripways
-**Kho mã:** `tripways-backend`, `tripways-web`
+**Trạng thái:** Affiliate-first foundation đang triển khai; Live Metasearch chuyển sang Phase 5 (Yêu cầu ≥ 50.000 MAU)  
+**Cập nhật:** 2026-08-31  
+**Chủ sở hữu:** Tripways  
+**Kho mã:** `tripways-backend`, `tripways-web`  
 
-> Travelpayouts Data API hiện chỉ cung cấp cached content observations và affiliate handoff.
-> Những yêu cầu live-search/dated inventory bên dưới vẫn là phase nâng cấp riêng, không được suy ra
-> từ observation hoặc coi là điều kiện để pSEO có giá trị.
+> [!IMPORTANT]
+> **Định vị phạm vi P3 vs P5:**
+> - **P3 (Commercial MVP):** Tích hợp **Travelpayouts Data API v3** để cung cấp giá vé quan sát (`observed_amount`, TTL 2–7 ngày) và chuyển tiếp liên kết an toàn (Affiliate Handoff kèm Marker & SubID) sang đối tác Aviasales. Không yêu cầu điều kiện traffic tối thiểu.
+> - **P5 (Future Phase — Live Metasearch):** Tìm kiếm chuyến bay theo ngày cụ thể, so sánh giá trực tiếp thời gian thực, polling. Chỉ kích hoạt khi website đạt tối thiểu 50.000 MAU và được cấp phép Search API.
 
 ## 1. Vấn đề
 
-Khám phá tuyến giúp người dùng hiểu các kết nối có khả năng tồn tại nhưng chưa trả lời chuyến bay và
-đề nghị nào đang được provider trả về cho ngày cụ thể. Tripways cũng thiếu đường chuyển tiếp an toàn
-tới đối tác liên kết và hệ thống phân tích cần thiết để hiểu giá trị sản phẩm, độ tin cậy provider
-và chuyển đổi thương mại.
+Khám phá tuyến giúp người dùng hiểu các kết nối có khả năng tồn tại giữa các điểm đến, nhưng người dùng cần biết khoảng giá ước tính gần đây và có một đường chuyển tiếp an toàn, minh bạch tới đối tác bán vé để kiểm tra giá thực tế và hoàn tất đặt chỗ.
 
-## 2. Mục tiêu
+## 2. Mục tiêu P3
 
-Ra mắt MVP khám phá chuyến bay production, nơi người dùng có thể đi từ trang tuyến hoặc pSEO đáng tin
-cậy tới tìm kiếm theo ngày, so sánh kết quả provider đã chuẩn hóa và đi qua chuyển hướng liên kết an
-toàn, trong khi Tripways đo được kết quả sản phẩm và vận hành.
+Ra mắt Commercial MVP cho Tripways:
+- Hiển thị giá vé quan sát gần nhất (`observed_amount`) từ Travelpayouts Data API trên các trang Route Page và City Hub mà không phụ thuộc vào API bên ngoài lúc SSR.
+- Triển khai luồng Affiliate Handoff an toàn qua Edge Function `/v1/flight/affiliate-handoff` chuyển tiếp người dùng sang đối tác bán vé Aviasales.
+- Đảm bảo cơ chế Kill Switch: sự cố từ đối tác thương mại không làm gián đoạn đồ thị khám phá tuyến bay.
 
 ## 3. Người dùng mục tiêu
 
@@ -181,20 +180,25 @@ Route Page.
 Mục tiêu số liệu thương mại ban đầu được đặt sau khi staging tạo baseline đại diện. Điều này không
 nới lỏng các cổng bảo mật, redirect, fixture hoặc quyền dữ liệu.
 
-## 9. Cổng nghiệm thu
+## 9. Cổng nghiệm thu P3 (Commercial MVP)
 
 P3 chỉ được nghiệm thu khi:
 
-- Hợp đồng live-search và affiliate provider đã được phê duyệt.
-- Luồng end-to-end gồm tìm kiếm, polling khi cần, chuẩn hóa kết quả và chuyển hướng an toàn vượt qua
-  staging.
-- Rate limit, kiểm soát chi phí, timeout và kill switch đã được kiểm chứng.
-- Schema analytics và chính sách lưu giữ dữ liệu riêng tư đã được phê duyệt.
-- Nội dung pháp lý, quyền riêng tư, affiliate và ghi nguồn đã được xuất bản.
-- Tên miền production, HTTPS, tách biệt môi trường, monitoring, backup và rollback đã sẵn sàng.
-- Đã xác định nhóm ra mắt giới hạn và người chịu trách nhiệm.
-- Đã kiểm chứng UI/API không biến commercial connection field bị thiếu thành khẳng định về vé chung,
-  connection được bảo vệ, self-transfer hoặc chuyển hành lý.
+- Tài khoản Travelpayouts đã được cấu hình hợp lệ với campaign Aviasales.
+- Ingestion và cache On-demand từ Travelpayouts Data API v3 hoạt động ổn định trong `public.flight_route_prices` (TTL 7 ngày).
+- Edge Function `/v1/flight/affiliate-handoff` tạo đúng liên kết chuyển tiếp an toàn kèm Partner Marker & SubID sang `https://www.aviasales.com/search/...`.
+- Đảm bảo tính trung thực dữ liệu: Tuyến đường bay không có giá thì giữ nguyên trạng thái `null`/`unavailable`, không tự tạo giá giả.
+- Kill switch commercial module hoạt động độc lập và không làm gián đoạn đồ thị tuyến bay.
+- Nội dung pháp lý, quyền riêng tư và affiliate disclosure đã được công bố minh bạch trên giao diện.
+
+---
+
+## 9B. Tiêu chí kích hoạt Phase 5 (Live Metasearch Engine)
+
+Phase 5 chỉ bắt đầu khi thỏa mãn toàn bộ các điều kiện:
+- Website Tripways đạt tối thiểu **50.000 MAU** được ghi nhận qua hệ thống đo lường tin cậy.
+- Hợp đồng và quyền truy cập API tìm kiếm trực tiếp (Aviasales Search API hoặc Kiwi Search API) được phê duyệt chính thức.
+- Hạ tầng hỗ trợ polling và bảo mật token tìm kiếm live được kiểm thử hoàn tất trên môi trường Staging.
 
 ## 10. Ngoài phạm vi
 

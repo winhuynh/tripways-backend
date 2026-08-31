@@ -210,12 +210,10 @@ Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-comme
 
 ### P3
 
-- Thêm backend contract cho ad placement, sponsored placement, affiliate offer, disclosure, partner
-  capability và kill switch.
-- Redirect dùng allowlist/signed identifier; frontend không nhận arbitrary destination URL.
+- Thêm backend contract cho Travelpayouts Data API v3 cache (`flight_route_prices`), ad placement, affiliate offer, disclosure, partner capability và kill switch.
+- Redirect dùng allowlist (`https://www.aviasales.com`) và signed identifier; frontend không nhận arbitrary destination URL.
 - Ad/affiliate analytics không được thay đổi organic module payload hoặc indexability truth.
-- Airport live-search prefill chỉ nhận verified direct row đã chọn; commercial placement không được
-  chen vào ordered journey steps hoặc thay đổi direct-flight ranking.
+- Không triển khai live search polling hoặc metasearch engine trong phase này.
 
 ### P4
 
@@ -223,4 +221,11 @@ Chi tiết quyết định nằm tại `docs/product/city-hub-provider-and-comme
 - Sitemap chỉ đọc indexable current publication; chia shard theo page type/market và có lastmod thật.
 - Rollout theo cohort, đo cache hit, RPC latency, publication duration, crawl waste, stale rate và cost
   per published/indexed page.
+
+### P5 (Kế hoạch tương lai — Yêu cầu traffic ≥ 50.000 MAU)
+
+- Tích hợp Live Metasearch Engine đa nhà cung cấp (Aviasales Search API hoặc Kiwi Search API).
+- Live search orchestration (`POST /api/live-flights/search`), polling trạng thái, normalization các offers ngắn hạn.
+- Phân biệt minh bạch `protected connection` và `self_transfer` dựa trên dữ liệu thời gian thực từ provider.
+- Bề mặt kết quả live search luôn có cờ `noindex`.
 - Có budget, anomaly gate và atomic rollback trước khi tăng số URL theo cấp số lớn.

@@ -11,8 +11,9 @@
 | **P0 (P0A & P0B)** | **Nền tảng & Staging**           | Local fixtures            | App shell, Database schema, RLS, CI/CD, Staging `noindex`.                             |
 | **P1**             | **Dữ liệu Địa lý & Sân bay**     | OurAirports (Free)        | Master database: Quốc gia, Thành phố, Sân bay, Tọa độ, Timezone.                       |
 | **P2**             | **Route Explorer & pSEO Matrix** | AeroDataBox (API.market)  | Đồ thị mạng lưới đường bay thẳng (0-stop) & Nối chuyến (1–2 stops), Ma trận trang SEO. |
-| **P3**             | **Thương mại & Giá vé**          | Travelpayouts / Aviasales | Cache giá vé quan sát (`observed_amount`), Nút CTA Affiliate Handoff an toàn.          |
+| **P3**             | **Thương mại & Giá vé Quan sát** | Travelpayouts Data API v3 | Cache giá vé quan sát (`observed_amount`), Nút CTA Affiliate Handoff sang Aviasales.  |
 | **P4**             | **Scale pSEO có kiểm soát**      | Toàn bộ hệ thống          | Quét chất lượng index, mở rộng sitemap theo cohort thị trường, tối ưu chuyển đổi.      |
+| **P5**             | **Live Metasearch Engine**       | Aviasales / Kiwi Search   | Live search theo ngày cụ thể (Yêu cầu traffic ≥ 50.000 MAU để được duyệt Search API).  |
 
 ---
 
@@ -59,14 +60,14 @@
 
 ---
 
-### 🔹 Phase 3: Tầng Thương mại & Giá vé Quan sát (Travelpayouts Integration)
+### 🔹 Phase 3: Tầng Thương mại & Giá vé Quan sát (Travelpayouts Data API & Affiliate Handoff)
 
-- **Mục tiêu:** Tạo doanh thu từ hoa hồng đặt vé (Affiliate Marketing) mà không làm chậm hệ thống.
-- **Nguồn dữ liệu:** **Travelpayouts / Aviasales Data API v3**.
+- **Mục tiêu:** Tạo doanh thu từ hoa hồng đặt vé (Affiliate Marketing) mà không làm chậm hệ thống và không yêu cầu điều kiện traffic ngặt nghèo.
+- **Nguồn dữ liệu:** **Travelpayouts Data API v3** (Cached price observations từ lịch sử tìm kiếm 2–7 ngày).
 - **Các công việc chính:**
   - [ ] **On-demand Cache-aside**: Khi người dùng vào trang Route, kiểm tra cache giá vé trong Postgres (`flight_route_prices`). Nếu cache miss, gọi Edge Function lấy giá vé quan sát gần nhất (`observed_amount`).
   - [ ] **Contextual In-line CTAs**: Đặt nút _"Kiểm tra giá vé"_ bên cạnh từng hãng bay thẳng và từng chặng nối chuyến.
-  - [ ] **Affiliate Handoff Gateway**: Server tạo URL chuyển tiếp an toàn (`/v1/flight/affiliate-handoff`) kèm Marker & SubID sang Aviasales/Travelpayouts.
+  - [ ] **Affiliate Handoff Gateway**: Server tạo URL chuyển tiếp an toàn (`/v1/flight/affiliate-handoff`) kèm Marker & SubID sang trang tìm kiếm Aviasales (`https://www.aviasales.com/search/...`).
   - [ ] **Kill Switch & Fallback**: Nếu API giá vé lỗi, toàn bộ đồ thị tuyến bay và trang pSEO vẫn hoạt động bình thường 100%.
 
 ---
@@ -79,6 +80,18 @@
   - [ ] Theo dõi các chỉ số SEO qua Google Search Console: Indexation Rate, Impressions, Organic Clicks.
   - [ ] Tối ưu hóa phễu chuyển đổi: Đo lường Outbound CTR (tỉ lệ click sang đối tác) và EPC (Earnings Per Click).
   - [ ] Lên lịch Ingestion đồng bộ đổi mùa bay IATA (cuối tháng 3 và cuối tháng 10).
+
+---
+
+### 🔹 Phase 5: Live Metasearch Engine (Trải nghiệm Tìm kiếm Trực tiếp theo ngày)
+
+- **Mục tiêu:** Cung cấp trải nghiệm tìm kiếm vé live real-time khi trang đã có lượng truy cập lớn.
+- **Điều kiện tiên quyết:** Đạt tối thiểu **50.000 MAU** và được phê duyệt cấp phép **Aviasales Search API** hoặc **Kiwi Search API**.
+- **Các công việc chính:**
+  - [ ] Xây dựng dịch vụ Live Search Orchestration (`POST /api/live-flights/search`) và polling trạng thái.
+  - [ ] Chuẩn hóa kết quả tìm kiếm thời gian thực (normalized short-lived offers).
+  - [ ] Phân định rõ bảo vệ nối chuyến (`protected connection`) vs tự chuyển chặng (`self_transfer`).
+  - [ ] Đảm bảo toàn bộ bề mặt kết quả tìm kiếm theo ngày đều mang cờ `noindex`.
 
 ---
 
