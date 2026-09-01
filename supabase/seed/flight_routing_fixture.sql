@@ -5,21 +5,36 @@ VALUES ('10000000-0000-4000-8000-000000000001','route_discovery_fixture','Route 
 INSERT INTO public.countries (id,iso2,iso3,name,slug,region,subregion,source_id,source_record_id) VALUES
 ('20000000-0000-4000-8000-000000000001','VN','VNM','Vietnam','vietnam','Asia','South-Eastern Asia','10000000-0000-4000-8000-000000000001','country-vn'),
 ('20000000-0000-4000-8000-000000000002','SG','SGP','Singapore','singapore','Asia','South-Eastern Asia','10000000-0000-4000-8000-000000000001','country-sg'),
-('20000000-0000-4000-8000-000000000004','GB','GBR','United Kingdom','united-kingdom','Europe','Northern Europe','10000000-0000-4000-8000-000000000001','country-gb');
+('20000000-0000-4000-8000-000000000003','TH','THA','Thailand','thailand','Asia','South-Eastern Asia','10000000-0000-4000-8000-000000000001','country-th'),
+('20000000-0000-4000-8000-000000000004','GB','GBR','United Kingdom','united-kingdom','Europe','Northern Europe','10000000-0000-4000-8000-000000000001','country-gb'),
+('20000000-0000-4000-8000-000000000005','JP','JPN','Japan','japan','Asia','Eastern Asia','10000000-0000-4000-8000-000000000001','country-jp');
 
 INSERT INTO public.cities (id,country_id,name,slug,iata_code,currency_code,primary_language,latitude,longitude,timezone,source_id,source_record_id) VALUES
 ('30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001','Ho Chi Minh City','ho-chi-minh-city','SGN','VND','vi',10.8231,106.6297,'Asia/Ho_Chi_Minh','10000000-0000-4000-8000-000000000001','city-sgn'),
 ('30000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002','Singapore','singapore','SIN','SGD','en',1.3521,103.8198,'Asia/Singapore','10000000-0000-4000-8000-000000000001','city-sin'),
-('30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004','London','london','LON','GBP','en',51.5072,-0.1276,'Europe/London','10000000-0000-4000-8000-000000000001','city-lon');
+('30000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-000000000003','Bangkok','bangkok','BKK','THB','th',13.7563,100.5018,'Asia/Bangkok','10000000-0000-4000-8000-000000000001','city-bkk'),
+('30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004','London','london','LON','GBP','en',51.5072,-0.1276,'Europe/London','10000000-0000-4000-8000-000000000001','city-lon'),
+('30000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-000000000005','Tokyo','tokyo','TYO','JPY','ja',35.6762,139.6503,'Asia/Tokyo','10000000-0000-4000-8000-000000000001','city-tyo'),
+('30000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-000000000001','Hanoi','hanoi','HAN','VND','vi',21.0278,105.8342,'Asia/Ho_Chi_Minh','10000000-0000-4000-8000-000000000001','city-han');
 
 INSERT INTO public.airports (id,iata,icao,name,slug,city_id,country_id,latitude,longitude,timezone,airport_type,status,is_hub,min_transit_minutes,source_id,source_record_id) VALUES
 ('40000000-0000-4000-8000-000000000001','SGN','VVTS','Tan Son Nhat International Airport','tan-son-nhat-international-airport','30000000-0000-4000-8000-000000000001','20000000-0000-4000-8000-000000000001',10.8188,106.6520,'Asia/Ho_Chi_Minh','large_airport','active',FALSE,90,'10000000-0000-4000-8000-000000000001','airport-sgn'),
 ('40000000-0000-4000-8000-000000000002','SIN','WSSS','Singapore Changi Airport','singapore-changi-airport','30000000-0000-4000-8000-000000000002','20000000-0000-4000-8000-000000000002',1.3644,103.9915,'Asia/Singapore','large_airport','active',TRUE,60,'10000000-0000-4000-8000-000000000001','airport-sin'),
-('40000000-0000-4000-8000-000000000004','LHR','EGLL','Heathrow Airport','heathrow-airport','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004',51.4700,-0.4543,'Europe/London','large_airport','active',TRUE,120,'10000000-0000-4000-8000-000000000001','airport-lhr');
+('40000000-0000-4000-8000-000000000003','BKK','VTBS','Suvarnabhumi Airport','suvarnabhumi-airport','30000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-000000000003',13.6900,100.7501,'Asia/Bangkok','large_airport','active',FALSE,75,'10000000-0000-4000-8000-000000000001','airport-bkk'),
+('40000000-0000-4000-8000-000000000004','LHR','EGLL','Heathrow Airport','heathrow-airport','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004',51.4700,-0.4543,'Europe/London','large_airport','active',FALSE,120,'10000000-0000-4000-8000-000000000001','airport-lhr'),
+('40000000-0000-4000-8000-000000000005','HND','RJTT','Haneda Airport','haneda-airport','30000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-000000000005',35.5494,139.7798,'Asia/Tokyo','large_airport','active',FALSE,75,'10000000-0000-4000-8000-000000000001','airport-hnd'),
+('40000000-0000-4000-8000-000000000006','HAN','VVNB','Noi Bai International Airport','noi-bai-international-airport','30000000-0000-4000-8000-000000000006','20000000-0000-4000-8000-000000000001',21.2187,105.8042,'Asia/Ho_Chi_Minh','large_airport','active',FALSE,75,'10000000-0000-4000-8000-000000000001','airport-han'),
+('40000000-0000-4000-8000-000000000007','DMK','VTBD','Don Mueang International Airport','don-mueang-international-airport','30000000-0000-4000-8000-000000000003','20000000-0000-4000-8000-000000000003',13.9126,100.6068,'Asia/Bangkok','large_airport','active',FALSE,60,'10000000-0000-4000-8000-000000000001','airport-dmk'),
+('40000000-0000-4000-8000-000000000008','LGW','EGKK','Gatwick Airport','gatwick-airport','30000000-0000-4000-8000-000000000004','20000000-0000-4000-8000-000000000004',51.1537,-0.1821,'Europe/London','large_airport','active',FALSE,90,'10000000-0000-4000-8000-000000000001','airport-lgw'),
+('40000000-0000-4000-8000-000000000009','NRT','RJAA','Narita International Airport','narita-international-airport','30000000-0000-4000-8000-000000000005','20000000-0000-4000-8000-000000000005',35.7720,140.3929,'Asia/Tokyo','large_airport','active',FALSE,90,'10000000-0000-4000-8000-000000000001','airport-nrt');
 
 INSERT INTO public.airlines (id,iata,icao,name,slug,country_id,business_model,status,source_id,source_record_id) VALUES
 ('50000000-0000-4000-8000-000000000001','VN','HVN','Vietnam Airlines','vietnam-airlines','20000000-0000-4000-8000-000000000001','full_service','active','10000000-0000-4000-8000-000000000001','airline-vn'),
-('50000000-0000-4000-8000-000000000002','SQ','SIA','Singapore Airlines','singapore-airlines','20000000-0000-4000-8000-000000000002','full_service','active','10000000-0000-4000-8000-000000000001','airline-sq');
+('50000000-0000-4000-8000-000000000002','SQ','SIA','Singapore Airlines','singapore-airlines','20000000-0000-4000-8000-000000000002','full_service','active','10000000-0000-4000-8000-000000000001','airline-sq'),
+('50000000-0000-4000-8000-000000000003','TG','THA','Thai Airways','thai-airways','20000000-0000-4000-8000-000000000003','full_service','active','10000000-0000-4000-8000-000000000001','airline-tg'),
+('50000000-0000-4000-8000-000000000004','VJ','VJC','VietJet Air','vietjet-air','20000000-0000-4000-8000-000000000001','low_cost','active','10000000-0000-4000-8000-000000000001','airline-vj'),
+('50000000-0000-4000-8000-000000000005','BA','BAW','British Airways','british-airways','20000000-0000-4000-8000-000000000004','full_service','active','10000000-0000-4000-8000-000000000001','airline-ba'),
+('50000000-0000-4000-8000-000000000006','JL','JAL','Japan Airlines','japan-airlines','20000000-0000-4000-8000-000000000005','full_service','active','10000000-0000-4000-8000-000000000001','airline-jl');
 
 INSERT INTO public.direct_flight_routes (
   id, origin_airport_id, destination_airport_id, origin_iata, destination_iata,
@@ -29,7 +44,19 @@ INSERT INTO public.direct_flight_routes (
 ('70000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000002', 'SGN', 'SIN', 'VN', 'Vietnam Airlines', '50000000-0000-4000-8000-000000000001', ARRAY['VN651'], 125, 1085, '{1,2,3,4,5,6,7}', ARRAY['A321'], '10000000-0000-4000-8000-000000000001', 'route-sgn-sin-vn', TRUE),
 ('70000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000002', 'SGN', 'SIN', 'SQ', 'Singapore Airlines', '50000000-0000-4000-8000-000000000002', ARRAY['SQ173'], 125, 1085, '{1,2,3,4,5,6,7}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-sgn-sin-sq', TRUE),
 ('70000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000002', '40000000-0000-4000-8000-000000000004', 'SIN', 'LHR', 'SQ', 'Singapore Airlines', '50000000-0000-4000-8000-000000000002', ARRAY['SQ308'], 820, 10885, '{1,2,3,4,5,6,7}', ARRAY['A380'], '10000000-0000-4000-8000-000000000001', 'route-sin-lhr-sq', TRUE),
-('70000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000004', 'SGN', 'LHR', 'VN', 'Vietnam Airlines', '50000000-0000-4000-8000-000000000001', ARRAY['VN51'], 780, 10200, '{2,4,6}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-sgn-lhr-vn', TRUE);
+('70000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000004', 'SGN', 'LHR', 'VN', 'Vietnam Airlines', '50000000-0000-4000-8000-000000000001', ARRAY['VN51'], 780, 10200, '{2,4,6}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-sgn-lhr-vn', TRUE),
+('70000000-0000-4000-8000-000000000005', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000006', 'SGN', 'HAN', 'VN', 'Vietnam Airlines', '50000000-0000-4000-8000-000000000001', ARRAY['VN220'], 130, 1160, '{1,2,3,4,5,6,7}', ARRAY['A321'], '10000000-0000-4000-8000-000000000001', 'route-sgn-han-vn', TRUE),
+('70000000-0000-4000-8000-000000000006', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000003', 'SGN', 'BKK', 'TG', 'Thai Airways', '50000000-0000-4000-8000-000000000003', ARRAY['TG551'], 90, 717, '{1,3,5,7}', ARRAY['A320'], '10000000-0000-4000-8000-000000000001', 'route-sgn-bkk-tg', TRUE),
+('70000000-0000-4000-8000-000000000007', '40000000-0000-4000-8000-000000000001', '40000000-0000-4000-8000-000000000003', 'SGN', 'BKK', 'VJ', 'VietJet Air', '50000000-0000-4000-8000-000000000004', ARRAY['VJ801'], 95, 717, '{2,4,6}', ARRAY['A321'], '10000000-0000-4000-8000-000000000001', 'route-sgn-bkk-vj', TRUE),
+('70000000-0000-4000-8000-000000000008', '40000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000002', 'BKK', 'SIN', 'SQ', 'Singapore Airlines', '50000000-0000-4000-8000-000000000002', ARRAY['SQ711'], 150, 1418, '{1,2,3,4,5,6,7}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-bkk-sin-sq', TRUE),
+('70000000-0000-4000-8000-000000000009', '40000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000004', 'BKK', 'LHR', 'TG', 'Thai Airways', '50000000-0000-4000-8000-000000000003', ARRAY['TG910'], 760, 9580, '{1,3,5,7}', ARRAY['B777'], '10000000-0000-4000-8000-000000000001', 'route-bkk-lhr-tg', TRUE),
+('70000000-0000-4000-8000-000000000010', '40000000-0000-4000-8000-000000000003', '40000000-0000-4000-8000-000000000005', 'BKK', 'HND', 'TG', 'Thai Airways', '50000000-0000-4000-8000-000000000003', ARRAY['TG660'], 360, 4580, '{1,2,3,4,5,6,7}', ARRAY['A350'], '10000000-0000-4000-8000-000000000001', 'route-bkk-hnd-tg', TRUE),
+('70000000-0000-4000-8000-000000000011', '40000000-0000-4000-8000-000000000007', '40000000-0000-4000-8000-000000000009', 'DMK', 'NRT', 'VJ', 'VietJet Air', '50000000-0000-4000-8000-000000000004', ARRAY['VJ933'], 370, 4650, '{2,4,6}', ARRAY['A321'], '10000000-0000-4000-8000-000000000001', 'route-dmk-nrt-vj', TRUE),
+('70000000-0000-4000-8000-000000000012', '40000000-0000-4000-8000-000000000006', '40000000-0000-4000-8000-000000000002', 'HAN', 'SIN', 'VN', 'Vietnam Airlines', '50000000-0000-4000-8000-000000000001', ARRAY['VN661'], 210, 2207, '{1,3,5,7}', ARRAY['A321'], '10000000-0000-4000-8000-000000000001', 'route-han-sin-vn', TRUE),
+('70000000-0000-4000-8000-000000000013', '40000000-0000-4000-8000-000000000005', '40000000-0000-4000-8000-000000000002', 'HND', 'SIN', 'JL', 'Japan Airlines', '50000000-0000-4000-8000-000000000006', ARRAY['JL35'], 430, 5310, '{1,2,3,4,5,6,7}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-hnd-sin-jl', TRUE),
+('70000000-0000-4000-8000-000000000014', '40000000-0000-4000-8000-000000000004', '40000000-0000-4000-8000-000000000001', 'LHR', 'SGN', 'BA', 'British Airways', '50000000-0000-4000-8000-000000000005', ARRAY['BA63'], 760, 10200, '{1,5}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-lhr-sgn-ba', TRUE),
+('70000000-0000-4000-8000-000000000015', '40000000-0000-4000-8000-000000000008', '40000000-0000-4000-8000-000000000001', 'LGW', 'SGN', 'BA', 'British Airways', '50000000-0000-4000-8000-000000000005', ARRAY['BA61'], 780, 10240, '{2,6}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-lgw-sgn-ba', TRUE),
+('70000000-0000-4000-8000-000000000016', '40000000-0000-4000-8000-000000000009', '40000000-0000-4000-8000-000000000004', 'NRT', 'LHR', 'JL', 'Japan Airlines', '50000000-0000-4000-8000-000000000006', ARRAY['JL41'], 855, 9585, '{3,7}', ARRAY['B787'], '10000000-0000-4000-8000-000000000001', 'route-nrt-lhr-jl', TRUE);
 
 INSERT INTO public.flight_route_prices (
   id, origin_city_id, destination_city_id, origin_airport_id, destination_airport_id,
@@ -62,12 +89,60 @@ VALUES
     'price-sgn-sin', now(), now() + INTERVAL '6 days', '/search/SGN-SIN', 'published'
   );
 
+INSERT INTO public.flight_route_prices (
+  id, origin_city_id, destination_city_id, origin_airport_id, destination_airport_id,
+  canonical_airline_id, provider_airline_iata, observation_type, trip_type, direct,
+  transfer_count, observed_amount, currency_code, market_code, locale, departure_date,
+  source_id, provider_code, source_record_id, observed_at, valid_until,
+  affiliate_path, status
+)
+VALUES
+  ('60000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000006','40000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000006','50000000-0000-4000-8000-000000000001','VN','cached_fare','one_way',TRUE,0,55,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-sgn-han-vn',now(),now() + INTERVAL '6 days','/search/SGN-HAN','published'),
+  ('60000000-0000-4000-8000-000000000004','30000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000003','50000000-0000-4000-8000-000000000003','TG','cached_fare','one_way',TRUE,0,120,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-sgn-bkk-tg',now(),now() + INTERVAL '6 days','/search/SGN-BKK','published'),
+  ('60000000-0000-4000-8000-000000000005','30000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000003','50000000-0000-4000-8000-000000000004','VJ','cached_fare','one_way',TRUE,0,75,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-sgn-bkk-vj',now(),now() + INTERVAL '6 days','/search/SGN-BKK','published'),
+  ('60000000-0000-4000-8000-000000000006','30000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000002','50000000-0000-4000-8000-000000000002','SQ','cached_fare','one_way',TRUE,0,110,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-bkk-sin-sq',now(),now() + INTERVAL '6 days','/search/BKK-SIN','published'),
+  ('60000000-0000-4000-8000-000000000007','30000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000004','50000000-0000-4000-8000-000000000003','TG','cached_fare','one_way',TRUE,0,500,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-bkk-lhr-tg',now(),now() + INTERVAL '6 days','/search/BKK-LHR','published'),
+  ('60000000-0000-4000-8000-000000000008','30000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000005','40000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000005','50000000-0000-4000-8000-000000000003','TG','cached_fare','one_way',TRUE,0,250,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-bkk-hnd-tg',now(),now() + INTERVAL '6 days','/search/BKK-HND','published'),
+  ('60000000-0000-4000-8000-000000000009','30000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000005','40000000-0000-4000-8000-000000000007','40000000-0000-4000-8000-000000000009','50000000-0000-4000-8000-000000000004','VJ','cached_fare','one_way',TRUE,0,190,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-dmk-nrt-vj',now(),now() + INTERVAL '6 days','/search/DMK-NRT','published'),
+  ('60000000-0000-4000-8000-000000000010','30000000-0000-4000-8000-000000000006','30000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000006','40000000-0000-4000-8000-000000000002','50000000-0000-4000-8000-000000000001','VN','cached_fare','one_way',TRUE,0,140,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-han-sin-vn',now(),now() + INTERVAL '6 days','/search/HAN-SIN','published'),
+  ('60000000-0000-4000-8000-000000000011','30000000-0000-4000-8000-000000000005','30000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000005','40000000-0000-4000-8000-000000000002','50000000-0000-4000-8000-000000000006','JL','cached_fare','one_way',TRUE,0,220,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-hnd-sin-jl',now(),now() + INTERVAL '6 days','/search/HND-SIN','published'),
+  ('60000000-0000-4000-8000-000000000012','30000000-0000-4000-8000-000000000004','30000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000005','BA','cached_fare','one_way',TRUE,0,450,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-lhr-sgn-ba',now(),now() + INTERVAL '6 days','/search/LHR-SGN','published'),
+  ('60000000-0000-4000-8000-000000000013','30000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000004',NULL,NULL,'cached_fare','one_way',FALSE,1,320,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-sgn-lhr-one-stop',now(),now() + INTERVAL '6 days','/search/SGN-LHR','published'),
+  ('60000000-0000-4000-8000-000000000014','30000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000003','40000000-0000-4000-8000-000000000004',NULL,NULL,'cached_fare','one_way',FALSE,1,420,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-bkk-lhr-one-stop',now(),now() + INTERVAL '6 days','/search/BKK-LHR','published'),
+  ('60000000-0000-4000-8000-000000000015','30000000-0000-4000-8000-000000000006','30000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000006','40000000-0000-4000-8000-000000000004',NULL,NULL,'cached_fare','one_way',FALSE,1,480,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-han-lhr-one-stop',now(),now() + INTERVAL '6 days','/search/HAN-LHR','published'),
+  ('60000000-0000-4000-8000-000000000016','30000000-0000-4000-8000-000000000005','30000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000005','40000000-0000-4000-8000-000000000004',NULL,NULL,'cached_fare','one_way',FALSE,1,600,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-hnd-lhr-one-stop',now(),now() + INTERVAL '6 days','/search/HND-LHR','published'),
+  ('60000000-0000-4000-8000-000000000017','30000000-0000-4000-8000-000000000004','30000000-0000-4000-8000-000000000001','40000000-0000-4000-8000-000000000008','40000000-0000-4000-8000-000000000001','50000000-0000-4000-8000-000000000005','BA','cached_fare','one_way',TRUE,0,430,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-lgw-sgn-ba',now(),now() + INTERVAL '6 days','/search/LGW-SGN','published'),
+  ('60000000-0000-4000-8000-000000000018','30000000-0000-4000-8000-000000000005','30000000-0000-4000-8000-000000000004','40000000-0000-4000-8000-000000000009','40000000-0000-4000-8000-000000000004','50000000-0000-4000-8000-000000000006','JL','cached_fare','one_way',TRUE,0,520,'USD','us','en-GB',CURRENT_DATE + 30,'10000000-0000-4000-8000-000000000001','fixture','price-nrt-lhr-jl',now(),now() + INTERVAL '6 days','/search/NRT-LHR','published');
+
 INSERT INTO public.pseo_pages (id,page_type,entity_key,locale,canonical_path,display_title,status,is_indexable,noindex_reason,source_freshness_at) VALUES
 ('81000000-0000-4000-8000-000000000001','city','ho-chi-minh-city','en-GB','/flights-from/ho-chi-minh-city','Flights from Ho Chi Minh City','published',false,'development_fixture',now()),
 ('81000000-0000-4000-8000-000000000002','airport','sgn','en-GB','/airports/tan-son-nhat-sgn','Tan Son Nhat Airport guide','published',false,'development_fixture',now()),
-('81000000-0000-4000-8000-000000000003','city_route','ho-chi-minh-city-london','en-GB','/flights/ho-chi-minh-city-london','Ho Chi Minh City to London flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000003','city_route','ho-chi-minh-city-to-london','en-GB','/flights/ho-chi-minh-city-to-london','Ho Chi Minh City to London flights','published',false,'development_fixture',now()),
 ('81000000-0000-4000-8000-000000000004','city_route','ho-chi-minh-city-to-singapore','en-GB','/flights/ho-chi-minh-city-to-singapore','Ho Chi Minh City to Singapore flights','published',false,'development_fixture',now()),
-('81000000-0000-4000-8000-000000000005','city_route','ho-chi-minh-city-singapore','en-GB','/flights/ho-chi-minh-city-singapore','Ho Chi Minh City to Singapore flights','published',false,'development_fixture',now());
+('81000000-0000-4000-8000-000000000006','city','bangkok','en-GB','/flights-from/bangkok','Flights from Bangkok','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000007','city','hanoi','en-GB','/flights-from/hanoi','Flights from Hanoi','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000008','city','singapore','en-GB','/flights-from/singapore','Flights from Singapore','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000009','city','london','en-GB','/flights-from/london','Flights from London','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000010','city','tokyo','en-GB','/flights-from/tokyo','Flights from Tokyo','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000011','airport','sin','en-GB','/airports/singapore-changi-sin','Singapore Changi Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000012','airport','bkk','en-GB','/airports/suvarnabhumi-bkk','Suvarnabhumi Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000013','airport','dmk','en-GB','/airports/don-mueang-dmk','Don Mueang Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000014','airport','lhr','en-GB','/airports/heathrow-lhr','Heathrow Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000015','airport','lgw','en-GB','/airports/gatwick-lgw','Gatwick Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000016','airport','hnd','en-GB','/airports/haneda-hnd','Haneda Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000017','airport','nrt','en-GB','/airports/narita-nrt','Narita Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000018','airport','han','en-GB','/airports/noi-bai-han','Noi Bai Airport guide','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000020','city_route','ho-chi-minh-city-to-hanoi','en-GB','/flights/ho-chi-minh-city-to-hanoi','Ho Chi Minh City to Hanoi flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000021','city_route','ho-chi-minh-city-to-bangkok','en-GB','/flights/ho-chi-minh-city-to-bangkok','Ho Chi Minh City to Bangkok flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000022','city_route','bangkok-to-singapore','en-GB','/flights/bangkok-to-singapore','Bangkok to Singapore flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000023','city_route','bangkok-to-london','en-GB','/flights/bangkok-to-london','Bangkok to London flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000024','city_route','bangkok-to-tokyo','en-GB','/flights/bangkok-to-tokyo','Bangkok to Tokyo flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000025','city_route','hanoi-to-singapore','en-GB','/flights/hanoi-to-singapore','Hanoi to Singapore flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000026','city_route','hanoi-to-london','en-GB','/flights/hanoi-to-london','Hanoi to London flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000027','city_route','tokyo-to-singapore','en-GB','/flights/tokyo-to-singapore','Tokyo to Singapore flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000028','city_route','tokyo-to-london','en-GB','/flights/tokyo-to-london','Tokyo to London flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000029','city_route','london-to-ho-chi-minh-city','en-GB','/flights/london-to-ho-chi-minh-city','London to Ho Chi Minh City flights','published',false,'development_fixture',now()),
+('81000000-0000-4000-8000-000000000030','city_route','singapore-to-london','en-GB','/flights/singapore-to-london','Singapore to London flights','published',false,'development_fixture',now());
 
 INSERT INTO public.city_pages (pseo_page_id,city_id,locale,route_direction,primary_airport_id,content,content_reviewed_at) VALUES
 ('81000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','en-GB','outbound','40000000-0000-4000-8000-000000000001',jsonb_build_object(
@@ -89,10 +164,20 @@ INSERT INTO public.city_pages (pseo_page_id,city_id,locale,route_direction,prima
     )),
     jsonb_build_object('cluster', 'popular_routes', 'links', jsonb_build_array(
       jsonb_build_object('anchor_text', 'Flights to Singapore', 'path', '/flights/ho-chi-minh-city-to-singapore'),
-      jsonb_build_object('anchor_text', 'Flights to London', 'path', '/flights/ho-chi-minh-city-london')
+      jsonb_build_object('anchor_text', 'Flights to London', 'path', '/flights/ho-chi-minh-city-to-london')
     ))
   )
 ), now());
+
+INSERT INTO public.city_pages (
+  pseo_page_id, city_id, locale, route_direction, primary_airport_id, content, content_reviewed_at
+)
+VALUES
+  ('81000000-0000-4000-8000-000000000006','30000000-0000-4000-8000-000000000003','en-GB','outbound','40000000-0000-4000-8000-000000000003','{}'::JSONB,now()),
+  ('81000000-0000-4000-8000-000000000007','30000000-0000-4000-8000-000000000006','en-GB','outbound','40000000-0000-4000-8000-000000000006','{}'::JSONB,now()),
+  ('81000000-0000-4000-8000-000000000008','30000000-0000-4000-8000-000000000002','en-GB','outbound','40000000-0000-4000-8000-000000000002','{}'::JSONB,now()),
+  ('81000000-0000-4000-8000-000000000009','30000000-0000-4000-8000-000000000004','en-GB','outbound','40000000-0000-4000-8000-000000000004','{}'::JSONB,now()),
+  ('81000000-0000-4000-8000-000000000010','30000000-0000-4000-8000-000000000005','en-GB','outbound','40000000-0000-4000-8000-000000000005','{}'::JSONB,now());
 
 INSERT INTO public.airport_pages (pseo_page_id,airport_id,locale,content,content_reviewed_at) VALUES
 ('81000000-0000-4000-8000-000000000002','40000000-0000-4000-8000-000000000001','en-GB',jsonb_build_object(
@@ -179,10 +264,58 @@ INSERT INTO public.airport_pages (pseo_page_id,airport_id,locale,content,content
     )),
     jsonb_build_object('cluster', 'routes', 'links', jsonb_build_array(
       jsonb_build_object('anchor_text', 'Flights to Singapore (SIN)', 'path', '/flights/ho-chi-minh-city-to-singapore'),
-      jsonb_build_object('anchor_text', 'Flights to London (LHR)', 'path', '/flights/ho-chi-minh-city-london')
+      jsonb_build_object('anchor_text', 'Flights to London (LHR)', 'path', '/flights/ho-chi-minh-city-to-london')
     ))
   )
 ), now());
+
+INSERT INTO public.airport_pages (
+  pseo_page_id, airport_id, locale, content, content_reviewed_at
+)
+SELECT
+  fixture.pseo_page_id,
+  fixture.airport_id,
+  'en-GB',
+  jsonb_build_object(
+    'seo', jsonb_build_object(
+      'h1', fixture.airport_name || ' (' || fixture.iata || ') Guide',
+      'subheadline', 'Terminals, transport, routes, and practical travel information',
+      'title', fixture.iata || ' Airport Guide | Tripways',
+      'meta_description', 'Plan your journey through ' || fixture.airport_name || '.'
+    ),
+    'orientation', jsonb_build_object(
+      'intro', fixture.airport_name || ' serves the Tripways deterministic local test network.',
+      'summary', 'Use this development fixture to test airport content, route filters, and maps.',
+      'city_distance_km', 20,
+      'terminal_count', 2
+    ),
+    'quick_answers', jsonb_build_object(
+      'default_transport', NULL,
+      'city_distance_km', 20,
+      'terminal_count', 2
+    ),
+    'arrival', jsonb_build_object('summary', 'Follow airport signs to arrivals.', 'steps', '[]'::JSONB),
+    'departure', jsonb_build_object('summary', 'Check in before proceeding to security.', 'steps', '[]'::JSONB),
+    'transport', '[]'::JSONB,
+    'terminals', '[]'::JSONB,
+    'facilities', '[]'::JSONB,
+    'lounges', '[]'::JSONB,
+    'notices', '[]'::JSONB,
+    'faqs', '[]'::JSONB,
+    'internal_link_groups', '[]'::JSONB
+  ),
+  now()
+FROM (
+  VALUES
+    ('81000000-0000-4000-8000-000000000011'::UUID,'40000000-0000-4000-8000-000000000002'::UUID,'SIN','Singapore Changi Airport'),
+    ('81000000-0000-4000-8000-000000000012'::UUID,'40000000-0000-4000-8000-000000000003'::UUID,'BKK','Suvarnabhumi Airport'),
+    ('81000000-0000-4000-8000-000000000013'::UUID,'40000000-0000-4000-8000-000000000007'::UUID,'DMK','Don Mueang International Airport'),
+    ('81000000-0000-4000-8000-000000000014'::UUID,'40000000-0000-4000-8000-000000000004'::UUID,'LHR','Heathrow Airport'),
+    ('81000000-0000-4000-8000-000000000015'::UUID,'40000000-0000-4000-8000-000000000008'::UUID,'LGW','Gatwick Airport'),
+    ('81000000-0000-4000-8000-000000000016'::UUID,'40000000-0000-4000-8000-000000000005'::UUID,'HND','Haneda Airport'),
+    ('81000000-0000-4000-8000-000000000017'::UUID,'40000000-0000-4000-8000-000000000009'::UUID,'NRT','Narita International Airport'),
+    ('81000000-0000-4000-8000-000000000018'::UUID,'40000000-0000-4000-8000-000000000006'::UUID,'HAN','Noi Bai International Airport')
+) AS fixture(pseo_page_id, airport_id, iata, airport_name);
 
 INSERT INTO public.route_pages (pseo_page_id,origin_city_id,destination_city_id,locale,content,content_reviewed_at) VALUES
 ('81000000-0000-4000-8000-000000000003','30000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000004','en-GB',jsonb_build_object(
@@ -244,4 +377,58 @@ INSERT INTO public.route_pages (pseo_page_id,origin_city_id,destination_city_id,
   )
 ), now());
 
+INSERT INTO public.route_pages (
+  pseo_page_id, origin_city_id, destination_city_id, locale, content, content_reviewed_at
+)
+SELECT
+  fixture.pseo_page_id,
+  fixture.origin_city_id,
+  fixture.destination_city_id,
+  'en-GB',
+  jsonb_build_object(
+    'seo', jsonb_build_object(
+      'h1', 'Flights from ' || fixture.origin_name || ' to ' || fixture.destination_name,
+      'subheadline', 'Compare deterministic direct and one-stop route fixtures',
+      'title', fixture.origin_name || ' to ' || fixture.destination_name || ' Flights | Tripways',
+      'meta_description', 'Compare local fixture routes from ' || fixture.origin_name || ' to ' || fixture.destination_name || '.',
+      'intro', 'This development-only route page covers search, filters, prices, and map rendering.'
+    ),
+    'travel_facts', '[]'::JSONB,
+    'editorial_sections', '[]'::JSONB,
+    'faqs', '[]'::JSONB,
+    'internal_link_groups', '[]'::JSONB
+  ),
+  now()
+FROM (
+  VALUES
+    ('81000000-0000-4000-8000-000000000020'::UUID,'30000000-0000-4000-8000-000000000001'::UUID,'30000000-0000-4000-8000-000000000006'::UUID,'Ho Chi Minh City','Hanoi'),
+    ('81000000-0000-4000-8000-000000000021'::UUID,'30000000-0000-4000-8000-000000000001'::UUID,'30000000-0000-4000-8000-000000000003'::UUID,'Ho Chi Minh City','Bangkok'),
+    ('81000000-0000-4000-8000-000000000022'::UUID,'30000000-0000-4000-8000-000000000003'::UUID,'30000000-0000-4000-8000-000000000002'::UUID,'Bangkok','Singapore'),
+    ('81000000-0000-4000-8000-000000000023'::UUID,'30000000-0000-4000-8000-000000000003'::UUID,'30000000-0000-4000-8000-000000000004'::UUID,'Bangkok','London'),
+    ('81000000-0000-4000-8000-000000000024'::UUID,'30000000-0000-4000-8000-000000000003'::UUID,'30000000-0000-4000-8000-000000000005'::UUID,'Bangkok','Tokyo'),
+    ('81000000-0000-4000-8000-000000000025'::UUID,'30000000-0000-4000-8000-000000000006'::UUID,'30000000-0000-4000-8000-000000000002'::UUID,'Hanoi','Singapore'),
+    ('81000000-0000-4000-8000-000000000026'::UUID,'30000000-0000-4000-8000-000000000006'::UUID,'30000000-0000-4000-8000-000000000004'::UUID,'Hanoi','London'),
+    ('81000000-0000-4000-8000-000000000027'::UUID,'30000000-0000-4000-8000-000000000005'::UUID,'30000000-0000-4000-8000-000000000002'::UUID,'Tokyo','Singapore'),
+    ('81000000-0000-4000-8000-000000000028'::UUID,'30000000-0000-4000-8000-000000000005'::UUID,'30000000-0000-4000-8000-000000000004'::UUID,'Tokyo','London'),
+    ('81000000-0000-4000-8000-000000000029'::UUID,'30000000-0000-4000-8000-000000000004'::UUID,'30000000-0000-4000-8000-000000000001'::UUID,'London','Ho Chi Minh City'),
+    ('81000000-0000-4000-8000-000000000030'::UUID,'30000000-0000-4000-8000-000000000002'::UUID,'30000000-0000-4000-8000-000000000004'::UUID,'Singapore','London')
+) AS fixture(pseo_page_id, origin_city_id, destination_city_id, origin_name, destination_name);
+
 SELECT public.publish_read_model_version('development_fixture');
+
+UPDATE public.flight_route_options
+SET
+  departure_time_buckets = CASE
+    WHEN operating_airlines[1] IN ('VN', 'JL') THEN ARRAY['morning']::TEXT[]
+    WHEN operating_airlines[1] IN ('TG', 'BA') THEN ARRAY['afternoon']::TEXT[]
+    WHEN operating_airlines[1] = 'SQ' THEN ARRAY['evening']::TEXT[]
+    ELSE ARRAY['early_morning']::TEXT[]
+  END,
+  cabins = CASE
+    WHEN operating_airlines && ARRAY['SQ', 'TG', 'BA', 'JL']::TEXT[]
+    THEN ARRAY['economy', 'business']::TEXT[]
+    ELSE ARRAY['economy']::TEXT[]
+  END
+WHERE publication_version_id = (
+  SELECT id FROM public.publication_versions WHERE is_current = TRUE
+);

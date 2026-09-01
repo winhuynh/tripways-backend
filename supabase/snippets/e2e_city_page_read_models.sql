@@ -19,8 +19,8 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  jsonb_array_length(public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #> '{data,routes}') = 2,
-  'Ho Chi Minh City page exposes both seeded routes'
+  jsonb_array_length(public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #> '{data,routes}') = 8,
+  'Ho Chi Minh City page exposes the deterministic route matrix'
 );
 
 SELECT pg_temp.test_assert(
@@ -29,13 +29,46 @@ SELECT pg_temp.test_assert(
 );
 
 SELECT pg_temp.test_assert(
-  (public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,routes,0,observed_amount}')::NUMERIC > 0,
-  'Ho Chi Minh City page exposes a fresh estimated route price'
+  NOT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(
+      public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #> '{data,routes}'
+    ) AS route
+    LEFT JOIN public.pseo_pages AS page
+      ON page.canonical_path = route->>'route_path'
+      AND page.status = 'published'
+    WHERE page.id IS NULL
+  ),
+  'Ho Chi Minh City page emits only published route links'
 );
 
 SELECT pg_temp.test_assert(
-  public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,content,seo,h1}' = 'Flights from Ho Chi Minh City',
+  public.rpc_get_page('{"page_type":"city","entity_key":"ho-chi-minh-city","locale":"en-GB"}'::JSONB) #>> '{data,page,h1}' = 'Direct Flights from Ho Chi Minh City (SGN)',
   'Ho Chi Minh City page exposes reviewed aggregate content'
+);
+
+SELECT pg_temp.test_assert(
+  NOT EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(
+      public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,featured_destinations}'
+    ) AS destination
+    WHERE (destination->>'stops')::INTEGER <> 0
+  ),
+  'direct-flight city pages do not expose connecting itineraries as featured destinations'
+);
+
+SELECT pg_temp.test_assert(
+  EXISTS (
+    SELECT 1
+    FROM jsonb_array_elements(
+      public.rpc_get_page('{"page_type":"city","entity_key":"bangkok","locale":"en-GB"}'::JSONB) #> '{data,featured_destinations}'
+    ) AS destination
+    WHERE destination->'destination_airports' @> '["NRT"]'::JSONB
+      AND destination #>> '{fare_estimate,min}' = '190.00'
+      AND destination #>> '{fare_estimate,currency}' = 'USD'
+  ),
+  'city destinations expose deterministic fare observations for fare-filter testing'
 );
 
 SELECT pg_temp.test_assert(

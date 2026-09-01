@@ -20,6 +20,7 @@ const FILTER_FIELDS = new Set([
   'counterpart_countries',
   'counterpart_regions',
   'departure_time_buckets',
+  'days_of_week',
   'route_type',
   'max_duration_minutes',
   'max_layover_minutes',
@@ -34,6 +35,7 @@ const AIRPORT_DISALLOWED_FILTER_FIELDS = [
   'destination_countries',
   'destination_regions',
   'departure_time_buckets',
+  'days_of_week',
   'max_duration_minutes',
   'max_layover_minutes',
   'cabin',
@@ -49,7 +51,7 @@ export type RouteSearchScope =
   | { type: 'city_pair'; from: string; to: string };
 
 export type RouteSearchFilters = {
-  maxStops: 0 | 1 | 2 | 3;
+  maxStops: 0 | 1;
   airlines: string[];
   connectionAirports: string[];
   departureAirports: string[];
@@ -59,6 +61,7 @@ export type RouteSearchFilters = {
   counterpartCountries: string[];
   counterpartRegions: string[];
   departureTimeBuckets: Array<'early_morning' | 'morning' | 'afternoon' | 'evening'>;
+  daysOfWeek: number[];
   routeType: 'all' | 'domestic' | 'international';
   maxDurationMinutes: number | null;
   maxLayoverMinutes: number | null;
@@ -100,7 +103,7 @@ export function parseRouteSearchRequest(value: unknown): RouteSearchRequest {
   return {
     scope,
     filters: {
-      maxStops: parseBoundedInteger(filters.max_stops ?? 3, 0, 3, ERROR_CODE) as 0 | 1 | 2 | 3,
+      maxStops: parseBoundedInteger(filters.max_stops ?? 1, 0, 1, ERROR_CODE) as 0 | 1,
       airlines: parseCodeList(filters.airlines, 2, ERROR_CODE),
       connectionAirports: parseCodeList(filters.connection_airports, 3, ERROR_CODE),
       departureAirports: parseCodeList(filters.departure_airports, 3, ERROR_CODE),
@@ -113,6 +116,7 @@ export function parseRouteSearchRequest(value: unknown): RouteSearchRequest {
         filters.departure_time_buckets,
         ['early_morning', 'morning', 'afternoon', 'evening'] as const,
       ),
+      daysOfWeek: parseIntegerList(filters.days_of_week, 1, 7),
       routeType: routeType as RouteSearchFilters['routeType'],
       maxDurationMinutes: optionalPositiveInteger(filters.max_duration_minutes),
       maxLayoverMinutes: optionalPositiveInteger(filters.max_layover_minutes),
@@ -169,6 +173,13 @@ function parseTextList(value: unknown): string[] {
     if (typeof item !== 'string' || item.trim().length < 1 || item.trim().length > 80) invalid();
     return item.trim();
   });
+  return [...new Set(values)];
+}
+
+function parseIntegerList(value: unknown, min: number, max: number): number[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value) || value.length > 50) invalid();
+  const values = value.map((item) => parseBoundedInteger(item, min, max, ERROR_CODE));
   return [...new Set(values)];
 }
 

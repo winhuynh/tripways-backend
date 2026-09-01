@@ -58,6 +58,7 @@ CREATE TABLE public.flight_route_options (
   destination_city_id       UUID              NOT NULL REFERENCES public.cities (id),
   destination_city_slug     TEXT              NOT NULL,
   destination_country_code  TEXT              NOT NULL,
+  destination_region        TEXT              NULL,
   origin_airport_id         UUID              NOT NULL REFERENCES public.airports (id),
   origin_airport_iata       TEXT              NOT NULL,
   destination_airport_id    UUID              NOT NULL REFERENCES public.airports (id),
@@ -71,6 +72,11 @@ CREATE TABLE public.flight_route_options (
   total_duration_minutes    INTEGER           NOT NULL DEFAULT 0,
   total_distance_km         INTEGER           NOT NULL DEFAULT 0,
   days_of_week              INTEGER[]         NOT NULL DEFAULT '{1,2,3,4,5,6,7}',
+  departure_time_buckets    TEXT[]            NOT NULL DEFAULT '{}',
+  layover_minutes           INTEGER           NOT NULL DEFAULT 0,
+  cabins                     TEXT[]            NOT NULL DEFAULT '{economy}',
+  price_amount               NUMERIC(14,2)     NULL,
+  price_currency             TEXT              NULL,
   route_type                TEXT              NOT NULL DEFAULT 'direct',
   confidence_score          NUMERIC(4,3)      NOT NULL DEFAULT 1.000,
   route_path                TEXT              NULL,
@@ -85,7 +91,30 @@ CREATE TABLE public.flight_route_options (
     CHECK (stops IN (0, 1)),
 
   CONSTRAINT flight_route_options_route_type_check
-    CHECK (route_type IN ('direct', 'same_airline', 'alliance', 'self_transfer'))
+    CHECK (route_type IN ('direct', 'same_airline', 'alliance', 'self_transfer')),
+
+  CONSTRAINT flight_route_options_departure_time_check
+    CHECK (
+      departure_time_buckets <@ ARRAY[
+        'early_morning', 'morning', 'afternoon', 'evening'
+      ]::TEXT[]
+    ),
+
+  CONSTRAINT flight_route_options_layover_check
+    CHECK (layover_minutes >= 0),
+
+  CONSTRAINT flight_route_options_cabins_check
+    CHECK (
+      cabins <@ ARRAY[
+        'economy', 'premium_economy', 'business', 'first'
+      ]::TEXT[]
+    ),
+
+  CONSTRAINT flight_route_options_price_check
+    CHECK (
+      (price_amount IS NULL AND price_currency IS NULL)
+      OR (price_amount >= 0 AND price_currency ~ '^[A-Z]{3}$')
+    )
 );
 
 CREATE INDEX flight_route_options_origin_idx ON public.flight_route_options

@@ -29,18 +29,19 @@ BEGIN
   INSERT INTO public.flight_route_options (
     id, publication_version_id,
     origin_city_id, origin_city_slug, origin_country_code,
-    destination_city_id, destination_city_slug, destination_country_code,
+    destination_city_id, destination_city_slug, destination_country_code, destination_region,
     origin_airport_id, origin_airport_iata,
     destination_airport_id, destination_airport_iata,
     stops, layover_airport_ids, layover_airports,
     operating_airlines, flight_numbers, flight_durations_minutes,
     total_duration_minutes, total_distance_km, days_of_week,
+    departure_time_buckets, layover_minutes, cabins, price_amount, price_currency,
     route_type, confidence_score, route_path
   )
   SELECT
-    gen_random_uuid(), p_publication_version_id,
+    r.id, p_publication_version_id,
     origin_city.id, origin_city.slug, origin_country.iso2,
-    destination_city.id, destination_city.slug, destination_country.iso2,
+    destination_city.id, destination_city.slug, destination_country.iso2, destination_country.region,
     origin_airport.id, origin_airport.iata,
     destination_airport.id, destination_airport.iata,
     0, '{}'::UUID[], '{}'::TEXT[],
@@ -51,6 +52,7 @@ BEGIN
       admin.calculate_haversine_distance_km(origin_airport.latitude, origin_airport.longitude, destination_airport.latitude, destination_airport.longitude)
     ),
     admin.calculate_route_schedule_intersection(r.days_of_week, NULL),
+    '{}'::TEXT[], 0, ARRAY['economy']::TEXT[], price.observed_amount, price.currency_code,
     admin.classify_route_connection_type(r.airline_iata, NULL),
     1.000,
     COALESCE(registry.canonical_path, '/flights/' || origin_city.slug || '-to-' || destination_city.slug)
@@ -66,6 +68,24 @@ BEGIN
    AND page.destination_city_id = destination_city.id
    AND page.locale = 'en-GB'
   LEFT JOIN public.pseo_pages registry ON registry.id = page.pseo_page_id AND registry.status <> 'archived'
+  LEFT JOIN LATERAL (
+    SELECT observed.observed_amount, observed.currency_code
+    FROM public.flight_route_prices AS observed
+    WHERE observed.origin_airport_id = origin_airport.id
+      AND observed.destination_airport_id = destination_airport.id
+      AND observed.transfer_count = 0
+      AND observed.status = 'published'
+      AND observed.valid_until > now()
+      AND (
+        observed.provider_airline_iata IS NULL
+        OR observed.provider_airline_iata = r.airline_iata
+      )
+    ORDER BY
+      (observed.provider_airline_iata = r.airline_iata) DESC,
+      observed.observed_amount ASC NULLS LAST,
+      observed.observed_at DESC
+    LIMIT 1
+  ) AS price ON TRUE
   WHERE r.is_active = TRUE
     AND origin_airport.status = 'active'
     AND destination_airport.status = 'active'
@@ -75,18 +95,26 @@ BEGIN
   INSERT INTO public.flight_route_options (
     id, publication_version_id,
     origin_city_id, origin_city_slug, origin_country_code,
-    destination_city_id, destination_city_slug, destination_country_code,
+    destination_city_id, destination_city_slug, destination_country_code, destination_region,
     origin_airport_id, origin_airport_iata,
     destination_airport_id, destination_airport_iata,
     stops, layover_airport_ids, layover_airports,
     operating_airlines, flight_numbers, flight_durations_minutes,
     total_duration_minutes, total_distance_km, days_of_week,
+    departure_time_buckets, layover_minutes, cabins, price_amount, price_currency,
     route_type, confidence_score, route_path
   )
   SELECT
-    gen_random_uuid(), p_publication_version_id,
+    (
+      substr(md5(r1.id::TEXT || ':' || r2.id::TEXT), 1, 8) || '-' ||
+      substr(md5(r1.id::TEXT || ':' || r2.id::TEXT), 9, 4) || '-' ||
+      substr(md5(r1.id::TEXT || ':' || r2.id::TEXT), 13, 4) || '-' ||
+      substr(md5(r1.id::TEXT || ':' || r2.id::TEXT), 17, 4) || '-' ||
+      substr(md5(r1.id::TEXT || ':' || r2.id::TEXT), 21, 12)
+    )::UUID,
+    p_publication_version_id,
     origin_city.id, origin_city.slug, origin_country.iso2,
-    destination_city.id, destination_city.slug, destination_country.iso2,
+    destination_city.id, destination_city.slug, destination_country.iso2, destination_country.region,
     origin_airport.id, origin_airport.iata,
     destination_airport.id, destination_airport.iata,
     1, ARRAY[hub_airport.id]::UUID[], ARRAY[r1.destination_iata]::TEXT[],
@@ -96,6 +124,8 @@ BEGIN
     admin.calculate_connecting_duration_minutes(r1.flight_duration_minutes, r2.flight_duration_minutes, hub_airport.min_transit_minutes),
     (r1.distance_km + r2.distance_km),
     admin.calculate_route_schedule_intersection(r1.days_of_week, r2.days_of_week),
+    '{}'::TEXT[], hub_airport.min_transit_minutes, ARRAY['economy']::TEXT[],
+    price.observed_amount, price.currency_code,
     admin.classify_route_connection_type(r1.airline_iata, r2.airline_iata),
     0.950,
     COALESCE(registry.canonical_path, '/flights/' || origin_city.slug || '-to-' || destination_city.slug)
@@ -113,6 +143,17 @@ BEGIN
    AND page.destination_city_id = destination_city.id
    AND page.locale = 'en-GB'
   LEFT JOIN public.pseo_pages registry ON registry.id = page.pseo_page_id AND registry.status <> 'archived'
+  LEFT JOIN LATERAL (
+    SELECT observed.observed_amount, observed.currency_code
+    FROM public.flight_route_prices AS observed
+    WHERE observed.origin_airport_id = origin_airport.id
+      AND observed.destination_airport_id = destination_airport.id
+      AND observed.transfer_count = 1
+      AND observed.status = 'published'
+      AND observed.valid_until > now()
+    ORDER BY observed.observed_amount ASC NULLS LAST, observed.observed_at DESC
+    LIMIT 1
+  ) AS price ON TRUE
   WHERE r1.is_active = TRUE
     AND r2.is_active = TRUE
     AND origin_airport.status = 'active'

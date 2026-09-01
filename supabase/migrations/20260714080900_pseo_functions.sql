@@ -137,6 +137,14 @@ BEGIN
           'layover_airports', fd.layover_airports,
           'duration_minutes', fd.duration_minutes,
           'route_path', fd.route_path,
+          'fare_estimate', CASE
+            WHEN fd.price_amount IS NULL THEN NULL
+            ELSE jsonb_build_object(
+              'min', fd.price_amount,
+              'max', fd.price_amount,
+              'currency', fd.price_currency
+            )
+          END,
           'is_top_route', (fd.rn = 1),
           'latitude', fd.latitude,
           'longitude', fd.longitude
@@ -159,12 +167,15 @@ BEGIN
             opt.layover_airports,
             opt.total_duration_minutes AS duration_minutes,
             opt.route_path,
+            opt.price_amount,
+            opt.price_currency,
             row_number() OVER (ORDER BY opt.stops ASC, opt.confidence_score DESC) AS rn
           FROM public.flight_route_options opt
           JOIN public.cities dest_c ON dest_c.id = opt.destination_city_id
           JOIN public.countries dest_co ON dest_co.id = dest_c.country_id
           WHERE opt.publication_version_id = v_version
             AND opt.origin_city_id = v_city.id
+            AND opt.stops = 0
         ) fd
       ), '[]'::JSONB),
       'faqs', COALESCE(v_page.content->'faqs', '[]'::JSONB),

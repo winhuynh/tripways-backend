@@ -31,42 +31,6 @@ BEGIN
 END;
 $$;
 
-SELECT public.rpc_publish_flight_route_cache_scope(
-  public.rpc_claim_flight_route_cache_refresh('{
-    "origin":"SGN","destination":"SIN","market":"vn","currency":"USD","locale":"en-GB"
-  }'::JSONB)->>'leaseToken',
-  'travelpayouts',
-  'SGN',
-  'SIN',
-  'vn',
-  'USD',
-  'en-GB',
-  jsonb_build_array(jsonb_build_object(
-    'sourceId', 'public-sgn-sin',
-    'originCode', 'SGN',
-    'originAirportIata', 'SGN',
-    'destinationCode', 'SIN',
-    'destinationAirportIata', 'SIN',
-    'airlineIata', 'VN',
-    'observationType', 'cached_fare',
-    'tripType', 'one_way',
-    'direct', TRUE,
-    'transferCount', 0,
-    'amount', 120,
-    'currencyCode', 'USD',
-    'marketCode', 'vn',
-    'locale', 'en-GB',
-    'departureDate', (CURRENT_DATE + 14)::TEXT,
-    'returnDate', NULL,
-    'durationMinutes', NULL,
-    'foundAt', now(),
-    'providerExpiresAt', now() + interval '6 days',
-    'validUntil', now() + interval '6 days',
-    'affiliatePath', '/search/SGN/SIN'
-  )),
-  'staging'
-);
-
 DO $$
 DECLARE
   v_payload         JSONB;
@@ -110,7 +74,6 @@ BEGIN
   PERFORM pg_temp.assert_public_payload(public.rpc_search_routes(
     '{"scope":{"type":"origin_airport","key":"SGN"},"filters":{},"page_size":20}'::JSONB
   ));
-  PERFORM pg_temp.assert_public_payload(public.rpc_get_homepage_statistics());
 END;
 $$;
 

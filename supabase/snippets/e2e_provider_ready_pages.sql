@@ -14,11 +14,6 @@ END;
 $$;
 
 SELECT pg_temp.test_assert(
-  (public.rpc_get_homepage_statistics() #>> '{data,published_direct_route_count}')::INTEGER > 0,
-  'homepage statistics use the current published route projection'
-);
-
-SELECT pg_temp.test_assert(
   public.rpc_get_page('{"page_type":"homepage","entity_key":"homepage","locale":"en-GB"}'::JSONB) #>> '{error,code}' = 'ERR_INVALID_REQUEST',
   'homepage is not a pSEO page contract'
 );

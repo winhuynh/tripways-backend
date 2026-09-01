@@ -24,6 +24,11 @@ Deno.test('flight route options store pre-computed 0-stop and 1-stop route graph
   assert.ok(sql.includes('operating_airlines'));
   assert.ok(sql.includes('total_duration_minutes'));
   assert.ok(sql.includes('days_of_week'));
+  assert.ok(sql.includes('departure_time_buckets'));
+  assert.ok(sql.includes('layover_minutes'));
+  assert.ok(sql.includes('price_amount'));
+  assert.ok(sql.includes('destination_region'));
+  assert.ok(sql.includes('cabins'));
   assert.ok(sql.includes('route_type'));
 });
 
@@ -61,4 +66,8 @@ Deno.test('route search reads from pre-computed flight_route_options', async () 
   assert.ok(refresh.includes('admin.calculate_route_schedule_intersection'));
   assert.ok(refresh.includes('admin.classify_route_connection_type'));
   assert.ok(refresh.includes('admin.calculate_haversine_distance_km'));
+  assert.ok(search.includes("'total'"));
+  assert.ok(search.includes("'facets'"));
+  assert.ok(search.includes("'next_cursor'"));
+  assert.ok(search.includes("'price'"));
 });

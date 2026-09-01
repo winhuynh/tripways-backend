@@ -5,7 +5,7 @@ Deno.test('canonical route search normalizes every reusable filter', () => {
   const result = parseRouteSearchRequest({
     scope: { type: 'city_pair', from: 'ho-chi-minh-city', to: 'london' },
     filters: {
-      max_stops: 3,
+      max_stops: 1,
       airlines: ['vn', 'VN'],
       connection_airports: ['sin'],
       departure_airports: ['bkk'],
@@ -15,6 +15,7 @@ Deno.test('canonical route search normalizes every reusable filter', () => {
       counterpart_countries: ['sg'],
       counterpart_regions: ['Asia'],
       departure_time_buckets: ['morning'],
+      days_of_week: [1, 5, 7, 7],
       route_type: 'international',
       max_duration_minutes: 1200,
       max_layover_minutes: 300,
@@ -39,6 +40,7 @@ Deno.test('canonical route search normalizes every reusable filter', () => {
   assert.deepEqual(result.filters.counterpartCountries, ['SG']);
   assert.deepEqual(result.filters.counterpartRegions, ['Asia']);
   assert.deepEqual(result.filters.departureTimeBuckets, ['morning']);
+  assert.deepEqual(result.filters.daysOfWeek, [1, 5, 7]);
   assert.equal(result.filters.routeType, 'international');
   assert.equal(result.filters.currency, 'USD');
 });
@@ -49,7 +51,7 @@ Deno.test('airport route search accepts a verified direction scope', () => {
     filters: { counterpart_query: 'singapore' },
   });
   assert.deepEqual(result.scope, { type: 'airport', key: 'BKK', direction: 'to' });
-  assert.equal(result.filters.maxStops, 3);
+  assert.equal(result.filters.maxStops, 1);
   assert.equal(result.filters.counterpartQuery, 'singapore');
   assert.throws(
     () =>
@@ -57,6 +59,18 @@ Deno.test('airport route search accepts a verified direction scope', () => {
         scope: { type: 'airport', key: 'BKK', direction: 'from' },
         filters: { max_stops: 1 },
       }),
+    /ERR_ROUTE_SEARCH_INVALID_REQUEST/,
+  );
+});
+
+Deno.test('canonical route search matches the 0-stop and 1-stop projection boundary', () => {
+  assert.equal(
+    parseRouteSearchRequest({ scope: { type: 'global' }, filters: { max_stops: 0 } })
+      .filters.maxStops,
+    0,
+  );
+  assert.throws(
+    () => parseRouteSearchRequest({ scope: { type: 'global' }, filters: { max_stops: 2 } }),
     /ERR_ROUTE_SEARCH_INVALID_REQUEST/,
   );
 });
