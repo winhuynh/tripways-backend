@@ -1,6 +1,10 @@
 import { getServiceRoleClient } from '@shared/supabase.ts';
 import { errorResponse } from '@shared/edge.ts';
-import { createAffiliateHandoffHandler } from './handler.ts';
+import {
+  createAffiliateHandoffHandler,
+  DEFAULT_DISCLOSURE,
+  isAllowlistedAviasalesUrl,
+} from './handler.ts';
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
 const rateLimit = 30;
@@ -14,15 +18,27 @@ const handler = createAffiliateHandoffHandler(async (observationRef) => {
     return { data: null, error: true };
   }
   const envelope = data as {
-    data?: { url?: unknown; expires_at?: unknown } | null;
+    data?: { url?: unknown; expires_at?: unknown; disclosure?: unknown } | null;
     error?: unknown;
   };
   if (
-    !envelope.data || typeof envelope.data.url !== 'string' ||
-    !envelope.data.url.startsWith('https://www.aviasales.com/') ||
+    !envelope.data ||
+    typeof envelope.data.url !== 'string' ||
+    !isAllowlistedAviasalesUrl(envelope.data.url) ||
     typeof envelope.data.expires_at !== 'string'
-  ) return { data: null, error: true };
-  return { data: { url: envelope.data.url, expires_at: envelope.data.expires_at }, error: null };
+  ) {
+    return { data: null, error: true };
+  }
+  return {
+    data: {
+      url: envelope.data.url,
+      expires_at: envelope.data.expires_at,
+      disclosure: typeof envelope.data.disclosure === 'string'
+        ? envelope.data.disclosure
+        : DEFAULT_DISCLOSURE,
+    },
+    error: null,
+  };
 });
 
 Deno.serve(async (request) => {

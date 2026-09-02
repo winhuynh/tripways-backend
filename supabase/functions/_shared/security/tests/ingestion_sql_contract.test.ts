@@ -20,6 +20,7 @@ const expectedTables = [
   ['schema/ingestion/raw_import_batches.sql', 'admin.raw_import_batches'],
   ['schema/ingestion/raw_base_data_records.sql', 'admin.raw_base_data_records'],
   ['schema/ingestion/ourairports_denylist.sql', 'admin.ourairports_denylist'],
+  ['schema/ingestion/route_price_cache_leases.sql', 'admin.route_price_cache_leases'],
 ] as const;
 
 Deno.test('ingestion stores one admin table per source file', async () => {

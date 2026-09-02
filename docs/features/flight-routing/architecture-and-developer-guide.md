@@ -64,7 +64,7 @@ graph TD
    - **Nguồn:** _OurAirports_ (Dữ liệu mở miễn phí 100%).
    - **Nhiệm vụ:** Cung cấp thông tin Quốc gia, Thành phố, Sân bay, Tọa độ ($Lat, Long$), Múi giờ, Loại sân bay (`large_airport`, `medium_airport`).
 2. **Tầng 2 — Đồ thị Tuyến bay & Lịch trình (Direct Routes & Schedule Graph)**:
-   - **Nguồn:** _AeroDataBox_ (qua API.market) hoặc _OpenFlights_.
+   - **Nguồn:** _AeroDataBox_ (qua API.market).
    - **Nhiệm vụ:** Cung cấp danh sách các chặng bay thẳng (`origin_iata -> destination_iata`), hãng khai thác (`airline_iata`), thời gian bay trung bình, ngày bay trong tuần (`days_of_week`). Chạy Batch Ingest 1 tháng/lần và đồng bộ vào chu kỳ đổi mùa IATA (cuối tháng 3 & cuối tháng 10).
 3. **Tầng 3 — Thương mại & Handoff (Monetization Layer)**:
    - **Nguồn:** _Travelpayouts Data API v3_ (cung cấp giá vé quan sát gần nhất đã cache) & _Travelpayouts Affiliate Campaign (Aviasales Campaign)_.

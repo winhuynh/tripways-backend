@@ -1,6 +1,6 @@
 # PRD P2: Tuyến bay & Đồ thị Lịch trình (Route Explorer & Schedule Graph)
 
-**Trạng thái:** Kế hoạch triển khai — Sử dụng AeroDataBox (qua API.market) & OpenFlights
+**Trạng thái:** Kế hoạch triển khai — Sử dụng AeroDataBox (qua API.market)
 **Cập nhật:** 2026-08-27
 **Chủ sở hữu:** Tripways
 **Kho mã:** `tripways-backend`, `tripways-web`
@@ -8,7 +8,7 @@
 > Quyết định cập nhật: P2 tập trung xây dựng **Cơ sở dữ liệu đồ thị mạng lưới đường bay (Route Graph)**
 > và **Lịch bay định kỳ (Schedules/Timetables)** phục vụ tính năng **Route Explorer** và ma trận trang **pSEO**
 > theo mô hình của FlightConnections. Dữ liệu được nạp định kỳ (Batch Ingestion) từ **AeroDataBox (qua API.market)**
-> hoặc OpenFlights vào PostgreSQL. Tầng giá vé thương mại và affiliate handoff được tách biệt hoàn toàn sang P3 (Travelpayouts).
+> vào PostgreSQL. Tầng giá vé thương mại và affiliate handoff được tách biệt hoàn toàn sang P3 (Travelpayouts).
 
 ## 1. Vấn đề
 
@@ -19,7 +19,7 @@ dữ liệu thời gian thực (live inventory).
 
 ## 2. Mục tiêu
 
-Nhập và xuất bản mạng lưới tuyến bay có hướng cùng lịch bay định kỳ từ AeroDataBox (API.market) / OpenFlights,
+Nhập và xuất bản mạng lưới tuyến bay có hướng cùng lịch bay định kỳ từ AeroDataBox (API.market),
 xây dựng Route Graph Engine trong PostgreSQL để tính toán:
 
 1. Tuyến bay thẳng (0-stop) kèm hãng khai thác và lịch bay trong tuần.

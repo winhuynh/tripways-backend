@@ -1,4 +1,4 @@
-import * as assert from 'https://deno.land/std@0.224.0/assert/mod.ts';
+import assert from 'node:assert/strict';
 import { parseLocationSuggestRequest } from '../request.ts';
 
 Deno.test('parseLocationSuggestRequest accepts valid parameters', () => {
@@ -9,7 +9,7 @@ Deno.test('parseLocationSuggestRequest accepts valid parameters', () => {
     limit: 10,
   });
 
-  assert.assertEquals(result, {
+  assert.deepEqual(result, {
     query: 'Da Nang',
     origin_iata: 'DAD',
     radius_km: 300,
@@ -18,7 +18,7 @@ Deno.test('parseLocationSuggestRequest accepts valid parameters', () => {
 });
 
 Deno.test('parseLocationSuggestRequest rejects invalid IATA', () => {
-  assert.assertThrows(
+  assert.throws(
     () =>
       parseLocationSuggestRequest({
         origin_iata: 'INVALID_IATA',
@@ -29,7 +29,7 @@ Deno.test('parseLocationSuggestRequest rejects invalid IATA', () => {
 });
 
 Deno.test('parseLocationSuggestRequest rejects non-record payload', () => {
-  assert.assertThrows(
+  assert.throws(
     () => parseLocationSuggestRequest('invalid'),
     Error,
     'ERR_LOCATION_SUGGEST_INVALID_REQUEST',

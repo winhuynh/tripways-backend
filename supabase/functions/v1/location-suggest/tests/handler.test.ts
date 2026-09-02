@@ -32,11 +32,13 @@ Deno.test('createLocationSuggestHandler returns data on successful query', async
 });
 
 Deno.test('createLocationSuggestHandler rejects invalid input', async () => {
-  const handler = createLocationSuggestHandler(async () => ({
-    data: [],
-    meta: { data_version: 'v1' },
-    error: null,
-  }));
+  const handler = createLocationSuggestHandler(() =>
+    Promise.resolve({
+      data: [],
+      meta: { data_version: 'v1' },
+      error: null,
+    })
+  );
 
   const response = await handler(
     new Request('https://edge.supabase.com/location-suggest', {
