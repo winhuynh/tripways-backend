@@ -10,7 +10,9 @@ export type RouteIngestionLogEvent = {
 };
 
 export type RouteIngestionRequestPayload = {
-  airports: string[];
+  airports?: string[];
+  scope?: 'top_airports' | 'all_eligible';
+  limit?: number;
 };
 
 export type RouteIngestionHandlerDependencies = {
@@ -25,19 +27,27 @@ export function parseRouteIngestionRequest(payload: unknown): RouteIngestionRequ
   }
 
   const obj = payload as Record<string, unknown>;
-  if (!Array.isArray(obj.airports)) {
+  const scope =
+    typeof obj.scope === 'string' && ['top_airports', 'all_eligible'].includes(obj.scope)
+      ? (obj.scope as 'top_airports' | 'all_eligible')
+      : undefined;
+
+  const limit = typeof obj.limit === 'number' && obj.limit > 0 && obj.limit <= 1000
+    ? obj.limit
+    : undefined;
+
+  let airports: string[] | undefined = undefined;
+  if (Array.isArray(obj.airports)) {
+    airports = obj.airports
+      .map((item) => String(item).trim().toUpperCase())
+      .filter((iata) => /^[A-Z]{3}$/.test(iata));
+  }
+
+  if ((!airports || airports.length === 0) && !scope) {
     throw new Error('ERR_INVALID_REQUEST');
   }
 
-  const airports = obj.airports
-    .map((item) => String(item).trim().toUpperCase())
-    .filter((iata) => /^[A-Z]{3}$/.test(iata));
-
-  if (airports.length === 0) {
-    throw new Error('ERR_EMPTY_AIRPORTS');
-  }
-
-  return { airports };
+  return { airports, scope, limit };
 }
 
 export async function handleRouteIngestionRequest(

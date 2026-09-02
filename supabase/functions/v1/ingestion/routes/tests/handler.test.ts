@@ -5,13 +5,17 @@ import {
   type RouteIngestionLogEvent,
 } from '../handler.ts';
 
-Deno.test('parseRouteIngestionRequest validates airport IATAs', () => {
+Deno.test('parseRouteIngestionRequest validates airport IATAs and scope', () => {
   const parsed = parseRouteIngestionRequest({ airports: ['sgn', 'sin', 'LHR', 'invalid'] });
   assert.deepEqual(parsed.airports, ['SGN', 'SIN', 'LHR']);
 
-  assert.throws(() => parseRouteIngestionRequest({ airports: [] }), /ERR_EMPTY_AIRPORTS/);
+  const scoped = parseRouteIngestionRequest({ scope: 'top_airports', limit: 300 });
+  assert.equal(scoped.scope, 'top_airports');
+  assert.equal(scoped.limit, 300);
+
   assert.throws(() => parseRouteIngestionRequest(null), /ERR_INVALID_REQUEST/);
   assert.throws(() => parseRouteIngestionRequest({}), /ERR_INVALID_REQUEST/);
+  assert.throws(() => parseRouteIngestionRequest({ airports: [] }), /ERR_INVALID_REQUEST/);
 });
 
 Deno.test('handleRouteIngestionRequest rejects unauthorized requests without valid bearer', async () => {
@@ -65,7 +69,7 @@ Deno.test('handleRouteIngestionRequest processes valid authenticated request', a
     execute(payload) {
       return Promise.resolve({
         status: 'success',
-        total_airports_processed: payload.airports.length,
+        total_airports_processed: payload.airports?.length ?? 0,
         total_routes_upserted: 5,
         results: [],
         errors: [],
