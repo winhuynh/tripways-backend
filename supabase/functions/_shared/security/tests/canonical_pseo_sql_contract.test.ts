@@ -91,6 +91,12 @@ Deno.test('publication refreshes one shared lean projection before all page read
   assert.ok(refresh.includes('public.route_page_read_models'));
 });
 
+Deno.test('publication prunes stale retired and failed versions', async () => {
+  const publish = await read('functions/pseo/shared/publish_read_model_version.sql');
+  assert.ok(publish.includes('delete from public.publication_versions'));
+  assert.ok(publish.includes("where status = 'retired'"));
+});
+
 Deno.test('homepage statistics rpc is removed', async () => {
   assert.equal(await read('functions/pseo/homepage/rpc_get_homepage_statistics.sql'), '');
   assert.equal(await read('functions/pseo/homepage/rpc_search_places.sql'), '');

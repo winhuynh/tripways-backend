@@ -112,3 +112,4 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/sitemap/query/index.ts"
+

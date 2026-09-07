@@ -13,7 +13,7 @@ CREATE TABLE public.pseo_pages (
   status               TEXT         NOT NULL DEFAULT 'draft',
   is_indexable         BOOLEAN      NOT NULL DEFAULT FALSE,
   noindex_reason       TEXT         NULL,
-  data_version         UUID         NULL REFERENCES public.publication_versions (id),
+  data_version         UUID         NULL REFERENCES public.publication_versions (id) ON DELETE SET NULL,
   content_updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
   source_freshness_at  TIMESTAMPTZ  NULL,
   generated_at         TIMESTAMPTZ  NOT NULL DEFAULT now(),

@@ -843,6 +843,21 @@ BEGIN
     published_at = now()
   WHERE id = v_version_id;
 
+  -- STEP 04: Prune stale retired and failed versions, preserving only current and immediate rollback candidate.
+  DELETE FROM public.publication_versions
+  WHERE id <> v_version_id
+    AND NOT EXISTS (
+      SELECT 1
+      FROM (
+        SELECT id
+        FROM public.publication_versions
+        WHERE status = 'retired'
+        ORDER BY published_at DESC NULLS LAST, created_at DESC
+        LIMIT 1
+      ) AS rollback_candidate
+      WHERE rollback_candidate.id = publication_versions.id
+    );
+
   RETURN jsonb_build_object(
     'data', jsonb_build_object(
       'data_version', v_version_id,
