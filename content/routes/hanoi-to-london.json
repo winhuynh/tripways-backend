@@ -1,0 +1,56 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "hanoi-to-london",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Hanoi to London",
+      "intro": "Direct flights from Hanoi to London connect Vietnam's historical capital directly with the United Kingdom, spanning 9,230 km with direct flight times around 12 to 13 hours.",
+      "title": "Hanoi to London Flights: Nonstop Schedules & Airlines | Tripways",
+      "subheadline": "Compare direct nonstop flights and 1-stop options from HAN to London",
+      "meta_description": "Compare direct flights and 1-stop routes from Hanoi (HAN) to London Heathrow (LHR). View schedules, durations, and airlines."
+    },
+    "faqs": [
+      {
+        "answer": "Yes, Vietnam Airlines operates nonstop flights from Hanoi Noi Bai (HAN) to London Heathrow (LHR).",
+        "question": "Does any airline fly direct from Hanoi to London?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Direct flights take approximately 12 hours 45 minutes westbound.",
+        "type": "duration",
+        "title": "Nonstop Flight Duration"
+      },
+      {
+        "body": "9,230 km (5,735 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Vietnam Airlines operates direct Boeing 787-9 Dreamliner services to London Heathrow (LHR).",
+        "type": "airlines",
+        "title": "Operating Airlines"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Vietnam Airlines operates direct flights between Hanoi and London Heathrow. For passengers seeking flexible dates or lower fares, one-stop itineraries via Doha (Qatar Airways) or Dubai (Emirates) are popular alternatives.",
+        "type": "comparison",
+        "heading": "Direct Flights vs 1-Stop Connections"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/hanoi",
+            "anchor_text": "Flights from Hanoi"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

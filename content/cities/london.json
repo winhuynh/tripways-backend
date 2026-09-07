@@ -1,0 +1,63 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "city",
+  "slug": "london",
+  "name": "London",
+  "iata": "LON",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Direct Flights from London",
+      "intro": "London operates the world's busiest metropolitan airport system. Intercontinental services primarily depart from London Heathrow (LHR) and London Gatwick (LGW), offering direct routes across Europe, North America, Asia, and Africa.",
+      "title": "Direct Flights from London: Nonstop Routes & Airports | Tripways",
+      "subheadline": "Explore nonstop global connections across six continents from London's airport network",
+      "meta_description": "Discover nonstop flights departing London. Compare Heathrow (LHR), Gatwick (LGW), flight times, and operating airlines."
+    },
+    "faqs": [
+      {
+        "answer": "London Heathrow (LHR) serves the majority of global flag carriers and long-haul connections. London Gatwick (LGW) combines major European routes with transatlantic and leisure long-haul services.",
+        "question": "Which airport should I use when departing London?"
+      },
+      {
+        "answer": "The Heathrow Express connects Heathrow Terminals 2/3 directly to London Paddington in 15 minutes. The Elizabeth Line provides direct cross-London rail transit without transfers in 30 to 40 minutes.",
+        "question": "What is the fastest way to travel between Heathrow and central London?"
+      },
+      {
+        "answer": "Direct National Express coach services run between Heathrow and Gatwick in roughly 65 to 80 minutes. Travelers should budget at least 3.5 to 4 hours between connecting flights.",
+        "question": "How do I transfer between London Heathrow and Gatwick?"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/airports/heathrow-lhr",
+            "anchor_text": "Heathrow Airport Guide (LHR)"
+          },
+          {
+            "path": "/airports/gatwick-lgw",
+            "anchor_text": "Gatwick Airport Guide (LGW)"
+          }
+        ],
+        "cluster": "airports"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/singapore-to-london",
+            "anchor_text": "Flights to Singapore"
+          },
+          {
+            "path": "/flights/london-to-ho-chi-minh-city",
+            "anchor_text": "Flights to Ho Chi Minh City"
+          },
+          {
+            "path": "/flights/bangkok-to-london",
+            "anchor_text": "Flights to Bangkok"
+          }
+        ],
+        "cluster": "popular_routes"
+      }
+    ]
+  }
+}

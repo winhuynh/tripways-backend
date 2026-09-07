@@ -1,0 +1,56 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "london-to-ho-chi-minh-city",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from London to Ho Chi Minh City",
+      "intro": "Direct flights from London to Ho Chi Minh City connect the UK capital with Southern Vietnam across 10,200 km in approximately 12 hours and 30 minutes.",
+      "title": "London to Ho Chi Minh City Flights: Direct Schedules | Tripways",
+      "subheadline": "Compare direct nonstop flights and 1-stop options from London to SGN",
+      "meta_description": "Compare direct flights from London Heathrow (LHR) to Ho Chi Minh City (SGN). View flight times, airlines, and booking tips."
+    },
+    "faqs": [
+      {
+        "answer": "London Heathrow (LHR) Terminal 4 offers direct nonstop flights to Ho Chi Minh City with Vietnam Airlines.",
+        "question": "Which London airport has direct flights to Ho Chi Minh City?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Nonstop flights take approximately 12 hours 30 minutes eastbound.",
+        "type": "duration",
+        "title": "Direct Duration"
+      },
+      {
+        "body": "10,200 km (6,338 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Vietnam Airlines operates direct Boeing 787 flights from London Heathrow (LHR).",
+        "type": "airlines",
+        "title": "Direct Airlines"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Vietnam Airlines provides the only direct nonstop service from London Heathrow. Competitive one-stop options are available via Singapore Airlines (Singapore), Qatar Airways (Doha), and Emirates (Dubai).",
+        "type": "comparison",
+        "heading": "Nonstop vs 1-Stop Options"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/london",
+            "anchor_text": "Flights from London"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

@@ -1179,7 +1179,6 @@ AS $$
 DECLARE
   v_project_url           TEXT;
   v_worker_secret         TEXT;
-  v_ourairports_job       BIGINT;
   v_aerodatabox_job       BIGINT;
   v_tp_warm_job           BIGINT;
   v_tp_day6_job           BIGINT;
@@ -1202,7 +1201,7 @@ BEGIN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_CRON_VAULT_PREREQUISITES_MISSING';
   END IF;
 
-  -- Unschedule existing jobs
+  -- Unschedule existing jobs (including retired/on-demand ourairports jobs)
   PERFORM cron.unschedule(job.jobid)
   FROM cron.job AS job
   WHERE job.jobname IN (
@@ -1212,23 +1211,10 @@ BEGIN
     'tripways-travelpayouts-day6-smart-refresh'
   );
 
-  -- 1. OurAirports Daily (Tầng 1 - 02:00 UTC)
-  SELECT cron.schedule(
-    'tripways-ourairports-daily',
-    '0 2 * * *',
-    $cron$SELECT net.http_post(
-        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-base-data',
-        headers := jsonb_build_object(
-          'Content-Type', 'application/json',
-          'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
-          'Idempotency-Key', 'ourairports-' || to_char(CURRENT_DATE, 'YYYY-MM-DD')
-        ),
-        body := jsonb_build_object('sourceCode', 'ourairports', 'providerMode', 'ourairports')
-      );$cron$
-  )
-  INTO v_ourairports_job;
+  -- Note: OurAirports base-data ingestion is on-demand (static master reference data).
+  -- It is invoked manually via CLI (pnpm ourairports:import-local) or administrative trigger.
 
-  -- 2. AeroDataBox Monthly Direct Routes Batch (Tầng 2 - Ngày 1 lúc 03:00 UTC)
+  -- 1. AeroDataBox Monthly Direct Routes Batch (Tầng 2 - Ngày 1 lúc 03:00 UTC)
   SELECT cron.schedule(
     'tripways-aerodatabox-monthly',
     '0 3 1 * *',
@@ -1275,7 +1261,6 @@ BEGIN
   INTO v_tp_day6_job;
 
   RETURN jsonb_build_object(
-    'ourairports_job_id', v_ourairports_job,
     'aerodatabox_job_id', v_aerodatabox_job,
     'tp_warm_job_id', v_tp_warm_job,
     'tp_day6_job_id', v_tp_day6_job

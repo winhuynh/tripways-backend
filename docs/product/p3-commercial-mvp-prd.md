@@ -3,10 +3,11 @@
 **Trạng thái:** Affiliate-first foundation đang triển khai; Live Metasearch chuyển sang Phase 5 (Yêu cầu ≥ 50.000 MAU)  
 **Cập nhật:** 2026-08-31  
 **Chủ sở hữu:** Tripways  
-**Kho mã:** `tripways-backend`, `tripways-web`  
+**Kho mã:** `tripways-backend`, `tripways-web`
 
 > [!IMPORTANT]
 > **Định vị phạm vi P3 vs P5:**
+>
 > - **P3 (Commercial MVP):** Tích hợp **Travelpayouts Data API v3** để cung cấp giá vé quan sát (`observed_amount`, TTL 2–7 ngày) và chuyển tiếp liên kết an toàn (Affiliate Handoff kèm Marker & SubID) sang đối tác Aviasales. Không yêu cầu điều kiện traffic tối thiểu.
 > - **P5 (Future Phase — Live Metasearch):** Tìm kiếm chuyến bay theo ngày cụ thể, so sánh giá trực tiếp thời gian thực, polling. Chỉ kích hoạt khi website đạt tối thiểu 50.000 MAU và được cấp phép Search API.
 
@@ -17,6 +18,7 @@ Khám phá tuyến giúp người dùng hiểu các kết nối có khả năng 
 ## 2. Mục tiêu P3
 
 Ra mắt Commercial MVP cho Tripways:
+
 - Hiển thị giá vé quan sát gần nhất (`observed_amount`) từ Travelpayouts Data API trên các trang Route Page và City Hub mà không phụ thuộc vào API bên ngoài lúc SSR.
 - Triển khai luồng Affiliate Handoff an toàn qua Edge Function `/v1/flight/affiliate-handoff` chuyển tiếp người dùng sang đối tác bán vé Aviasales.
 - Đảm bảo cơ chế Kill Switch: sự cố từ đối tác thương mại không làm gián đoạn đồ thị khám phá tuyến bay.
@@ -196,6 +198,7 @@ P3 chỉ được nghiệm thu khi:
 ## 9B. Tiêu chí kích hoạt Phase 5 (Live Metasearch Engine)
 
 Phase 5 chỉ bắt đầu khi thỏa mãn toàn bộ các điều kiện:
+
 - Website Tripways đạt tối thiểu **50.000 MAU** được ghi nhận qua hệ thống đo lường tin cậy.
 - Hợp đồng và quyền truy cập API tìm kiếm trực tiếp (Aviasales Search API hoặc Kiwi Search API) được phê duyệt chính thức.
 - Hạ tầng hỗ trợ polling và bảo mật token tìm kiếm live được kiểm thử hoàn tất trên môi trường Staging.

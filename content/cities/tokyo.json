@@ -1,0 +1,63 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "city",
+  "slug": "tokyo",
+  "name": "Tokyo",
+  "iata": "TYO",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Direct Flights from Tokyo",
+      "intro": "Tokyo is Japan's aviation nucleus, connected worldwide via downtown Tokyo Haneda Airport (HND) — just 15 km from the city centre — and Narita International Airport (NRT), Tokyo's dedicated long-haul intercontinental gateway.",
+      "title": "Direct Flights from Tokyo: Nonstop Routes & Airports | Tripways",
+      "subheadline": "Compare nonstop domestic and international routes from Haneda (HND) and Narita (NRT)",
+      "meta_description": "Discover all nonstop flight routes departing Tokyo. Compare downtown Haneda (HND) and international Narita (NRT), airlines, and flight schedules."
+    },
+    "faqs": [
+      {
+        "answer": "Haneda (HND) is significantly closer to downtown Tokyo, taking only 13 to 20 minutes by monorail or train. Narita (NRT) is 60 km east, taking 36 to 60 minutes via the Keisei Skyliner or JR Narita Express.",
+        "question": "Is Haneda or Narita better for flights to and from Tokyo?"
+      },
+      {
+        "answer": "Japan Airlines (JAL) and All Nippon Airways (ANA) operate extensive domestic and international hub networks across both Haneda and Narita airports.",
+        "question": "Which airlines operate major hubs in Tokyo?"
+      },
+      {
+        "answer": "Direct Airport Limousine buses connect Haneda and Narita terminals in 65 to 90 minutes. Direct Keisei-Keikyu Access Express trains connect both airports in roughly 90 minutes.",
+        "question": "How do I transfer between Haneda (HND) and Narita (NRT)?"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/airports/haneda-hnd",
+            "anchor_text": "Haneda Airport Guide (HND)"
+          },
+          {
+            "path": "/airports/narita-nrt",
+            "anchor_text": "Narita Airport Guide (NRT)"
+          }
+        ],
+        "cluster": "airports"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/tokyo-to-singapore",
+            "anchor_text": "Flights to Singapore"
+          },
+          {
+            "path": "/flights/tokyo-to-london",
+            "anchor_text": "Flights to London"
+          },
+          {
+            "path": "/flights/bangkok-to-tokyo",
+            "anchor_text": "Flights to Bangkok"
+          }
+        ],
+        "cluster": "popular_routes"
+      }
+    ]
+  }
+}

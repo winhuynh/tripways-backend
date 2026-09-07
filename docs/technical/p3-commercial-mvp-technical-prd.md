@@ -3,10 +3,11 @@
 **PRD sản phẩm liên quan:** `docs/product/p3-commercial-mvp-prd.md`  
 **Phụ thuộc:** P2 hoàn tất, tài khoản đối tác Travelpayouts được kết nối  
 **Trạng thái:** Triển khai tầng giá quan sát (Data API) và Affiliate Handoff; Live Search tách riêng sang P5  
-**Cập nhật:** 2026-08-31  
+**Cập nhật:** 2026-08-31
 
 > [!IMPORTANT]
 > **Định vị phạm vi P3 vs P5:**
+>
 > - **P3 (Commercial MVP hiện tại):** Sử dụng **Travelpayouts Data API v3** để nạp và lưu trữ ngắn hạn giá vé quan sát (`observed_amount`, TTL 2–7 ngày) và thực hiện **Affiliate Handoff** an toàn sang đối tác đặt vé Aviasales (`https://www.aviasales.com/search/...`). Không yêu cầu điều kiện traffic tối thiểu.
 > - **P5 (Future Phase — Live Metasearch Engine):** Chỉ kích hoạt khi website đạt tối thiểu **50.000 MAU** và được phê duyệt cấp phép **Aviasales Search API** hoặc **Kiwi Search API**. Kiến trúc tìm kiếm live, polling và connection protection chi tiết nằm ở Phần II của tài liệu này.
 
@@ -34,6 +35,7 @@ Người dùng click nút CTA: "Kiểm tra giá hãng này"
 ## 2. Mô hình lưu trữ giá quan sát (`flight_route_prices`)
 
 Bảng `public.flight_route_prices` lưu trữ kết quả quan sát giá vé theo cơ chế On-demand Cache-aside:
+
 - Lưu trữ các trường: `origin_iata`, `destination_iata`, `observed_amount`, `currency`, `found_at`, `valid_until` (tối đa 7 ngày), `affiliate_path`.
 - **Zero Provider Call trong SSR**: Không gọi provider khi render trang. Đọc từ PostgreSQL read models cục bộ.
 - **On-demand Cache Miss**: Khi browser thật truy vấn và cache miss, Edge Function gọi Travelpayouts Data API v3.

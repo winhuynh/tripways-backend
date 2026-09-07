@@ -156,17 +156,18 @@ Deno.test('OurAirports denylist is internal and readable only through a service-
   assert.equal(includesSql(rpcSql, 'to authenticated'), false);
 });
 
-Deno.test('one cron installer schedules base data ingestion', async () => {
+Deno.test('one cron installer manages dynamic flight and price ingestion with on-demand ourairports', async () => {
   const sql = await readSource('operations/configure_ingestion_crons.sql');
 
   assert.ok(includesSql(sql, 'create extension if not exists pg_cron'));
   assert.ok(includesSql(sql, 'create extension if not exists pg_net'));
   assert.ok(includesSql(sql, 'cron.schedule('));
-  assert.ok(sql.includes("'tripways-ourairports-daily'"));
-  assert.ok(sql.includes("'0 2 * * *'"));
-  assert.ok(sql.includes("'/functions/v1/ingestion-base-data'"));
+  assert.ok(sql.includes("'tripways-aerodatabox-monthly'"));
+  assert.ok(sql.includes("'tripways-travelpayouts-top-warm'"));
+  assert.ok(sql.includes("'tripways-travelpayouts-day6-smart-refresh'"));
+  assert.ok(sql.includes("'tripways-ourairports-daily'")); // unscheduled/retired
+  assert.ok(includesSql(sql, 'cron.unschedule'));
   assert.ok(sql.includes('vault.decrypted_secrets'));
-  assert.ok(sql.includes("'ourairports'"));
   assert.ok(includesSql(sql, 'err_cron_vault_prerequisites_missing'));
 });
 

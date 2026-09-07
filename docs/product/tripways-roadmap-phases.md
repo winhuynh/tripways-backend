@@ -11,7 +11,7 @@
 | **P0 (P0A & P0B)** | **Nền tảng & Staging**           | Local fixtures            | App shell, Database schema, RLS, CI/CD, Staging `noindex`.                             |
 | **P1**             | **Dữ liệu Địa lý & Sân bay**     | OurAirports (Free)        | Master database: Quốc gia, Thành phố, Sân bay, Tọa độ, Timezone.                       |
 | **P2**             | **Route Explorer & pSEO Matrix** | AeroDataBox (API.market)  | Đồ thị mạng lưới đường bay thẳng (0-stop) & Nối chuyến (1–2 stops), Ma trận trang SEO. |
-| **P3**             | **Thương mại & Giá vé Quan sát** | Travelpayouts Data API v3 | Cache giá vé quan sát (`observed_amount`), Nút CTA Affiliate Handoff sang Aviasales.  |
+| **P3**             | **Thương mại & Giá vé Quan sát** | Travelpayouts Data API v3 | Cache giá vé quan sát (`observed_amount`), Nút CTA Affiliate Handoff sang Aviasales.   |
 | **P4**             | **Scale pSEO có kiểm soát**      | Toàn bộ hệ thống          | Quét chất lượng index, mở rộng sitemap theo cohort thị trường, tối ưu chuyển đổi.      |
 | **P5**             | **Live Metasearch Engine**       | Aviasales / Kiwi Search   | Live search theo ngày cụ thể (Yêu cầu traffic ≥ 50.000 MAU để được duyệt Search API).  |
 

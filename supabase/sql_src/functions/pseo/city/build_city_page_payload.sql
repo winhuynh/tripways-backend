@@ -124,49 +124,69 @@ BEGIN
           'origin_airports', fd.origin_airports,
           'destination_airports', fd.destination_airports,
           'airlines', fd.airlines,
-          'stops', fd.stops,
-          'layover_airports', fd.layover_airports,
+          'stops', 0,
+          'layover_airports', '[]'::JSONB,
           'duration_minutes', fd.duration_minutes,
+          'shortest_duration_minutes', fd.shortest_duration_minutes,
+          'longest_duration_minutes', fd.longest_duration_minutes,
           'route_path', fd.route_path,
           'fare_estimate', CASE
-            WHEN fd.price_amount IS NULL THEN NULL
+            WHEN fd.price_min IS NULL THEN NULL
             ELSE jsonb_build_object(
-              'min', fd.price_amount,
-              'max', fd.price_amount,
+              'min', fd.price_min,
+              'max', fd.price_max,
               'currency', fd.price_currency
             )
           END,
           'is_top_route', (fd.rn = 1),
           'latitude', fd.latitude,
           'longitude', fd.longitude
-        ) ORDER BY fd.stops ASC, fd.confidence_score DESC, fd.opt_id)
+        ) ORDER BY fd.max_confidence DESC, fd.city_name ASC)
         FROM (
           SELECT
-            opt.id AS opt_id,
-            opt.stops,
-            opt.confidence_score,
             dest_c.name AS city_name,
             dest_c.slug AS city_slug,
-            dest_c.latitude,
-            dest_c.longitude,
+            COALESCE(dest_c.latitude, (SELECT a.latitude FROM public.airports a WHERE a.city_id = dest_c.id AND a.latitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)) AS latitude,
+            COALESCE(dest_c.longitude, (SELECT a.longitude FROM public.airports a WHERE a.city_id = dest_c.id AND a.longitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)) AS longitude,
             dest_co.name AS country_name,
             dest_co.slug AS country_slug,
             COALESCE(dest_co.subregion, dest_co.region, 'Asia') AS region,
-            ARRAY[opt.origin_airport_iata] AS origin_airports,
-            ARRAY[opt.destination_airport_iata] AS destination_airports,
-            opt.operating_airlines AS airlines,
-            opt.layover_airports,
-            opt.total_duration_minutes AS duration_minutes,
+            array_agg(DISTINCT opt.origin_airport_iata ORDER BY opt.origin_airport_iata) AS origin_airports,
+            array_agg(DISTINCT opt.destination_airport_iata ORDER BY opt.destination_airport_iata) AS destination_airports,
+            ARRAY(
+              SELECT DISTINCT u
+              FROM unnest(array_agg(opt.operating_airlines)) AS u
+              ORDER BY u
+            ) AS airlines,
+            min(opt.total_duration_minutes) AS duration_minutes,
+            min(opt.total_duration_minutes) AS shortest_duration_minutes,
+            max(opt.total_duration_minutes) AS longest_duration_minutes,
             opt.route_path,
-            opt.price_amount,
-            opt.price_currency,
-            row_number() OVER (ORDER BY opt.stops ASC, opt.confidence_score DESC) AS rn
+            min(opt.price_amount) AS price_min,
+            max(opt.price_amount) AS price_max,
+            coalesce(min(opt.price_currency), 'GBP') AS price_currency,
+            max(opt.confidence_score) AS max_confidence,
+            row_number() OVER (ORDER BY max(opt.confidence_score) DESC, dest_c.name ASC) AS rn
           FROM public.flight_route_options opt
           JOIN public.cities dest_c ON dest_c.id = opt.destination_city_id
           JOIN public.countries dest_co ON dest_co.id = dest_c.country_id
           WHERE opt.publication_version_id = v_version
             AND opt.origin_city_id = v_city.id
             AND opt.stops = 0
+          GROUP BY
+            opt.origin_city_id,
+            opt.destination_city_id,
+            opt.publication_version_id,
+            dest_c.id,
+            dest_c.name,
+            dest_c.slug,
+            dest_c.latitude,
+            dest_c.longitude,
+            dest_co.name,
+            dest_co.slug,
+            dest_co.subregion,
+            dest_co.region,
+            opt.route_path
         ) fd
       ), '[]'::JSONB),
       'faqs', COALESCE(v_page.content->'faqs', '[]'::JSONB),

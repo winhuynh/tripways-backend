@@ -21,9 +21,10 @@ BEGIN
   IF (SELECT count(*) FROM cron.job
       WHERE active
         AND jobname IN (
-          'tripways-ourairports-daily',
-          'tripways-travelpayouts-demand-cache-daily'
-        )) <> 2
+          'tripways-aerodatabox-monthly',
+          'tripways-travelpayouts-top-warm',
+          'tripways-travelpayouts-day6-smart-refresh'
+        )) <> 3
   THEN
     RAISE EXCEPTION 'ERR_STAGING_CRON_INCOMPLETE';
   END IF;

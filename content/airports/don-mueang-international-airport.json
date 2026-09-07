@@ -1,0 +1,192 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "DMK",
+  "slug": "don-mueang-international-airport",
+  "name": "Don Mueang International Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Don Mueang International Airport (DMK) Guide",
+      "title": "DMK Airport Guide: Don Mueang Terminals & Transport | Tripways",
+      "subheadline": "Bangkok's dedicated low-cost carrier hub: terminals, SRT Red Line, and tips",
+      "meta_description": "Complete passenger guide for Don Mueang Airport (DMK) in Bangkok. Includes SRT Red Line train tips, AirAsia flights, and terminal advice."
+    },
+    "faqs": [
+      {
+        "answer": "Yes, Terminals 1 and 2 are connected by an enclosed indoor corridor on Level 1 and Level 3. Walking between check-in areas takes less than 5 minutes.",
+        "question": "Can I walk between Terminal 1 and Terminal 2 at Don Mueang?"
+      },
+      {
+        "answer": "Follow signs to the SRT Red Line station via the covered skybridge on Level 2. Trains reach Krung Thep Aphiwat Central Station in 20 minutes for 33 THB.",
+        "question": "How do I take the train from Don Mueang Airport to central Bangkok?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "International arrivals land at Terminal 1; all domestic flights land at Terminal 2. Both terminals are connected by a short indoor walkway.",
+          "title": "1. Terminal Assignment",
+          "audience": "all"
+        },
+        {
+          "body": "Immigration counters are on the 2nd Floor of Terminal 1. After customs clearance, exit to the public arrival concourse.",
+          "title": "2. Passport Control & Baggage",
+          "audience": "international"
+        },
+        {
+          "body": "Take the elevated skybridge to Don Mueang SRT Red Line Station, board the A1/A2 express buses outside Gate 6, or queue for metered taxis.",
+          "title": "3. Transport Options",
+          "audience": "all"
+        }
+      ],
+      "summary": "Arrival corridors, baggage claim, and city transfer options at Don Mueang."
+    },
+    "lounges": [
+      {
+        "name": "Miracle Lounge (DMK Domestic & Intl)",
+        "amenities": [
+          "buffet",
+          "wifi",
+          "beer",
+          "charging_stations"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, LoungeKey, DragonPass, and walk-in pass (~750 THB)",
+        "estimated_price": {
+          "max": 30,
+          "min": 25,
+          "currency": "USD"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "T1 Airside near Gate 2 and T2 Domestic 3rd Floor",
+        "operating_hours_summary": "05:00–20:00 daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "During weekday rush hours (07:00–09:30 and 16:30–19:30), highway congestion along Don Mueang Tollway can add 30 to 45 minutes to taxi rides.",
+        "title": "Allow Extra Time for Tollway Traffic"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "Terminal 1 Level 3 handles all international check-in, immigration, and boarding gates 1–26.",
+          "title": "1. International Departures (Terminal 1)",
+          "audience": "international"
+        },
+        {
+          "body": "Terminal 2 Level 3 handles all domestic flights (AirAsia, Nok Air, Lion Air). Automated self-check-in kiosks and bag-drop machines are widely available.",
+          "title": "2. Domestic Departures (Terminal 2)",
+          "audience": "all"
+        }
+      ],
+      "summary": "Check-in rows and security screening procedures at DMK."
+    },
+    "terminals": [
+      {
+        "code": "T1",
+        "name": "Terminal 1 (International Flights)",
+        "status": "active"
+      },
+      {
+        "code": "T2",
+        "name": "Terminal 2 (Domestic Flights)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "SRT Dark Red Line Electric Train",
+        "type": "train",
+        "summary": "Modern elevated train connecting DMK to Bangkok's central railway terminal with MRT Blue Line connection.",
+        "duration": {
+          "max_minutes": 25,
+          "min_minutes": 20
+        },
+        "direction": "from_airport",
+        "source_url": null,
+        "booking_url": null,
+        "best_for_label": "Budget travelers avoiding expressway traffic",
+        "estimated_price": {
+          "max": 33,
+          "min": 33,
+          "currency": "THB"
+        },
+        "luggage_summary": "Standard train carriage",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Krung Thep Aphiwat Central Station (Bang Sue)",
+        "accessibility_summary": "Full elevator access",
+        "operating_hours_summary": "05:00–00:00 daily (every 10–15 mins)",
+        "pickup_location_summary": "Direct pedestrian skybridge from Terminal 2 Level 2"
+      },
+      {
+        "name": "Airport Express Bus A1 / A2",
+        "type": "bus",
+        "summary": "Direct air-conditioned express bus running via tollway directly to the northern Skytrain interchange.",
+        "duration": {
+          "max_minutes": 40,
+          "min_minutes": 25
+        },
+        "direction": "from_airport",
+        "source_url": null,
+        "booking_url": null,
+        "best_for_label": "Quick connection to the BTS Skytrain",
+        "estimated_price": {
+          "max": 30,
+          "min": 30,
+          "currency": "THB"
+        },
+        "luggage_summary": "Luggage rack space",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "BTS Mo Chit / MRT Chatuchak Park",
+        "accessibility_summary": null,
+        "operating_hours_summary": "07:00–23:00 daily (every 15 mins)",
+        "pickup_location_summary": "Terminal 1 Gate 6 and Terminal 2 Gate 12"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Magic Food Point",
+        "summary": "Affordable local food court located on the 2nd Floor connecting walkway offering traditional Thai meals.",
+        "category": "Food"
+      }
+    ],
+    "orientation": {
+      "intro": "Don Mueang International Airport (DMK) is Asia's oldest operating commercial airport, located 24 km north of central Bangkok.",
+      "summary": "Serving as Bangkok's primary hub for low-cost airlines, including Thai AirAsia, Nok Air, and Thai Lion Air, operating across two adjacent terminals.",
+      "terminal_count": 2,
+      "city_distance_km": 24
+    },
+    "quick_answers": {
+      "terminal_count": 2,
+      "city_distance_km": 24,
+      "default_transport": {
+        "name": "SRT Dark Red Line / A1 Airport Bus",
+        "estimated_price": {
+          "max": 250,
+          "min": 30,
+          "currency": "THB"
+        },
+        "typical_minutes": {
+          "max": 45,
+          "min": 25
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/bangkok",
+            "anchor_text": "Flights from Bangkok"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

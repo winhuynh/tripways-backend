@@ -14,21 +14,11 @@ DECLARE
 BEGIN
   INSERT INTO admin.data_sources (
     code,
-    name,
-    source_type,
-    environment_scope,
-    production_allowed,
-    seo_allowed,
-    derived_data_allowed
+    name
   )
   VALUES (
     'p0a_ingestion_e2e',
-    'P0A ingestion E2E',
-    'development_fixture',
-    'development',
-    FALSE,
-    FALSE,
-    FALSE
+    'P0A ingestion E2E'
   )
   RETURNING id INTO v_source_id;
 

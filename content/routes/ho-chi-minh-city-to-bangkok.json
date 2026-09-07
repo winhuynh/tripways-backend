@@ -1,0 +1,56 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "ho-chi-minh-city-to-bangkok",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Ho Chi Minh City to Bangkok",
+      "intro": "The Ho Chi Minh City to Bangkok route connects Vietnam's southern commercial hub with Thailand's capital in just 1 hour and 30 minutes across 717 km.",
+      "title": "Ho Chi Minh City to Bangkok Flights: Direct Schedules | Tripways",
+      "subheadline": "Compare multiple daily flights between SGN and Bangkok (BKK/DMK)",
+      "meta_description": "Find all direct flights from Ho Chi Minh City (SGN) to Bangkok (BKK/DMK). Compare airlines, flight times, and fares."
+    },
+    "faqs": [
+      {
+        "answer": "Direct flights take roughly 1 hour and 30 minutes.",
+        "question": "How long is the flight from Ho Chi Minh City to Bangkok?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Nonstop flights take approximately 1 hour 30 minutes.",
+        "type": "duration",
+        "title": "Flight Duration"
+      },
+      {
+        "body": "717 km (446 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Vietnam Airlines, Thai Airways, Vietjet Air, and Thai AirAsia.",
+        "type": "airlines",
+        "title": "Airlines Flying"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Flights arriving at Suvarnabhumi (BKK) connect directly to long-haul departures and the Airport Rail Link. Flights arriving at Don Mueang (DMK) are primarily operated by low-cost carriers like Thai AirAsia.",
+        "type": "comparison",
+        "heading": "Suvarnabhumi (BKK) vs Don Mueang (DMK)"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/ho-chi-minh-city",
+            "anchor_text": "Flights from Ho Chi Minh City"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

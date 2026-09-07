@@ -1,0 +1,236 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "BKK",
+  "slug": "suvarnabhumi-airport",
+  "name": "Suvarnabhumi Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Suvarnabhumi Airport (BKK) Guide",
+      "title": "BKK Airport Guide: Suvarnabhumi Terminals & Transport | Tripways",
+      "subheadline": "Bangkok's flagship international hub: terminals, transport, and departure advice",
+      "meta_description": "Complete passenger guide for Bangkok Suvarnabhumi Airport (BKK). Includes Airport Rail Link transit, Satellite Terminal SAT-1, and taxi advice."
+    },
+    "faqs": [
+      {
+        "answer": "Take the Airport Rail Link (ARL) from Basement Level B. A one-way ticket to Phaya Thai station (interchange for the BTS Skytrain) costs 45 THB and takes 26 minutes.",
+        "question": "How do I take the train from Suvarnabhumi Airport to central Bangkok?"
+      },
+      {
+        "answer": "Yes, a free airport shuttle runs between BKK (Level 2, Gate 3) and DMK for passengers holding a valid boarding pass or ticket departing from the connecting airport within 24 hours.",
+        "question": "Is there free shuttle bus transit between Suvarnabhumi (BKK) and Don Mueang (DMK)?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "Flights docking at Satellite Terminal SAT-1 connect to the Main Terminal via a 3-minute underground Automated People Mover (APM) train running every 3 minutes.",
+          "title": "1. Arrival Concourse & APM Train",
+          "audience": "international"
+        },
+        {
+          "body": "Proceed to Immigration on the 2nd Floor. Foreign passport holders should follow signs to international visitor counters. Baggage carousels are located immediately behind passport control.",
+          "title": "2. Passport Control & Customs",
+          "audience": "international"
+        },
+        {
+          "body": "Descend to Level 1 for official metered taxi kiosks or Level B for the Airport Rail Link train station directly into central Bangkok.",
+          "title": "3. Ground Transport",
+          "audience": "all"
+        }
+      ],
+      "summary": "Arrival procedures, immigration clearance, and ground transit connections."
+    },
+    "lounges": [
+      {
+        "name": "Miracle Lounge",
+        "amenities": [
+          "showers",
+          "hot_thai_buffet",
+          "cocktail_bar",
+          "wifi"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, DragonPass, and walk-in pass (~1,300 THB)",
+        "estimated_price": {
+          "max": 45,
+          "min": 35,
+          "currency": "USD"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Concourses A, C, D, F, G, and Concourse SAT-1",
+        "operating_hours_summary": "24 hours daily"
+      },
+      {
+        "name": "Thai Airways Royal Orchid Prestige Lounge",
+        "amenities": [
+          "spa_treatments",
+          "showers",
+          "a_la_carte_dining",
+          "quiet_rooms"
+        ],
+        "source_url": "https://thaiairways.com",
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Star Alliance Gold, Royal Orchid Plus, and Royal Silk Business Class",
+        "estimated_price": null,
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Concourse D, 3rd Floor",
+        "operating_hours_summary": "05:00–02:00 daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "If your gate is in Concourse SAT-1, allow at least 20 minutes from immigration to reach your departure gate via the APM train.",
+        "title": "SAT-1 Gate Walking Times"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "All airline departures check in on Level 4. Thai Airways counters are located in Rows A–C; foreign international airlines occupy Rows D–W.",
+          "title": "1. Check-in Counters (Level 4)",
+          "audience": "all"
+        },
+        {
+          "body": "Security screening is situated on the mezzanine level above check-in rows, leading directly down to immigration clearance booths.",
+          "title": "2. Security Screening & Passport Control",
+          "audience": "international"
+        },
+        {
+          "body": "If your boarding gate starts with 'S' (Gates S101–S128), board the automated shuttle train on Basement 1 to reach Concourse SAT-1. Allow 15 extra minutes.",
+          "title": "3. Gate Navigation & SAT-1 Transfers",
+          "audience": "all"
+        }
+      ],
+      "summary": "Departure check-in, security screening, and boarding gate navigation."
+    },
+    "terminals": [
+      {
+        "code": "Main",
+        "name": "Main Passenger Terminal (Concourses A–G)",
+        "status": "active"
+      },
+      {
+        "code": "SAT-1",
+        "name": "Satellite Terminal 1 (Gates S101–S128)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Airport Rail Link (City Line)",
+        "type": "train",
+        "summary": "Fast and congestion-free electric train stopping at 8 stations across Bangkok before terminating at Phaya Thai.",
+        "duration": {
+          "max_minutes": 30,
+          "min_minutes": 26
+        },
+        "direction": "from_airport",
+        "source_url": null,
+        "booking_url": null,
+        "best_for_label": "Solo travelers and downtown commuters",
+        "estimated_price": {
+          "max": 45,
+          "min": 45,
+          "currency": "THB"
+        },
+        "luggage_summary": "Standard metro space",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Phaya Thai Station (BTS Interchange)",
+        "accessibility_summary": "Elevators and tactile paving",
+        "operating_hours_summary": "05:30–00:00 daily (every 10–15 mins)",
+        "pickup_location_summary": "Basement Level B, beneath the main passenger terminal"
+      },
+      {
+        "name": "Official Public Metered Taxi",
+        "type": "taxi",
+        "summary": "Automated ticket kiosk assigns a numbered taxi bay. Regulated meter fare plus 50 THB airport surcharge and expressway tolls.",
+        "duration": {
+          "max_minutes": 60,
+          "min_minutes": 35
+        },
+        "direction": "from_airport",
+        "source_url": null,
+        "booking_url": null,
+        "best_for_label": "Families, luggage, and late-night arrivals",
+        "estimated_price": {
+          "max": 450,
+          "min": 300,
+          "currency": "THB"
+        },
+        "luggage_summary": "Sedan or 7-seat van",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Any Bangkok Hotel (Door-to-door)",
+        "accessibility_summary": null,
+        "operating_hours_summary": "24 hours daily",
+        "pickup_location_summary": "Level 1 (Ground Floor), Gates 4 and 7"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Tourist SIM Counters",
+        "summary": "Official AIS, TrueMove H, and dtac kiosks on Level 2 (Arrivals) offering unlimited 5G data packages.",
+        "category": "Connectivity"
+      },
+      {
+        "name": "Luggage Storage & Delivery",
+        "summary": "Bellugg and Airportels counters available on Level 2 and Level B for same-day hotel delivery.",
+        "category": "Luggage"
+      }
+    ],
+    "orientation": {
+      "intro": "Suvarnabhumi Airport (BKK) is Bangkok's primary international airport, located 30 km east of downtown Bangkok in Samut Prakan province.",
+      "summary": "Featuring one of the world's largest single-building passenger terminals and the new Satellite Terminal 1 (SAT-1), serving major long-haul and regional flag carriers.",
+      "terminal_count": 2,
+      "city_distance_km": 30
+    },
+    "quick_answers": {
+      "terminal_count": 2,
+      "city_distance_km": 30,
+      "default_transport": {
+        "name": "Airport Rail Link (ARL) / Metered Taxi",
+        "estimated_price": {
+          "max": 450,
+          "min": 45,
+          "currency": "THB"
+        },
+        "typical_minutes": {
+          "max": 60,
+          "min": 30
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/bangkok",
+            "anchor_text": "Flights from Bangkok"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/bangkok-to-singapore",
+            "anchor_text": "Flights to Singapore (SIN)"
+          },
+          {
+            "path": "/flights/bangkok-to-tokyo",
+            "anchor_text": "Flights to Tokyo (HND/NRT)"
+          },
+          {
+            "path": "/flights/bangkok-to-london",
+            "anchor_text": "Flights to London (LHR)"
+          }
+        ],
+        "cluster": "routes"
+      }
+    ]
+  }
+}

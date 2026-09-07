@@ -33,6 +33,14 @@ export function isAllowlistedAviasalesUrl(targetUrl: string): boolean {
   }
 }
 
+function safeEnv(name: string): string | undefined {
+  try {
+    return Deno.env.get(name);
+  } catch {
+    return undefined;
+  }
+}
+
 export function buildFallbackSearchHandoff(
   req: Extract<AffiliateHandoffRequest, { type: 'fallback_search' }>,
   options?: FallbackSearchOptions,
@@ -47,9 +55,9 @@ export function buildFallbackSearchHandoff(
     }
   }
 
-  const marker = options?.marker || Deno.env.get('TRAVELPAYOUTS_MARKER') ||
-    Deno.env.get('AVIASALES_MARKER') || 'tripways';
-  const subId = options?.subId || Deno.env.get('AFFILIATE_SUB_ID') || 'fallback_search';
+  const marker = options?.marker || safeEnv('TRAVELPAYOUTS_MARKER') ||
+    safeEnv('AVIASALES_MARKER') || 'tripways';
+  const subId = options?.subId || safeEnv('AFFILIATE_SUB_ID') || 'fallback_search';
   const ttlSeconds = options?.ttlSeconds ?? 86400;
 
   const url = new URL(

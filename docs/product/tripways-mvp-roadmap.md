@@ -52,7 +52,7 @@ Nguyên mẫu hiện chưa có:
 | P0B       | **Kế tiếp**        | Sản phẩm staging ổn định trên Cloudflare + Supabase Cloud, riêng tư và `noindex`            | Cùng release candidate hoạt động từ xa; chỉ còn khác biệt hạ tầng, bí mật và vận hành          |
 | P1        | Kế hoạch song hành | Có thể nhập và kiểm duyệt dữ liệu nền thật một cách an toàn                                 | Dữ liệu quốc gia, thành phố và sân bay thật được xuất bản qua pipeline OurAirports             |
 | P2        | Kế hoạch song hành | Dữ liệu tuyến bay & đồ thị kết nối (AeroDataBox/API.market) vận hành Route Explorer và pSEO | Mạng lưới chặng bay thẳng (Direct Routes) và kết nối 1–3 stops kiểu FlightConnections sẵn sàng |
-| P3        | Chưa bắt đầu       | Tích hợp giá vé quan sát và Affiliate Handoff an toàn (Travelpayouts Data API)              | MVP production đáp ứng cổng thương mại, affiliate CTA sang Aviasales, disclosure và analytics |
+| P3        | Chưa bắt đầu       | Tích hợp giá vé quan sát và Affiliate Handoff an toàn (Travelpayouts Data API)              | MVP production đáp ứng cổng thương mại, affiliate CTA sang Aviasales, disclosure và analytics  |
 | P4        | Chưa bắt đầu       | Mở rộng pSEO có kiểm soát từ tập thị trường đã chứng minh giá trị                           | Coverage, quality, indexability, cost và freshness gate hoạt động ở quy mô production          |
 | P5        | Kế hoạch tương lai | Tích hợp Live Metasearch Engine đa nhà cung cấp (Yêu cầu traffic ≥ 50.000 MAU)              | Tích hợp Aviasales/Kiwi Search API khi website đủ điều kiện traffic và được cấp quyền live API |
 

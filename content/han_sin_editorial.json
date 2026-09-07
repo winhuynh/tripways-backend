@@ -1,0 +1,731 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "version": "1.0.0",
+  "locale": "en-GB",
+  "cities": [
+    {
+      "slug": "hanoi",
+      "iata": "HAN",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Hanoi",
+          "subheadline": "Explore nonstop routes from Noi Bai International Airport across Asia and Europe",
+          "title": "Direct Flights from Hanoi: Nonstop Routes & Airlines | Tripways",
+          "meta_description": "Discover all nonstop flight routes departing Hanoi (HAN). Compare airlines, flight times, destinations across Asia and Europe, and departure tips.",
+          "intro": "Hanoi is Northern Vietnam's premier aviation gateway. From Noi Bai International Airport (HAN), travelers can connect directly to over 40 domestic and international destinations across East Asia, Southeast Asia, and key European cities."
+        },
+        "faqs": [
+          {
+            "question": "Which airport in Hanoi serves scheduled commercial flights?",
+            "answer": "All commercial passenger flights in Hanoi operate via Noi Bai International Airport (HAN), situated 28 km north of the city centre. Domestic departures operate from Terminal 1, while international departures use Terminal 2."
+          },
+          {
+            "question": "Which airlines operate the most international routes from Hanoi?",
+            "answer": "Flag carrier Vietnam Airlines and budget operator Vietjet Air maintain the largest international networks out of Hanoi, supplemented by regional carriers including Singapore Airlines, Thai Airways, All Nippon Airways, and Korean Air."
+          },
+          {
+            "question": "What are the most popular direct international destinations from Hanoi?",
+            "answer": "The most frequent international routes from Hanoi include Singapore (SIN), Bangkok (BKK), Tokyo (NRT/HND), Seoul (ICN), and Taipei (TPE), along with direct long-haul flights to London Heathrow, Paris CDG, and Frankfurt."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Noi Bai Airport Guide (HAN)",
+                "path": "/airports/noi-bai-han"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore",
+                "path": "/flights/hanoi-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/hanoi-to-london"
+              },
+              {
+                "anchor_text": "Flights to Ho Chi Minh City",
+                "path": "/flights/ho-chi-minh-city-to-hanoi"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "singapore",
+      "iata": "SIN",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Singapore",
+          "subheadline": "Explore nonstop global routes from world-renowned Singapore Changi Airport",
+          "title": "Direct Flights from Singapore: Nonstop Routes & Airlines | Tripways",
+          "meta_description": "Discover all nonstop flight routes departing Singapore (SIN). Compare airlines, flight times, and destinations across Asia, Australia, Europe, and the Americas.",
+          "intro": "Singapore is one of the world's preeminent global aviation crossroads. Operating out of Singapore Changi Airport (SIN), passengers can access nonstop connections to more than 140 destinations across Southeast Asia, East Asia, Oceania, Europe, and North America."
+        },
+        "faqs": [
+          {
+            "question": "Which airport handles commercial passenger flights in Singapore?",
+            "answer": "Virtually all scheduled commercial passenger flights depart from Singapore Changi Airport (SIN). Seletar Airport (XSP) primarily handles turboprop flights to Malaysia and private aviation charters."
+          },
+          {
+            "question": "How early should I arrive at Singapore Changi Airport?",
+            "answer": "For international flights, plan to arrive 2 to 3 hours prior to departure. While automated check-in and luggage drop are fast, Terminals 1, 2, and 3 perform security screening at the individual boarding gate rather than a central checkpoint."
+          },
+          {
+            "question": "What is the longest nonstop flight departing from Singapore?",
+            "answer": "Singapore Airlines operates one of the world's longest commercial flights directly between Singapore Changi (SIN) and New York (JFK / Newark EWR), taking approximately 18 to 19 hours."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Singapore Changi Airport Guide (SIN)",
+                "path": "/airports/singapore-changi-sin"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Hanoi",
+                "path": "/flights/hanoi-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/singapore-to-london"
+              },
+              {
+                "anchor_text": "Flights to Ho Chi Minh City",
+                "path": "/flights/ho-chi-minh-city-to-singapore"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "airports": [
+    {
+      "iata": "HAN",
+      "slug": "noi-bai-han",
+      "content": {
+        "seo": {
+          "h1": "Noi Bai International Airport (HAN) Guide",
+          "subheadline": "Northern Vietnam's primary hub: terminals, transport, and departure advice",
+          "title": "HAN Airport Guide: Noi Bai Terminals & Transit | Tripways",
+          "meta_description": "Complete passenger guide for Hanoi Noi Bai Airport (HAN). Includes terminal transfers, express bus 86, taxi advice, and departure tips."
+        },
+        "orientation": {
+          "intro": "Noi Bai International Airport (HAN) is the gateway to Hanoi and Northern Vietnam, situated 28 km north of the city centre.",
+          "summary": "Operating two distinct passenger terminals — Domestic (T1) and International (T2) — connected by a regular free shuttle bus.",
+          "city_distance_km": 28,
+          "terminal_count": 2
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Express Bus 86 / Grab Taxi",
+            "typical_minutes": { "min": 40, "max": 60 },
+            "estimated_price": {
+              "min": 45000,
+              "max": 350000,
+              "currency": "VND"
+            }
+          },
+          "city_distance_km": 28,
+          "terminal_count": 2
+        },
+        "arrival": {
+          "summary": "Step-by-step arrival procedures for international and domestic arrivals at Noi Bai.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Immigration & Visa Verification",
+              "body": "International arrivals disembark at Terminal 2 2nd Floor. Follow signs to passport control. E-visa holders can use automated passport gates (Autogate) if pre-enrolled, or standard staffed booths."
+            },
+            {
+              "audience": "all",
+              "title": "2. Baggage Claim & Customs",
+              "body": "Baggage carousels are located on the Ground Floor. All international arriving bags must pass through customs security scanners before exiting to the arrival hall."
+            },
+            {
+              "audience": "all",
+              "title": "3. Ground Transport & Connectivity",
+              "body": "Official telecom kiosks (Viettel, Vinaphone) and licensed currency exchange counters line the exit lobby. Proceed outside to the designated taxi bays or Express Bus 86 pick-up point."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Check-in and departure guidance at Terminal 1 and Terminal 2.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Confirmation",
+              "body": "Confirm your terminal in advance: Domestic flights depart from T1; all international carriers depart from T2 3rd Floor."
+            },
+            {
+              "audience": "international",
+              "title": "2. Check-in & Security",
+              "body": "Check-in counters close 50 minutes prior to departure for domestic and 60 minutes for international. Security screening requires electronics and liquids under 100ml removed into separate trays."
+            },
+            {
+              "audience": "all",
+              "title": "3. Terminal Transfer Shuttle",
+              "body": "If connecting between T1 and T2, a free electric shuttle bus operates every 10–15 minutes from 06:00 to 23:30 from the curb outside arrival doors."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "bus",
+            "name": "Express Bus 86 (Noi Bai – Hanoi Railway Station)",
+            "destination_label": "Hanoi Old Quarter & Hoan Kiem",
+            "summary": "High-quality air-conditioned express service with luggage racks and stops throughout the Old Quarter.",
+            "duration": { "min_minutes": 45, "max_minutes": 60 },
+            "estimated_price": {
+              "min": 45000,
+              "max": 45000,
+              "currency": "VND"
+            },
+            "operating_hours_summary": "06:15–22:00 daily (every 45 mins)",
+            "pickup_location_summary": "T1 Domestic (Lane 2) and T2 International (Column 1–2 arrival curb)",
+            "best_for_label": "Solo travelers and budget-conscious visitors",
+            "luggage_summary": "Dedicated spacious luggage shelving",
+            "accessibility_summary": "Low-floor boarding accessible for wheelchairs",
+            "booking_url": null,
+            "source_url": "https://transerco.com.vn",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "taxi",
+            "name": "GrabCar / Official Airport Taxi",
+            "destination_label": "Door-to-door (Central Hanoi)",
+            "summary": "Pre-booked app rides or reputable metered taxi fleets (Mai Linh, Taxi Group) via Vo Nguyen Giap expressway.",
+            "duration": { "min_minutes": 35, "max_minutes": 50 },
+            "estimated_price": {
+              "min": 250000,
+              "max": 350000,
+              "currency": "VND"
+            },
+            "operating_hours_summary": "24 hours daily",
+            "pickup_location_summary": "Outer arrival pickup lanes B and C",
+            "best_for_label": "Families, couples, and late-night arrivals",
+            "luggage_summary": "Standard 4-seat sedan or 7-seat SUV trunk",
+            "accessibility_summary": null,
+            "booking_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Domestic Passenger Terminal (Vietnam Airlines, Vietjet, Bamboo)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "International Passenger Terminal (All foreign carriers & intl flights)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Connectivity",
+            "name": "4G/5G Tourist SIM Cards",
+            "summary": "Viettel and Vinaphone official counters at T2 arrivals lobby offering prepaid high-speed data SIMs."
+          },
+          {
+            "category": "Finance",
+            "name": "ATMs & Foreign Exchange",
+            "summary": "Vietcombank, BIDV, and Agribank ATMs available on the ground floors of both terminals."
+          },
+          {
+            "category": "Comfort",
+            "name": "Free High-Speed Wi-Fi",
+            "summary": "Complimentary 'NoiBai Airport Free Wi-Fi' available across domestic and international concourses."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "Song Hong Business Lounge",
+            "location_summary": "Terminal 2 Airside, 4th Floor near Gate 28",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, and walk-in entry pass",
+            "operating_hours_summary": "06:00–02:00 daily",
+            "amenities": [
+              "high_speed_wifi",
+              "hot_food_buffet",
+              "showers",
+              "massage_chairs",
+              "flight_monitors"
+            ],
+            "estimated_price": { "min": 35, "max": 40, "currency": "USD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "name": "Lotus Lounge (Vietnam Airlines)",
+            "location_summary": "T1 Domestic (3rd Floor) & T2 International (4th Floor)",
+            "location_type": "airside",
+            "access_summary": "SkyTeam Elite Plus, Lotusmiles Platinum/Gold, and Business Class passengers",
+            "operating_hours_summary": "04:30–23:00 daily",
+            "amenities": [
+              "wifi",
+              "vietnamese_buffet",
+              "quiet_zone",
+              "shower_suites"
+            ],
+            "estimated_price": null,
+            "affiliate_url": null,
+            "source_url": "https://vietnamairlines.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Avoid Unregistered Taxi Touts",
+            "body": "Decline offers from individuals soliciting rides inside the arrival hall. Only take metered taxis from the official outdoor queue or verified ride-hailing drivers."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How far is Noi Bai Airport from central Hanoi?",
+            "answer": "Noi Bai Airport is approximately 28 km north of Hanoi Old Quarter. Travel by taxi or bus typically takes 35 to 50 minutes via Vo Nguyen Giap expressway."
+          },
+          {
+            "question": "Is there a free transfer between Terminal 1 and Terminal 2?",
+            "answer": "Yes, an official free electric shuttle runs between T1 and T2 every 10 to 15 minutes between 06:00 and 23:30. The transit ride takes approximately 5 minutes."
+          },
+          {
+            "question": "Where do I board the Express Bus 86 at Noi Bai?",
+            "answer": "At Terminal 2 (International), Bus 86 stops at Column 1-2 on the Ground Floor arrival curb. At Terminal 1 (Domestic), it stops at Lane 2 outside the arrival doors."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Hanoi",
+                "path": "/flights-from/hanoi"
+              }
+            ]
+          },
+          {
+            "cluster": "routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore (SIN)",
+                "path": "/flights/hanoi-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London (LHR)",
+                "path": "/flights/hanoi-to-london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "SIN",
+      "slug": "singapore-changi-sin",
+      "content": {
+        "seo": {
+          "h1": "Singapore Changi Airport (SIN) Guide",
+          "subheadline": "World-class transit hub: terminals, Jewel, Skytrain, and passenger connections",
+          "title": "SIN Airport Guide: Singapore Changi Terminals & Transit | Tripways",
+          "meta_description": "Complete passenger transit and terminal guide for Singapore Changi Airport (SIN). Includes MRT transport, Jewel access, lounges, and transfer tips."
+        },
+        "orientation": {
+          "intro": "Singapore Changi Airport (SIN) consistently ranks among the world's finest airports, located 20 km east of downtown Singapore.",
+          "summary": "With four world-class passenger terminals and the Jewel lifestyle complex, Changi serves over 65 million travelers annually with seamless inter-terminal transit.",
+          "city_distance_km": 20,
+          "terminal_count": 4
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "MRT East-West Line / Grab Taxi",
+            "typical_minutes": { "min": 25, "max": 45 },
+            "estimated_price": { "min": 2, "max": 35, "currency": "SGD" }
+          },
+          "city_distance_km": 20,
+          "terminal_count": 4
+        },
+        "arrival": {
+          "summary": "Arrival procedures, electronic SG Arrival Card verification, and Jewel access.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Electronic SG Arrival Card & Automated Clearance",
+              "body": "Submit the electronic SG Arrival Card (SGAC) with health declaration online within 3 days before arrival. Eligible passport holders from most countries can use the automated biometric clearance lanes directly."
+            },
+            {
+              "audience": "all",
+              "title": "2. Airside Duty-Free & Baggage Reclaim",
+              "body": "Extensive duty-free shopping is accessible airside before passing immigration. After passport control, proceed to the baggage carousels in the ground arrival hall."
+            },
+            {
+              "audience": "all",
+              "title": "3. Ground Transport & Jewel Changi Access",
+              "body": "Jewel Changi Airport is connected to Terminal 1 arrivals hall and via pedestrian air-conditioned bridges from Terminals 2 and 3. MRT train stations are located in the basements of T2 and T3."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Early check-in, automated bag drop, and gate-level security screening.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Early Check-in at Jewel Lounge",
+              "body": "Passengers flying on participating airlines can check in and drop luggage at the Jewel Early Check-in Lounge up to 24 hours prior to scheduled departure."
+            },
+            {
+              "audience": "all",
+              "title": "2. Centralized Automated Immigration",
+              "body": "Departure passport control uses automated facial recognition gates. Terminal concourses feature butterfly gardens, rooftop pools, and transit lounges."
+            },
+            {
+              "audience": "all",
+              "title": "3. Gate-Level Security Screening",
+              "body": "Important note: In Terminals 1, 2, and 3, security screening takes place directly at the individual boarding gate. Arrive at your gate at least 45 minutes before departure."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "SMRT East-West Line (Changi Airport MRT)",
+            "destination_label": "Downtown Singapore / Marina Bay",
+            "summary": "Affordable and punctual rapid transit connecting Changi directly to city center via Tanah Merah interchange.",
+            "duration": { "min_minutes": 32, "max_minutes": 45 },
+            "estimated_price": { "min": 2, "max": 3, "currency": "SGD" },
+            "operating_hours_summary": "05:31–23:18 Monday–Saturday, 05:59–23:18 Sundays",
+            "pickup_location_summary": "Basement 2, between Terminals 2 and 3",
+            "best_for_label": "Solo travelers and commuters",
+            "luggage_summary": "Standard metro carriage space",
+            "accessibility_summary": "Full step-free elevator and barrier-free access",
+            "booking_url": null,
+            "source_url": "https://www.smrt.com.sg",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "taxi",
+            "name": "GrabCar / Metered Airport Taxi",
+            "destination_label": "Any Singapore Destination (Door-to-door)",
+            "summary": "Official metered taxi stands and ride-hailing pick-up bays at arrival levels of all terminals.",
+            "duration": { "min_minutes": 20, "max_minutes": 30 },
+            "estimated_price": { "min": 20, "max": 38, "currency": "SGD" },
+            "operating_hours_summary": "24 hours daily",
+            "pickup_location_summary": "Arrival hall taxi stands (Doors 1-4) or app ride bays",
+            "best_for_label": "Families with children, couples, and heavy luggage",
+            "luggage_summary": "Full sedan or maxi-cab capacity",
+            "accessibility_summary": null,
+            "booking_url": null,
+            "source_url": "https://www.changiairport.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Terminal 1 (Scoot, Emirates, British Airways, Japan Airlines)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "Terminal 2 (Singapore Airlines SE/S.Asia, ANA, Lufthansa, Swiss)",
+            "status": "active"
+          },
+          {
+            "code": "T3",
+            "name": "Terminal 3 (Singapore Airlines Europe/Americas/Oceania, Qatar Airways)",
+            "status": "active"
+          },
+          {
+            "code": "T4",
+            "name": "Terminal 4 (AirAsia, Cathay Pacific, Vietjet, Korean Air)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Leisure",
+            "name": "Jewel Changi Rain Vortex",
+            "summary": "World's tallest indoor waterfall (40m) surrounded by a four-story lush indoor forest canopy."
+          },
+          {
+            "category": "Connectivity",
+            "name": "High-Speed WiFi & Power Stations",
+            "summary": "Free high-speed WiFi (#WiFi@Changi) and over 1,500 USB/AC charging stations throughout all terminals."
+          },
+          {
+            "category": "Transit",
+            "name": "Complimentary Singapore City Tour",
+            "summary": "Free 2.5-hour guided city tours available for transit passengers with layovers of 5.5 hours or more."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "SilverKris Lounge",
+            "location_summary": "Terminal 2 and Terminal 3 Airside, 3rd Floor",
+            "location_type": "airside",
+            "access_summary": "Singapore Airlines and Star Alliance First & Business Class passengers",
+            "operating_hours_summary": "24 hours daily",
+            "amenities": [
+              "shower_suites",
+              "fine_dining_buffet",
+              "barista_coffee",
+              "private_nap_pods",
+              "fast_wifi"
+            ],
+            "estimated_price": null,
+            "affiliate_url": null,
+            "source_url": "https://singaporeair.com",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "name": "SATS Premier Lounge",
+            "location_summary": "Airside Terminals 1, 2, and 3",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, LoungeKey, and walk-in pass",
+            "operating_hours_summary": "24 hours daily",
+            "amenities": [
+              "buffet",
+              "showers",
+              "massage_chairs",
+              "workstations"
+            ],
+            "estimated_price": { "min": 45, "max": 55, "currency": "SGD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Mandatory SG Arrival Card (SGAC)",
+            "body": "All foreign travelers must submit the official SG Arrival Card online via ICA Singapore website or MyICA mobile app within 3 days prior to landing."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How do I transfer between terminals at Singapore Changi?",
+            "answer": "Terminals 1, 2, and 3 are connected both airside and landside by the free Changi Skytrain (05:00 to 02:30) and pedestrian walkways. Terminal 4 connects to T2 via free shuttle buses running 24/7."
+          },
+          {
+            "question": "Can transit passengers visit Jewel Changi Airport?",
+            "answer": "Jewel is located landside outside immigration. To visit Jewel during a transit, you must clear Singapore immigration with valid entry eligibility and re-enter through departure security."
+          },
+          {
+            "question": "What is the cheapest way to reach downtown Singapore from Changi?",
+            "answer": "The MRT train from Changi Airport station (under T2/T3) costs approximately 2.00 to 2.50 SGD and takes 35 minutes to reach central Singapore."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Singapore",
+                "path": "/flights-from/singapore"
+              }
+            ]
+          },
+          {
+            "cluster": "routes",
+            "links": [
+              {
+                "anchor_text": "Flights to London (LHR/LGW)",
+                "path": "/flights/singapore-to-london"
+              },
+              {
+                "anchor_text": "Flights to Hanoi (HAN)",
+                "path": "/flights/hanoi-to-singapore"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "slug": "hanoi-to-singapore",
+      "origin_city_slug": "hanoi",
+      "destination_city_slug": "singapore",
+      "content": {
+        "seo": {
+          "h1": "Flights from Hanoi to Singapore",
+          "subheadline": "Compare daily direct flight schedules and airlines between HAN and SIN",
+          "title": "Hanoi to Singapore Flights: Direct Schedules & Airlines | Tripways",
+          "meta_description": "Compare daily direct and 1-stop flights from Hanoi (HAN) to Singapore (SIN). View flight times, operating carriers, and transit details.",
+          "intro": "Direct flights from Hanoi to Singapore bridge Northern Vietnam with Southeast Asia's global financial hub in approximately 3 hours and 30 minutes across a flight distance of 2,207 km."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Nonstop flights average 3 hours 25 minutes to 3 hours 40 minutes southbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "The direct flight distance between Noi Bai (HAN) and Singapore Changi (SIN) is 2,207 km (1,371 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Operating Carriers",
+            "body": "Operated nonstop by Singapore Airlines, Vietnam Airlines, and budget carrier Scoot."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Airlines: Full-Service vs Low-Cost Comparison",
+            "body": "Singapore Airlines and Vietnam Airlines operate daily wide-body and modern narrow-body aircraft featuring complimentary hot meals, checked baggage allowance, and seatback entertainment. Travelers prioritizing cost efficiency can choose Scoot, with à la carte baggage and seat selection."
+          },
+          {
+            "type": "arrival_guide",
+            "heading": "Arriving at Singapore Changi (SIN)",
+            "body": "Flights from Hanoi disembark at Terminal 1 (Scoot) or Terminal 2/3 (Singapore Airlines, Vietnam Airlines). Ensure you submit the mandatory SG Arrival Card (SGAC) online within 3 days prior to landing."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the nonstop flight from Hanoi to Singapore?",
+            "answer": "Direct nonstop flights take roughly 3 hours and 30 minutes. Connecting flights with layovers in Bangkok or Ho Chi Minh City generally take 6 hours or longer."
+          },
+          {
+            "question": "Do Vietnamese citizens need a visa to travel to Singapore?",
+            "answer": "No visa is required for Vietnamese passport holders entering Singapore for tourism stays up to 30 days. You must possess a passport valid for at least 6 months and a submitted SG Arrival Card."
+          },
+          {
+            "question": "Which terminals at Hanoi and Singapore handle these flights?",
+            "answer": "Departures leave from Hanoi Noi Bai Terminal 2 (International). Arrivals at Singapore Changi land at Terminals 1, 2, or 3 depending on the operating airline."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Hanoi",
+                "path": "/flights-from/hanoi"
+              },
+              {
+                "anchor_text": "Flights from Singapore",
+                "path": "/flights-from/singapore"
+              }
+            ]
+          },
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Noi Bai Airport Guide (HAN)",
+                "path": "/airports/noi-bai-han"
+              },
+              {
+                "anchor_text": "Singapore Changi Guide (SIN)",
+                "path": "/airports/singapore-changi-sin"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "singapore-to-london",
+      "origin_city_slug": "singapore",
+      "destination_city_slug": "london",
+      "content": {
+        "seo": {
+          "h1": "Flights from Singapore to London",
+          "subheadline": "Compare direct nonstop flights and competitive 1-stop options between SIN and LON",
+          "title": "Singapore to London Flights: Nonstop Schedules & Airlines | Tripways",
+          "meta_description": "Compare direct flights from Singapore Changi (SIN) to London Heathrow (LHR) and Gatwick (LGW). View flight times, airlines, and transit insights.",
+          "intro": "The Singapore to London air route is one of global aviation's premier long-haul corridors, spanning 10,885 km with direct flight times averaging 13 to 14 hours."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Nonstop Duration",
+            "body": "Direct flights take approximately 13 hours 40 minutes heading westbound and 12 hours 50 minutes eastbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "The flight distance between Singapore Changi (SIN) and London Heathrow (LHR) is 10,885 km (6,764 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Nonstop Airlines",
+            "body": "Singapore Airlines (flying to LHR and LGW) and British Airways (flying to LHR) operate daily nonstop wide-body services."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Direct vs 1-Stop Connecting Options",
+            "body": "Direct nonstop flights save 3 to 6 hours of journey time. One-stop connections via Middle Eastern hubs such as Doha (Qatar Airways) or Dubai (Emirates) frequently provide competitive pricing and break up the 14-hour journey."
+          },
+          {
+            "type": "arrival_guide",
+            "heading": "Arriving in London: Heathrow (LHR) vs Gatwick (LGW)",
+            "body": "Heathrow provides express connectivity via the Elizabeth Line and Heathrow Express straight into Central London. Gatwick offers the Gatwick Express to Victoria Station, serving southern London destinations."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "Which airlines operate direct flights from Singapore to London?",
+            "answer": "Singapore Airlines and British Airways provide daily nonstop flights between Singapore Changi (SIN) and London Heathrow (LHR). Singapore Airlines also operates direct flights to London Gatwick (LGW)."
+          },
+          {
+            "question": "How long does a direct flight from Singapore to London take?",
+            "answer": "Direct flights take roughly 13 hours and 30 minutes westbound, and around 12 hours and 50 minutes on the return eastbound leg due to jet stream tailwinds."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Singapore",
+                "path": "/flights-from/singapore"
+              }
+            ]
+          },
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Singapore Changi Airport Guide",
+                "path": "/airports/singapore-changi-sin"
+              },
+              {
+                "anchor_text": "Heathrow Airport Guide",
+                "path": "/airports/heathrow-lhr"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "HAN",
+  "slug": "noi-bai-international-airport",
+  "name": "Noi Bai International Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Noi Bai International Airport (HAN) Guide",
+      "title": "HAN Airport Guide: Noi Bai Terminals & Transit | Tripways",
+      "subheadline": "Northern Vietnam's primary hub: terminals, transport, and departure advice",
+      "meta_description": "Complete passenger guide for Hanoi Noi Bai Airport (HAN). Includes terminal transfers, express bus 86, taxi advice, and departure tips."
+    },
+    "faqs": [
+      {
+        "answer": "Noi Bai Airport is approximately 28 km north of Hanoi Old Quarter. Travel by taxi or bus typically takes 35 to 50 minutes via Vo Nguyen Giap expressway.",
+        "question": "How far is Noi Bai Airport from central Hanoi?"
+      },
+      {
+        "answer": "Yes, an official free electric shuttle runs between T1 and T2 every 10 to 15 minutes between 06:00 and 23:30. The transit ride takes approximately 5 minutes.",
+        "question": "Is there a free transfer between Terminal 1 and Terminal 2?"
+      },
+      {
+        "answer": "At Terminal 2 (International), Bus 86 stops at Column 1-2 on the Ground Floor arrival curb. At Terminal 1 (Domestic), it stops at Lane 2 outside the arrival doors.",
+        "question": "Where do I board the Express Bus 86 at Noi Bai?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "International arrivals disembark at Terminal 2 2nd Floor. Follow signs to passport control. E-visa holders can use automated passport gates (Autogate) if pre-enrolled, or standard staffed booths.",
+          "title": "1. Immigration & Visa Verification",
+          "audience": "international"
+        },
+        {
+          "body": "Baggage carousels are located on the Ground Floor. All international arriving bags must pass through customs security scanners before exiting to the arrival hall.",
+          "title": "2. Baggage Claim & Customs",
+          "audience": "all"
+        },
+        {
+          "body": "Official telecom kiosks (Viettel, Vinaphone) and licensed currency exchange counters line the exit lobby. Proceed outside to the designated taxi bays or Express Bus 86 pick-up point.",
+          "title": "3. Ground Transport & Connectivity",
+          "audience": "all"
+        }
+      ],
+      "summary": "Step-by-step arrival procedures for international and domestic arrivals at Noi Bai."
+    },
+    "lounges": [
+      {
+        "name": "Song Hong Business Lounge",
+        "amenities": [
+          "high_speed_wifi",
+          "hot_food_buffet",
+          "showers",
+          "massage_chairs",
+          "flight_monitors"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, DragonPass, and walk-in entry pass",
+        "estimated_price": {
+          "max": 40,
+          "min": 35,
+          "currency": "USD"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Terminal 2 Airside, 4th Floor near Gate 28",
+        "operating_hours_summary": "06:00–02:00 daily"
+      },
+      {
+        "name": "Lotus Lounge (Vietnam Airlines)",
+        "amenities": [
+          "wifi",
+          "vietnamese_buffet",
+          "quiet_zone",
+          "shower_suites"
+        ],
+        "source_url": "https://vietnamairlines.com",
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "SkyTeam Elite Plus, Lotusmiles Platinum/Gold, and Business Class passengers",
+        "estimated_price": null,
+        "last_verified_at": "2026-09-01",
+        "location_summary": "T1 Domestic (3rd Floor) & T2 International (4th Floor)",
+        "operating_hours_summary": "04:30–23:00 daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "Decline offers from individuals soliciting rides inside the arrival hall. Only take metered taxis from the official outdoor queue or verified ride-hailing drivers.",
+        "title": "Avoid Unregistered Taxi Touts"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "Confirm your terminal in advance: Domestic flights depart from T1; all international carriers depart from T2 3rd Floor.",
+          "title": "1. Terminal Confirmation",
+          "audience": "all"
+        },
+        {
+          "body": "Check-in counters close 50 minutes prior to departure for domestic and 60 minutes for international. Security screening requires electronics and liquids under 100ml removed into separate trays.",
+          "title": "2. Check-in & Security",
+          "audience": "international"
+        },
+        {
+          "body": "If connecting between T1 and T2, a free electric shuttle bus operates every 10–15 minutes from 06:00 to 23:30 from the curb outside arrival doors.",
+          "title": "3. Terminal Transfer Shuttle",
+          "audience": "all"
+        }
+      ],
+      "summary": "Check-in and departure guidance at Terminal 1 and Terminal 2."
+    },
+    "terminals": [
+      {
+        "code": "T1",
+        "name": "Domestic Passenger Terminal (Vietnam Airlines, Vietjet, Bamboo)",
+        "status": "active"
+      },
+      {
+        "code": "T2",
+        "name": "International Passenger Terminal (All foreign carriers & intl flights)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Express Bus 86 (Noi Bai – Hanoi Railway Station)",
+        "type": "bus",
+        "summary": "High-quality air-conditioned express service with luggage racks and stops throughout the Old Quarter.",
+        "duration": {
+          "max_minutes": 60,
+          "min_minutes": 45
+        },
+        "direction": "from_airport",
+        "source_url": "https://transerco.com.vn",
+        "booking_url": null,
+        "best_for_label": "Solo travelers and budget-conscious visitors",
+        "estimated_price": {
+          "max": 45000,
+          "min": 45000,
+          "currency": "VND"
+        },
+        "luggage_summary": "Dedicated spacious luggage shelving",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Hanoi Old Quarter & Hoan Kiem",
+        "accessibility_summary": "Low-floor boarding accessible for wheelchairs",
+        "operating_hours_summary": "06:15–22:00 daily (every 45 mins)",
+        "pickup_location_summary": "T1 Domestic (Lane 2) and T2 International (Column 1–2 arrival curb)"
+      },
+      {
+        "name": "GrabCar / Official Airport Taxi",
+        "type": "taxi",
+        "summary": "Pre-booked app rides or reputable metered taxi fleets (Mai Linh, Taxi Group) via Vo Nguyen Giap expressway.",
+        "duration": {
+          "max_minutes": 50,
+          "min_minutes": 35
+        },
+        "direction": "from_airport",
+        "source_url": null,
+        "booking_url": null,
+        "best_for_label": "Families, couples, and late-night arrivals",
+        "estimated_price": {
+          "max": 350000,
+          "min": 250000,
+          "currency": "VND"
+        },
+        "luggage_summary": "Standard 4-seat sedan or 7-seat SUV trunk",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Door-to-door (Central Hanoi)",
+        "accessibility_summary": null,
+        "operating_hours_summary": "24 hours daily",
+        "pickup_location_summary": "Outer arrival pickup lanes B and C"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "4G/5G Tourist SIM Cards",
+        "summary": "Viettel and Vinaphone official counters at T2 arrivals lobby offering prepaid high-speed data SIMs.",
+        "category": "Connectivity"
+      },
+      {
+        "name": "ATMs & Foreign Exchange",
+        "summary": "Vietcombank, BIDV, and Agribank ATMs available on the ground floors of both terminals.",
+        "category": "Finance"
+      },
+      {
+        "name": "Free High-Speed Wi-Fi",
+        "summary": "Complimentary 'NoiBai Airport Free Wi-Fi' available across domestic and international concourses.",
+        "category": "Comfort"
+      }
+    ],
+    "orientation": {
+      "intro": "Noi Bai International Airport (HAN) is the gateway to Hanoi and Northern Vietnam, situated 28 km north of the city centre.",
+      "summary": "Operating two distinct passenger terminals — Domestic (T1) and International (T2) — connected by a regular free shuttle bus.",
+      "terminal_count": 2,
+      "city_distance_km": 28
+    },
+    "quick_answers": {
+      "terminal_count": 2,
+      "city_distance_km": 28,
+      "default_transport": {
+        "name": "Express Bus 86 / Grab Taxi",
+        "estimated_price": {
+          "max": 350000,
+          "min": 45000,
+          "currency": "VND"
+        },
+        "typical_minutes": {
+          "max": 60,
+          "min": 40
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/hanoi",
+            "anchor_text": "Flights from Hanoi"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/hanoi-to-singapore",
+            "anchor_text": "Flights to Singapore (SIN)"
+          },
+          {
+            "path": "/flights/hanoi-to-london",
+            "anchor_text": "Flights to London (LHR)"
+          }
+        ],
+        "cluster": "routes"
+      }
+    ]
+  }
+}

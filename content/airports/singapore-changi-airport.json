@@ -1,0 +1,252 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "SIN",
+  "slug": "singapore-changi-airport",
+  "name": "Singapore Changi Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Singapore Changi Airport (SIN) Guide",
+      "title": "SIN Airport Guide: Singapore Changi Terminals & Transit | Tripways",
+      "subheadline": "World-class transit hub: terminals, Jewel, Skytrain, and passenger connections",
+      "meta_description": "Complete passenger transit and terminal guide for Singapore Changi Airport (SIN). Includes MRT transport, Jewel access, lounges, and transfer tips."
+    },
+    "faqs": [
+      {
+        "answer": "Terminals 1, 2, and 3 are connected both airside and landside by the free Changi Skytrain (05:00 to 02:30) and pedestrian walkways. Terminal 4 connects to T2 via free shuttle buses running 24/7.",
+        "question": "How do I transfer between terminals at Singapore Changi?"
+      },
+      {
+        "answer": "Jewel is located landside outside immigration. To visit Jewel during a transit, you must clear Singapore immigration with valid entry eligibility and re-enter through departure security.",
+        "question": "Can transit passengers visit Jewel Changi Airport?"
+      },
+      {
+        "answer": "The MRT train from Changi Airport station (under T2/T3) costs approximately 2.00 to 2.50 SGD and takes 35 minutes to reach central Singapore.",
+        "question": "What is the cheapest way to reach downtown Singapore from Changi?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "Submit the electronic SG Arrival Card (SGAC) with health declaration online within 3 days before arrival. Eligible passport holders from most countries can use the automated biometric clearance lanes directly.",
+          "title": "1. Electronic SG Arrival Card & Automated Clearance",
+          "audience": "international"
+        },
+        {
+          "body": "Extensive duty-free shopping is accessible airside before passing immigration. After passport control, proceed to the baggage carousels in the ground arrival hall.",
+          "title": "2. Airside Duty-Free & Baggage Reclaim",
+          "audience": "all"
+        },
+        {
+          "body": "Jewel Changi Airport is connected to Terminal 1 arrivals hall and via pedestrian air-conditioned bridges from Terminals 2 and 3. MRT train stations are located in the basements of T2 and T3.",
+          "title": "3. Ground Transport & Jewel Changi Access",
+          "audience": "all"
+        }
+      ],
+      "summary": "Arrival procedures, electronic SG Arrival Card verification, and Jewel access."
+    },
+    "lounges": [
+      {
+        "name": "SilverKris Lounge",
+        "amenities": [
+          "shower_suites",
+          "fine_dining_buffet",
+          "barista_coffee",
+          "private_nap_pods",
+          "fast_wifi"
+        ],
+        "source_url": "https://singaporeair.com",
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Singapore Airlines and Star Alliance First & Business Class passengers",
+        "estimated_price": null,
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Terminal 2 and Terminal 3 Airside, 3rd Floor",
+        "operating_hours_summary": "24 hours daily"
+      },
+      {
+        "name": "SATS Premier Lounge",
+        "amenities": [
+          "buffet",
+          "showers",
+          "massage_chairs",
+          "workstations"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, DragonPass, LoungeKey, and walk-in pass",
+        "estimated_price": {
+          "max": 55,
+          "min": 45,
+          "currency": "SGD"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Airside Terminals 1, 2, and 3",
+        "operating_hours_summary": "24 hours daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "All foreign travelers must submit the official SG Arrival Card online via ICA Singapore website or MyICA mobile app within 3 days prior to landing.",
+        "title": "Mandatory SG Arrival Card (SGAC)"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "Passengers flying on participating airlines can check in and drop luggage at the Jewel Early Check-in Lounge up to 24 hours prior to scheduled departure.",
+          "title": "1. Early Check-in at Jewel Lounge",
+          "audience": "all"
+        },
+        {
+          "body": "Departure passport control uses automated facial recognition gates. Terminal concourses feature butterfly gardens, rooftop pools, and transit lounges.",
+          "title": "2. Centralized Automated Immigration",
+          "audience": "all"
+        },
+        {
+          "body": "Important note: In Terminals 1, 2, and 3, security screening takes place directly at the individual boarding gate. Arrive at your gate at least 45 minutes before departure.",
+          "title": "3. Gate-Level Security Screening",
+          "audience": "all"
+        }
+      ],
+      "summary": "Early check-in, automated bag drop, and gate-level security screening."
+    },
+    "terminals": [
+      {
+        "code": "T1",
+        "name": "Terminal 1 (Scoot, Emirates, British Airways, Japan Airlines)",
+        "status": "active"
+      },
+      {
+        "code": "T2",
+        "name": "Terminal 2 (Singapore Airlines SE/S.Asia, ANA, Lufthansa, Swiss)",
+        "status": "active"
+      },
+      {
+        "code": "T3",
+        "name": "Terminal 3 (Singapore Airlines Europe/Americas/Oceania, Qatar Airways)",
+        "status": "active"
+      },
+      {
+        "code": "T4",
+        "name": "Terminal 4 (AirAsia, Cathay Pacific, Vietjet, Korean Air)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "SMRT East-West Line (Changi Airport MRT)",
+        "type": "train",
+        "summary": "Affordable and punctual rapid transit connecting Changi directly to city center via Tanah Merah interchange.",
+        "duration": {
+          "max_minutes": 45,
+          "min_minutes": 32
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.smrt.com.sg",
+        "booking_url": null,
+        "best_for_label": "Solo travelers and commuters",
+        "estimated_price": {
+          "max": 3,
+          "min": 2,
+          "currency": "SGD"
+        },
+        "luggage_summary": "Standard metro carriage space",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Downtown Singapore / Marina Bay",
+        "accessibility_summary": "Full step-free elevator and barrier-free access",
+        "operating_hours_summary": "05:31–23:18 Monday–Saturday, 05:59–23:18 Sundays",
+        "pickup_location_summary": "Basement 2, between Terminals 2 and 3"
+      },
+      {
+        "name": "GrabCar / Metered Airport Taxi",
+        "type": "taxi",
+        "summary": "Official metered taxi stands and ride-hailing pick-up bays at arrival levels of all terminals.",
+        "duration": {
+          "max_minutes": 30,
+          "min_minutes": 20
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.changiairport.com",
+        "booking_url": null,
+        "best_for_label": "Families with children, couples, and heavy luggage",
+        "estimated_price": {
+          "max": 38,
+          "min": 20,
+          "currency": "SGD"
+        },
+        "luggage_summary": "Full sedan or maxi-cab capacity",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Any Singapore Destination (Door-to-door)",
+        "accessibility_summary": null,
+        "operating_hours_summary": "24 hours daily",
+        "pickup_location_summary": "Arrival hall taxi stands (Doors 1-4) or app ride bays"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Jewel Changi Rain Vortex",
+        "summary": "World's tallest indoor waterfall (40m) surrounded by a four-story lush indoor forest canopy.",
+        "category": "Leisure"
+      },
+      {
+        "name": "High-Speed WiFi & Power Stations",
+        "summary": "Free high-speed WiFi (#WiFi@Changi) and over 1,500 USB/AC charging stations throughout all terminals.",
+        "category": "Connectivity"
+      },
+      {
+        "name": "Complimentary Singapore City Tour",
+        "summary": "Free 2.5-hour guided city tours available for transit passengers with layovers of 5.5 hours or more.",
+        "category": "Transit"
+      }
+    ],
+    "orientation": {
+      "intro": "Singapore Changi Airport (SIN) consistently ranks among the world's finest airports, located 20 km east of downtown Singapore.",
+      "summary": "With four world-class passenger terminals and the Jewel lifestyle complex, Changi serves over 65 million travelers annually with seamless inter-terminal transit.",
+      "terminal_count": 4,
+      "city_distance_km": 20
+    },
+    "quick_answers": {
+      "terminal_count": 4,
+      "city_distance_km": 20,
+      "default_transport": {
+        "name": "MRT East-West Line / Grab Taxi",
+        "estimated_price": {
+          "max": 35,
+          "min": 2,
+          "currency": "SGD"
+        },
+        "typical_minutes": {
+          "max": 45,
+          "min": 25
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/singapore",
+            "anchor_text": "Flights from Singapore"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/singapore-to-london",
+            "anchor_text": "Flights to London (LHR/LGW)"
+          },
+          {
+            "path": "/flights/hanoi-to-singapore",
+            "anchor_text": "Flights to Hanoi (HAN)"
+          }
+        ],
+        "cluster": "routes"
+      }
+    ]
+  }
+}

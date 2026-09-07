@@ -1,0 +1,60 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "ho-chi-minh-city-to-hanoi",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Ho Chi Minh City to Hanoi",
+      "intro": "The Ho Chi Minh City to Hanoi air corridor ranks among the world's top five busiest domestic routes, with over 50 daily flights connecting Vietnam's northern and southern metropolises in roughly 2 hours.",
+      "title": "Ho Chi Minh City to Hanoi Flights: Schedules & Fares | Tripways",
+      "subheadline": "Compare hourly direct flights on Vietnam's busiest domestic air corridor",
+      "meta_description": "Compare daily direct flights between Ho Chi Minh City (SGN) and Hanoi (HAN). View hourly departures, flight times, and airline options."
+    },
+    "faqs": [
+      {
+        "answer": "Direct flights take approximately 2 hours and 10 minutes.",
+        "question": "How long is the flight from Ho Chi Minh City to Hanoi?"
+      },
+      {
+        "answer": "There are more than 50 scheduled daily flights across all major Vietnamese carriers.",
+        "question": "How many flights operate daily between SGN and HAN?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Nonstop flights take approximately 2 hours to 2 hours 15 minutes.",
+        "type": "duration",
+        "title": "Flight Duration"
+      },
+      {
+        "body": "1,160 km (721 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Vietnam Airlines, Vietjet Air, Bamboo Airways, and Vietravel Airlines.",
+        "type": "airlines",
+        "title": "Operating Airlines"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Vietnam Airlines operates high-frequency wide-body flights (Airbus A350 and Boeing 787) with full meal service and baggage. Vietjet Air provides cost-effective hourly departures throughout the day and evening.",
+        "type": "comparison",
+        "heading": "Airline Choices: Full Service vs Budget"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/ho-chi-minh-city",
+            "anchor_text": "Flights from Ho Chi Minh City"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

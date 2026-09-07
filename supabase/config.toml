@@ -23,6 +23,7 @@ sql_paths = [
   "./seed/flight_routing_fixture.sql",
   "./seed/ourairports_source.sql",
   "./seed/travelpayouts_source.sql",
+  "./seed/editorial_content.sql",
 ]
 
 [realtime]

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "singapore-to-london",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Singapore to London",
+      "intro": "The Singapore to London air route is one of global aviation's premier long-haul corridors, spanning 10,885 km with direct flight times averaging 13 to 14 hours.",
+      "title": "Singapore to London Flights: Nonstop Schedules & Airlines | Tripways",
+      "subheadline": "Compare direct nonstop flights and competitive 1-stop options between SIN and LON",
+      "meta_description": "Compare direct flights from Singapore Changi (SIN) to London Heathrow (LHR) and Gatwick (LGW). View flight times, airlines, and transit insights."
+    },
+    "faqs": [
+      {
+        "answer": "Singapore Airlines and British Airways provide daily nonstop flights between Singapore Changi (SIN) and London Heathrow (LHR). Singapore Airlines also operates direct flights to London Gatwick (LGW).",
+        "question": "Which airlines operate direct flights from Singapore to London?"
+      },
+      {
+        "answer": "Direct flights take roughly 13 hours and 30 minutes westbound, and around 12 hours and 50 minutes on the return eastbound leg due to jet stream tailwinds.",
+        "question": "How long does a direct flight from Singapore to London take?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Direct flights take approximately 13 hours 40 minutes heading westbound and 12 hours 50 minutes eastbound.",
+        "type": "duration",
+        "title": "Nonstop Duration"
+      },
+      {
+        "body": "The flight distance between Singapore Changi (SIN) and London Heathrow (LHR) is 10,885 km (6,764 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Singapore Airlines (flying to LHR and LGW) and British Airways (flying to LHR) operate daily nonstop wide-body services.",
+        "type": "airlines",
+        "title": "Nonstop Airlines"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Direct nonstop flights save 3 to 6 hours of journey time. One-stop connections via Middle Eastern hubs such as Doha (Qatar Airways) or Dubai (Emirates) frequently provide competitive pricing and break up the 14-hour journey.",
+        "type": "comparison",
+        "heading": "Direct vs 1-Stop Connecting Options"
+      },
+      {
+        "body": "Heathrow provides express connectivity via the Elizabeth Line and Heathrow Express straight into Central London. Gatwick offers the Gatwick Express to Victoria Station, serving southern London destinations.",
+        "type": "arrival_guide",
+        "heading": "Arriving in London: Heathrow (LHR) vs Gatwick (LGW)"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/singapore",
+            "anchor_text": "Flights from Singapore"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/airports/singapore-changi-sin",
+            "anchor_text": "Singapore Changi Airport Guide"
+          },
+          {
+            "path": "/airports/heathrow-lhr",
+            "anchor_text": "Heathrow Airport Guide"
+          }
+        ],
+        "cluster": "airports"
+      }
+    ]
+  }
+}

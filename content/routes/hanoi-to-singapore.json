@@ -1,0 +1,86 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "hanoi-to-singapore",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Hanoi to Singapore",
+      "intro": "Direct flights from Hanoi to Singapore bridge Northern Vietnam with Southeast Asia's global financial hub in approximately 3 hours and 30 minutes across a flight distance of 2,207 km.",
+      "title": "Hanoi to Singapore Flights: Direct Schedules & Airlines | Tripways",
+      "subheadline": "Compare daily direct flight schedules and airlines between HAN and SIN",
+      "meta_description": "Compare daily direct and 1-stop flights from Hanoi (HAN) to Singapore (SIN). View flight times, operating carriers, and transit details."
+    },
+    "faqs": [
+      {
+        "answer": "Direct nonstop flights take roughly 3 hours and 30 minutes. Connecting flights with layovers in Bangkok or Ho Chi Minh City generally take 6 hours or longer.",
+        "question": "How long is the nonstop flight from Hanoi to Singapore?"
+      },
+      {
+        "answer": "No visa is required for Vietnamese passport holders entering Singapore for tourism stays up to 30 days. You must possess a passport valid for at least 6 months and a submitted SG Arrival Card.",
+        "question": "Do Vietnamese citizens need a visa to travel to Singapore?"
+      },
+      {
+        "answer": "Departures leave from Hanoi Noi Bai Terminal 2 (International). Arrivals at Singapore Changi land at Terminals 1, 2, or 3 depending on the operating airline.",
+        "question": "Which terminals at Hanoi and Singapore handle these flights?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Nonstop flights average 3 hours 25 minutes to 3 hours 40 minutes southbound.",
+        "type": "duration",
+        "title": "Flight Duration"
+      },
+      {
+        "body": "The direct flight distance between Noi Bai (HAN) and Singapore Changi (SIN) is 2,207 km (1,371 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Operated nonstop by Singapore Airlines, Vietnam Airlines, and budget carrier Scoot.",
+        "type": "airlines",
+        "title": "Direct Operating Carriers"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Singapore Airlines and Vietnam Airlines operate daily wide-body and modern narrow-body aircraft featuring complimentary hot meals, checked baggage allowance, and seatback entertainment. Travelers prioritizing cost efficiency can choose Scoot, with à la carte baggage and seat selection.",
+        "type": "comparison",
+        "heading": "Airlines: Full-Service vs Low-Cost Comparison"
+      },
+      {
+        "body": "Flights from Hanoi disembark at Terminal 1 (Scoot) or Terminal 2/3 (Singapore Airlines, Vietnam Airlines). Ensure you submit the mandatory SG Arrival Card (SGAC) online within 3 days prior to landing.",
+        "type": "arrival_guide",
+        "heading": "Arriving at Singapore Changi (SIN)"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/hanoi",
+            "anchor_text": "Flights from Hanoi"
+          },
+          {
+            "path": "/flights-from/singapore",
+            "anchor_text": "Flights from Singapore"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/airports/noi-bai-han",
+            "anchor_text": "Noi Bai Airport Guide (HAN)"
+          },
+          {
+            "path": "/airports/singapore-changi-sin",
+            "anchor_text": "Singapore Changi Guide (SIN)"
+          }
+        ],
+        "cluster": "airports"
+      }
+    ]
+  }
+}

@@ -1,0 +1,179 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "HND",
+  "slug": "haneda-airport",
+  "name": "Haneda Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Tokyo Haneda Airport (HND) Guide",
+      "title": "HND Airport Guide: Tokyo Haneda Terminals & Transport | Tripways",
+      "subheadline": "Tokyo's downtown airport: terminals, Tokyo Monorail, Keikyu Line, and transit",
+      "meta_description": "Complete passenger guide for Tokyo Haneda Airport (HND). Covers Tokyo Monorail, Keikyu Line, Terminal 3 international transit, and lounges."
+    },
+    "faqs": [
+      {
+        "answer": "Tokyo Monorail reaches Hamamatsucho on the Yamanote line in 13 minutes, while the Keikyu Line reaches Shinagawa in 11 minutes.",
+        "question": "How quickly can I get to central Tokyo from Haneda Airport?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "International arrivals land at Terminal 3 (or Terminal 2 International Concourse). Pre-fill immigration and customs forms on Visit Japan Web to clear electronic gates swiftly.",
+          "title": "1. Immigration & Visit Japan Web QR Code",
+          "audience": "international"
+        },
+        {
+          "body": "Collect luggage on the 2nd Floor. Train ticket gates for Tokyo Monorail and Keikyu Line are situated immediately past the customs exit.",
+          "title": "2. Baggage & Rail Access",
+          "audience": "all"
+        }
+      ],
+      "summary": "Visit Japan Web clearance, customs, and train stations at Terminal 3."
+    },
+    "lounges": [
+      {
+        "name": "TIAT Lounge",
+        "amenities": [
+          "buffet",
+          "showers",
+          "japanese_sake",
+          "wifi"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, LoungeKey, and select credit cards",
+        "estimated_price": null,
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Terminal 3 Airside, 4th Floor near Gate 114",
+        "operating_hours_summary": "24 hours daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "Bright green and white free shuttle buses run continuously between Terminals 1, 2, and 3 outside the arrival curb every 4 minutes.",
+        "title": "Free Terminal Shuttle Buses"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "Terminal 1 handles domestic JAL and Skymark. Terminal 2 handles domestic ANA and select ANA international departures. Terminal 3 handles all foreign carriers and major international flights.",
+          "title": "1. Terminal Assignment",
+          "audience": "all"
+        }
+      ],
+      "summary": "Terminal verification and departure security procedures."
+    },
+    "terminals": [
+      {
+        "code": "T1",
+        "name": "Terminal 1 (JAL Domestic, Skymark, StarFlyer)",
+        "status": "active"
+      },
+      {
+        "code": "T2",
+        "name": "Terminal 2 (ANA Domestic & selected International)",
+        "status": "active"
+      },
+      {
+        "code": "T3",
+        "name": "Terminal 3 (International Flag Carriers)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Tokyo Monorail (Haneda Express)",
+        "type": "train",
+        "summary": "Scenic elevated monorail whisking travelers directly to the Yamanote Line loop in 13 minutes.",
+        "duration": {
+          "max_minutes": 18,
+          "min_minutes": 13
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.tokyo-monorail.co.jp",
+        "booking_url": null,
+        "best_for_label": "Fast connection to Tokyo Station, Ueno, and Akihabara",
+        "estimated_price": {
+          "max": 500,
+          "min": 500,
+          "currency": "JPY"
+        },
+        "luggage_summary": "Luggage bays in each car",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Hamamatsucho Station (JR Yamanote Line Interchange)",
+        "accessibility_summary": "Full elevator access",
+        "operating_hours_summary": "05:15–00:10 daily (every 4–5 mins)",
+        "pickup_location_summary": "Monorail stations at Terminals 1, 2, and 3"
+      },
+      {
+        "name": "Keikyu Airport Line",
+        "type": "train",
+        "summary": "Rapid electric train connecting Haneda directly to Shinagawa (Shinkansen bullet train hub) and through to Ginza and Asakusa.",
+        "duration": {
+          "max_minutes": 20,
+          "min_minutes": 11
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.keikyu.co.jp",
+        "booking_url": null,
+        "best_for_label": "Best for Shibuya, Shinjuku, and Shinkansen transfers",
+        "estimated_price": {
+          "max": 330,
+          "min": 330,
+          "currency": "JPY"
+        },
+        "luggage_summary": "Standard metro seating",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Shinagawa Station & Asakusa Subway Line",
+        "accessibility_summary": "Full elevator access",
+        "operating_hours_summary": "05:25–00:00 daily (every 5–10 mins)",
+        "pickup_location_summary": "Keikyu stations at Terminals 1/2 and Terminal 3"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Edo Ko-ji Shopping Street & Observation Deck",
+        "summary": "Traditional Edo-period replica streetscape on Terminal 3 4th Floor with authentic ramen, sushi, and rooftop flight viewing.",
+        "category": "Leisure"
+      }
+    ],
+    "orientation": {
+      "intro": "Tokyo Haneda Airport (HND) is situated just 15 km south of downtown Tokyo in Ota City.",
+      "summary": "Consistently recognized as one of the cleanest and most punctual airports in the world, featuring three terminals connected by regular free shuttle buses.",
+      "terminal_count": 3,
+      "city_distance_km": 15
+    },
+    "quick_answers": {
+      "terminal_count": 3,
+      "city_distance_km": 15,
+      "default_transport": {
+        "name": "Tokyo Monorail / Keikyu Airport Line",
+        "estimated_price": {
+          "max": 500,
+          "min": 330,
+          "currency": "JPY"
+        },
+        "typical_minutes": {
+          "max": 25,
+          "min": 13
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/tokyo",
+            "anchor_text": "Flights from Tokyo"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "city",
+  "slug": "hanoi",
+  "name": "Hanoi",
+  "iata": "HAN",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Direct Flights from Hanoi",
+      "intro": "Hanoi is Northern Vietnam's premier aviation gateway. From Noi Bai International Airport (HAN), travelers can connect directly to over 40 domestic and international destinations across East Asia, Southeast Asia, and key European cities.",
+      "title": "Direct Flights from Hanoi: Nonstop Routes & Airlines | Tripways",
+      "subheadline": "Explore nonstop routes from Noi Bai International Airport across Asia and Europe",
+      "meta_description": "Discover all nonstop flight routes departing Hanoi (HAN). Compare airlines, flight times, destinations across Asia and Europe, and departure tips."
+    },
+    "faqs": [
+      {
+        "answer": "All commercial passenger flights in Hanoi operate via Noi Bai International Airport (HAN), situated 28 km north of the city centre. Domestic departures operate from Terminal 1, while international departures use Terminal 2.",
+        "question": "Which airport in Hanoi serves scheduled commercial flights?"
+      },
+      {
+        "answer": "Flag carrier Vietnam Airlines and budget operator Vietjet Air maintain the largest international networks out of Hanoi, supplemented by regional carriers including Singapore Airlines, Thai Airways, All Nippon Airways, and Korean Air.",
+        "question": "Which airlines operate the most international routes from Hanoi?"
+      },
+      {
+        "answer": "The most frequent international routes from Hanoi include Singapore (SIN), Bangkok (BKK), Tokyo (NRT/HND), Seoul (ICN), and Taipei (TPE), along with direct long-haul flights to London Heathrow, Paris CDG, and Frankfurt.",
+        "question": "What are the most popular direct international destinations from Hanoi?"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/airports/noi-bai-han",
+            "anchor_text": "Noi Bai Airport Guide (HAN)"
+          }
+        ],
+        "cluster": "airports"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/hanoi-to-singapore",
+            "anchor_text": "Flights to Singapore"
+          },
+          {
+            "path": "/flights/hanoi-to-london",
+            "anchor_text": "Flights to London"
+          },
+          {
+            "path": "/flights/ho-chi-minh-city-to-hanoi",
+            "anchor_text": "Flights to Ho Chi Minh City"
+          }
+        ],
+        "cluster": "popular_routes"
+      }
+    ]
+  }
+}

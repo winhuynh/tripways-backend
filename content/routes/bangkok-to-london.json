@@ -1,0 +1,60 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "bangkok-to-london",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Bangkok to London",
+      "intro": "Flying from Bangkok to London connects Thailand's vibrant capital with the United Kingdom across 9,580 km with nonstop flight durations around 12 to 13 hours.",
+      "title": "Bangkok to London Flights: Nonstop Routes & Airlines | Tripways",
+      "subheadline": "Compare nonstop flights and 1-stop options from BKK to London",
+      "meta_description": "Compare direct and 1-stop flights from Bangkok (BKK) to London Heathrow (LHR) and Gatwick (LGW). View schedules and airline ratings."
+    },
+    "faqs": [
+      {
+        "answer": "Thai Airways and EVA Air operate direct nonstop flights from Bangkok Suvarnabhumi (BKK) to London Heathrow (LHR).",
+        "question": "Which airlines fly direct from Bangkok to London?"
+      },
+      {
+        "answer": "The fastest nonstop flight takes roughly 12 hours and 35 minutes.",
+        "question": "What is the fastest flight time between Bangkok and London?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Nonstop flights take approximately 12 hours 40 minutes westbound.",
+        "type": "duration",
+        "title": "Direct Flight Time"
+      },
+      {
+        "body": "9,580 km (5,953 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Thai Airways and EVA Air operate daily direct nonstop flights to London Heathrow (LHR).",
+        "type": "airlines",
+        "title": "Operating Airlines"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Direct flights on Thai Airways and EVA Air save 4+ hours of travel time. One-stop connections via Qatar Airways (Doha) or Emirates (Dubai) frequently offer substantial price discounts and modern wide-body aircraft comfort.",
+        "type": "comparison",
+        "heading": "Nonstop vs 1-Stop Connecting Routes"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/bangkok",
+            "anchor_text": "Flights from Bangkok"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

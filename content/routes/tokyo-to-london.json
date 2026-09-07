@@ -1,0 +1,56 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "tokyo-to-london",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Tokyo to London",
+      "intro": "The Tokyo to London route is a historic intercontinental link connecting Japan with the United Kingdom across 9,585 km with nonstop flight times of 14 to 15 hours.",
+      "title": "Tokyo to London Flights: Nonstop Schedules & Airlines | Tripways",
+      "subheadline": "Compare direct nonstop flights and connecting schedules from Tokyo to London",
+      "meta_description": "Compare nonstop flights from Tokyo (HND/NRT) to London Heathrow (LHR). View flight times, airlines, and routings."
+    },
+    "faqs": [
+      {
+        "answer": "Direct flights currently take roughly 14 to 15 hours.",
+        "question": "How long is the nonstop flight from Tokyo to London?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Direct flights take approximately 14 hours 30 minutes to 15 hours.",
+        "type": "duration",
+        "title": "Flight Duration"
+      },
+      {
+        "body": "9,585 km (5,956 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "British Airways, Japan Airlines (JAL), and All Nippon Airways (ANA).",
+        "type": "airlines",
+        "title": "Direct Carriers"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Direct flights depart from Tokyo Haneda (HND) to London Heathrow (LHR) operated by JAL, ANA, and British Airways. Flight times reflect modern polar or southern route corridors.",
+        "type": "comparison",
+        "heading": "Flight Routings & Airlines"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/tokyo",
+            "anchor_text": "Flights from Tokyo"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

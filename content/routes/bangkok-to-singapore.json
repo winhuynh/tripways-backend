@@ -1,0 +1,60 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "bangkok-to-singapore",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Bangkok to Singapore",
+      "intro": "Connecting Thailand's capital with Singapore spans 1,418 km with flight times under two and a half hours, making it one of the busiest trunk routes in ASEAN.",
+      "title": "Bangkok to Singapore Flights: Direct Schedules & Fares | Tripways",
+      "subheadline": "Compare daily direct flight options from BKK and DMK to SIN",
+      "meta_description": "Compare daily nonstop flights between Bangkok (BKK/DMK) and Singapore (SIN). View airlines, flight times, and airport details."
+    },
+    "faqs": [
+      {
+        "answer": "Direct flights take approximately 2 hours and 25 minutes.",
+        "question": "How long is the flight from Bangkok to Singapore?"
+      },
+      {
+        "answer": "Suvarnabhumi Airport (BKK) operates the highest frequency of daily flights to Singapore.",
+        "question": "Which airport in Bangkok has the most flights to Singapore?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Nonstop flights average 2 hours 20 minutes to 2 hours 35 minutes.",
+        "type": "duration",
+        "title": "Flight Duration"
+      },
+      {
+        "body": "1,418 km (881 miles).",
+        "type": "distance",
+        "title": "Flight Distance"
+      },
+      {
+        "body": "Singapore Airlines, Thai Airways, Scoot, and Thai AirAsia.",
+        "type": "airlines",
+        "title": "Direct Carriers"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Full-service carriers (Singapore Airlines, Thai Airways) depart from Suvarnabhumi (BKK). Budget airlines including Thai AirAsia operate primarily out of Don Mueang (DMK), while Scoot operates out of BKK.",
+        "type": "comparison",
+        "heading": "Departing from Suvarnabhumi (BKK) vs Don Mueang (DMK)"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/bangkok",
+            "anchor_text": "Flights from Bangkok"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

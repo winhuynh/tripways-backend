@@ -1,0 +1,56 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "bangkok-to-tokyo",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Bangkok to Tokyo",
+      "intro": "The Bangkok to Tokyo flight corridor connects two of Asia's most dynamic capital cities, covering 4,600 km with average nonstop flight times of 5 hours 45 minutes to 6 hours 15 minutes.",
+      "title": "Bangkok to Tokyo Flights: Direct Routes & Airlines | Tripways",
+      "subheadline": "Compare direct flights from Bangkok to Haneda (HND) and Narita (NRT)",
+      "meta_description": "Find direct flights from Bangkok (BKK/DMK) to Tokyo (HND/NRT). Compare flight times, airlines, and airport options."
+    },
+    "faqs": [
+      {
+        "answer": "Nonstop flights take approximately 6 hours heading eastbound.",
+        "question": "How long is the flight from Bangkok to Tokyo?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Direct flights take approximately 5 hours 45 minutes to 6 hours 15 minutes.",
+        "type": "duration",
+        "title": "Flight Duration"
+      },
+      {
+        "body": "4,580 km (2,846 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "Thai Airways, Japan Airlines (JAL), All Nippon Airways (ANA), Zipair, and Thai AirAsia X.",
+        "type": "airlines",
+        "title": "Direct Carriers"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Flights landing at Haneda Airport (HND) offer faster downtown access via Tokyo Monorail (15 mins). Flights landing at Narita (NRT) often provide lower fares via budget carriers like Zipair.",
+        "type": "comparison",
+        "heading": "Arriving at Haneda (HND) vs Narita (NRT)"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/bangkok",
+            "anchor_text": "Flights from Bangkok"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

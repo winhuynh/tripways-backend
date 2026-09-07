@@ -1,0 +1,2440 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "version": "1.0.0",
+  "locale": "en-GB",
+  "cities": [
+    {
+      "slug": "hanoi",
+      "iata": "HAN",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Hanoi",
+          "subheadline": "Explore nonstop routes from Noi Bai International Airport across Asia and Europe",
+          "title": "Direct Flights from Hanoi: Nonstop Routes & Airlines | Tripways",
+          "meta_description": "Discover all nonstop flight routes departing Hanoi (HAN). Compare airlines, flight times, destinations across Asia and Europe, and departure tips.",
+          "intro": "Hanoi is Northern Vietnam's premier aviation gateway. From Noi Bai International Airport (HAN), travelers can connect directly to over 40 domestic and international destinations across East Asia, Southeast Asia, and key European cities."
+        },
+        "faqs": [
+          {
+            "question": "Which airport in Hanoi serves scheduled commercial flights?",
+            "answer": "All commercial passenger flights in Hanoi operate via Noi Bai International Airport (HAN), situated 28 km north of the city centre. Domestic departures operate from Terminal 1, while international departures use Terminal 2."
+          },
+          {
+            "question": "Which airlines operate the most international routes from Hanoi?",
+            "answer": "Flag carrier Vietnam Airlines and budget operator Vietjet Air maintain the largest international networks out of Hanoi, supplemented by regional carriers including Singapore Airlines, Thai Airways, All Nippon Airways, and Korean Air."
+          },
+          {
+            "question": "What are the most popular direct international destinations from Hanoi?",
+            "answer": "The most frequent international routes from Hanoi include Singapore (SIN), Bangkok (BKK), Tokyo (NRT/HND), Seoul (ICN), and Taipei (TPE), along with direct long-haul flights to London Heathrow, Paris CDG, and Frankfurt."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Noi Bai Airport Guide (HAN)",
+                "path": "/airports/noi-bai-han"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore",
+                "path": "/flights/hanoi-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/hanoi-to-london"
+              },
+              {
+                "anchor_text": "Flights to Ho Chi Minh City",
+                "path": "/flights/ho-chi-minh-city-to-hanoi"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "singapore",
+      "iata": "SIN",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Singapore",
+          "subheadline": "Explore nonstop global routes from world-renowned Singapore Changi Airport",
+          "title": "Direct Flights from Singapore: Nonstop Routes & Airlines | Tripways",
+          "meta_description": "Discover all nonstop flight routes departing Singapore (SIN). Compare airlines, flight times, and destinations across Asia, Australia, Europe, and the Americas.",
+          "intro": "Singapore is one of the world's preeminent global aviation crossroads. Operating out of Singapore Changi Airport (SIN), passengers can access nonstop connections to more than 140 destinations across Southeast Asia, East Asia, Oceania, Europe, and North America."
+        },
+        "faqs": [
+          {
+            "question": "Which airport handles commercial passenger flights in Singapore?",
+            "answer": "Virtually all scheduled commercial passenger flights depart from Singapore Changi Airport (SIN). Seletar Airport (XSP) primarily handles turboprop flights to Malaysia and private aviation charters."
+          },
+          {
+            "question": "How early should I arrive at Singapore Changi Airport?",
+            "answer": "For international flights, plan to arrive 2 to 3 hours prior to departure. While automated check-in and luggage drop are fast, Terminals 1, 2, and 3 perform security screening at the individual boarding gate rather than a central checkpoint."
+          },
+          {
+            "question": "What is the longest nonstop flight departing from Singapore?",
+            "answer": "Singapore Airlines operates one of the world's longest commercial flights directly between Singapore Changi (SIN) and New York (JFK / Newark EWR), taking approximately 18 to 19 hours."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Singapore Changi Airport Guide (SIN)",
+                "path": "/airports/singapore-changi-sin"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Hanoi",
+                "path": "/flights/hanoi-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/singapore-to-london"
+              },
+              {
+                "anchor_text": "Flights to Ho Chi Minh City",
+                "path": "/flights/ho-chi-minh-city-to-singapore"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bangkok",
+      "iata": "BKK",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Bangkok",
+          "subheadline": "Explore nonstop connections from Suvarnabhumi (BKK) and Don Mueang (DMK)",
+          "title": "Direct Flights from Bangkok: Nonstop Routes & Airports | Tripways",
+          "meta_description": "Discover all nonstop flight routes departing Bangkok. Compare Suvarnabhumi (BKK) and Don Mueang (DMK), operating airlines, and flight durations.",
+          "intro": "Bangkok is mainland Southeast Asia's primary aviation crossroads, served by Suvarnabhumi Airport (BKK) for long-haul flag carriers and Don Mueang International Airport (DMK) primarily for regional low-cost routes."
+        },
+        "faqs": [
+          {
+            "question": "Which airport in Bangkok should I fly out of?",
+            "answer": "Choose Suvarnabhumi (BKK) for full-service international flights, long-haul connections, and Airport Rail Link train access. Choose Don Mueang (DMK) for regional low-cost carriers including AirAsia, Nok Air, and Lion Air."
+          },
+          {
+            "question": "How many direct destinations are reachable from Bangkok?",
+            "answer": "Bangkok offers direct nonstop flights to over 140 destinations worldwide, spanning ASEAN capital cities, East Asia, South Asia, Europe, and Australasia."
+          },
+          {
+            "question": "How much time is required to transfer between BKK and DMK?",
+            "answer": "Allow at least 3.5 to 4 hours between connecting flights. The driving distance between BKK and DMK is approximately 45 km, taking 50 to 90 minutes by expressway depending on traffic."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Suvarnabhumi Airport Guide (BKK)",
+                "path": "/airports/suvarnabhumi-bkk"
+              },
+              {
+                "anchor_text": "Don Mueang Airport Guide (DMK)",
+                "path": "/airports/don-mueang-dmk"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore",
+                "path": "/flights/bangkok-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to Tokyo",
+                "path": "/flights/bangkok-to-tokyo"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/bangkok-to-london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "london",
+      "iata": "LON",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from London",
+          "subheadline": "Explore nonstop global connections across six continents from London's airport network",
+          "title": "Direct Flights from London: Nonstop Routes & Airports | Tripways",
+          "meta_description": "Discover nonstop flights departing London. Compare Heathrow (LHR), Gatwick (LGW), flight times, and operating airlines.",
+          "intro": "London operates the world's busiest metropolitan airport system. Intercontinental services primarily depart from London Heathrow (LHR) and London Gatwick (LGW), offering direct routes across Europe, North America, Asia, and Africa."
+        },
+        "faqs": [
+          {
+            "question": "Which airport should I use when departing London?",
+            "answer": "London Heathrow (LHR) serves the majority of global flag carriers and long-haul connections. London Gatwick (LGW) combines major European routes with transatlantic and leisure long-haul services."
+          },
+          {
+            "question": "What is the fastest way to travel between Heathrow and central London?",
+            "answer": "The Heathrow Express connects Heathrow Terminals 2/3 directly to London Paddington in 15 minutes. The Elizabeth Line provides direct cross-London rail transit without transfers in 30 to 40 minutes."
+          },
+          {
+            "question": "How do I transfer between London Heathrow and Gatwick?",
+            "answer": "Direct National Express coach services run between Heathrow and Gatwick in roughly 65 to 80 minutes. Travelers should budget at least 3.5 to 4 hours between connecting flights."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Heathrow Airport Guide (LHR)",
+                "path": "/airports/heathrow-lhr"
+              },
+              {
+                "anchor_text": "Gatwick Airport Guide (LGW)",
+                "path": "/airports/gatwick-lgw"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore",
+                "path": "/flights/singapore-to-london"
+              },
+              {
+                "anchor_text": "Flights to Ho Chi Minh City",
+                "path": "/flights/london-to-ho-chi-minh-city"
+              },
+              {
+                "anchor_text": "Flights to Bangkok",
+                "path": "/flights/bangkok-to-london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tokyo",
+      "iata": "TYO",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Tokyo",
+          "subheadline": "Compare nonstop domestic and international routes from Haneda (HND) and Narita (NRT)",
+          "title": "Direct Flights from Tokyo: Nonstop Routes & Airports | Tripways",
+          "meta_description": "Discover all nonstop flight routes departing Tokyo. Compare downtown Haneda (HND) and international Narita (NRT), airlines, and flight schedules.",
+          "intro": "Tokyo is Japan's aviation nucleus, connected worldwide via downtown Tokyo Haneda Airport (HND) — just 15 km from the city centre — and Narita International Airport (NRT), Tokyo's dedicated long-haul intercontinental gateway."
+        },
+        "faqs": [
+          {
+            "question": "Is Haneda or Narita better for flights to and from Tokyo?",
+            "answer": "Haneda (HND) is significantly closer to downtown Tokyo, taking only 13 to 20 minutes by monorail or train. Narita (NRT) is 60 km east, taking 36 to 60 minutes via the Keisei Skyliner or JR Narita Express."
+          },
+          {
+            "question": "Which airlines operate major hubs in Tokyo?",
+            "answer": "Japan Airlines (JAL) and All Nippon Airways (ANA) operate extensive domestic and international hub networks across both Haneda and Narita airports."
+          },
+          {
+            "question": "How do I transfer between Haneda (HND) and Narita (NRT)?",
+            "answer": "Direct Airport Limousine buses connect Haneda and Narita terminals in 65 to 90 minutes. Direct Keisei-Keikyu Access Express trains connect both airports in roughly 90 minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Haneda Airport Guide (HND)",
+                "path": "/airports/haneda-hnd"
+              },
+              {
+                "anchor_text": "Narita Airport Guide (NRT)",
+                "path": "/airports/narita-nrt"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore",
+                "path": "/flights/tokyo-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/tokyo-to-london"
+              },
+              {
+                "anchor_text": "Flights to Bangkok",
+                "path": "/flights/bangkok-to-tokyo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ho-chi-minh-city",
+      "iata": "SGN",
+      "content": {
+        "seo": {
+          "h1": "Direct Flights from Ho Chi Minh City",
+          "subheadline": "Explore nonstop routes across Southeast Asia, East Asia, Europe, and Australia",
+          "title": "Direct Flights from Ho Chi Minh City: Nonstop Routes & Airlines | Tripways",
+          "meta_description": "Discover all nonstop and connecting flights departing from Ho Chi Minh City (SGN). Compare airlines, flight times, and live schedule data.",
+          "intro": "Ho Chi Minh City is Vietnam's primary economic engine and busiest aviation gateway. From Tan Son Nhat International Airport (SGN), passengers can connect directly to over 30 international destinations and every major domestic hub."
+        },
+        "faqs": [
+          {
+            "question": "Which airlines operate the most international flights from Ho Chi Minh City?",
+            "answer": "Vietnam Airlines and Vietjet Air operate the widest network of international routes, supplemented by regional carriers like Singapore Airlines, Thai Airways, and Cathay Pacific."
+          },
+          {
+            "question": "How early should I arrive at SGN for international departures?",
+            "answer": "It is strongly recommended to arrive at least 3 hours prior to scheduled departure due to immigration and security screening queues at Terminal 2."
+          },
+          {
+            "question": "What is the cheapest month to fly out of Ho Chi Minh City?",
+            "answer": "Fares are generally lowest during shoulder seasons in September to November and March to May, avoiding the peak Lunar New Year (Tet) travel period."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Tan Son Nhat Airport Guide (SGN)",
+                "path": "/airports/tan-son-nhat-sgn"
+              }
+            ]
+          },
+          {
+            "cluster": "popular_routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore",
+                "path": "/flights/ho-chi-minh-city-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London",
+                "path": "/flights/ho-chi-minh-city-to-london"
+              },
+              {
+                "anchor_text": "Flights to Hanoi",
+                "path": "/flights/ho-chi-minh-city-to-hanoi"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "airports": [
+    {
+      "iata": "HAN",
+      "slug": "noi-bai-han",
+      "content": {
+        "seo": {
+          "h1": "Noi Bai International Airport (HAN) Guide",
+          "subheadline": "Northern Vietnam's primary hub: terminals, transport, and departure advice",
+          "title": "HAN Airport Guide: Noi Bai Terminals & Transit | Tripways",
+          "meta_description": "Complete passenger guide for Hanoi Noi Bai Airport (HAN). Includes terminal transfers, express bus 86, taxi advice, and departure tips."
+        },
+        "orientation": {
+          "intro": "Noi Bai International Airport (HAN) is the gateway to Hanoi and Northern Vietnam, situated 28 km north of the city centre.",
+          "summary": "Operating two distinct passenger terminals — Domestic (T1) and International (T2) — connected by a regular free shuttle bus.",
+          "city_distance_km": 28,
+          "terminal_count": 2
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Express Bus 86 / Grab Taxi",
+            "typical_minutes": { "min": 40, "max": 60 },
+            "estimated_price": {
+              "min": 45000,
+              "max": 350000,
+              "currency": "VND"
+            }
+          },
+          "city_distance_km": 28,
+          "terminal_count": 2
+        },
+        "arrival": {
+          "summary": "Step-by-step arrival procedures for international and domestic arrivals at Noi Bai.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Immigration & Visa Verification",
+              "body": "International arrivals disembark at Terminal 2 2nd Floor. Follow signs to passport control. E-visa holders can use automated passport gates (Autogate) if pre-enrolled, or standard staffed booths."
+            },
+            {
+              "audience": "all",
+              "title": "2. Baggage Claim & Customs",
+              "body": "Baggage carousels are located on the Ground Floor. All international arriving bags must pass through customs security scanners before exiting to the arrival hall."
+            },
+            {
+              "audience": "all",
+              "title": "3. Ground Transport & Connectivity",
+              "body": "Official telecom kiosks (Viettel, Vinaphone) and licensed currency exchange counters line the exit lobby. Proceed outside to the designated taxi bays or Express Bus 86 pick-up point."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Check-in and departure guidance at Terminal 1 and Terminal 2.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Confirmation",
+              "body": "Confirm your terminal in advance: Domestic flights depart from T1; all international carriers depart from T2 3rd Floor."
+            },
+            {
+              "audience": "international",
+              "title": "2. Check-in & Security",
+              "body": "Check-in counters close 50 minutes prior to departure for domestic and 60 minutes for international. Security screening requires electronics and liquids under 100ml removed into separate trays."
+            },
+            {
+              "audience": "all",
+              "title": "3. Terminal Transfer Shuttle",
+              "body": "If connecting between T1 and T2, a free electric shuttle bus operates every 10–15 minutes from 06:00 to 23:30 from the curb outside arrival doors."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "bus",
+            "name": "Express Bus 86 (Noi Bai – Hanoi Railway Station)",
+            "destination_label": "Hanoi Old Quarter & Hoan Kiem",
+            "summary": "High-quality air-conditioned express service with luggage racks and stops throughout the Old Quarter.",
+            "duration": { "min_minutes": 45, "max_minutes": 60 },
+            "estimated_price": {
+              "min": 45000,
+              "max": 45000,
+              "currency": "VND"
+            },
+            "operating_hours_summary": "06:15–22:00 daily (every 45 mins)",
+            "pickup_location_summary": "T1 Domestic (Lane 2) and T2 International (Column 1–2 arrival curb)",
+            "best_for_label": "Solo travelers and budget-conscious visitors",
+            "luggage_summary": "Dedicated spacious luggage shelving",
+            "accessibility_summary": "Low-floor boarding accessible for wheelchairs",
+            "booking_url": null,
+            "source_url": "https://transerco.com.vn",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "taxi",
+            "name": "GrabCar / Official Airport Taxi",
+            "destination_label": "Door-to-door (Central Hanoi)",
+            "summary": "Pre-booked app rides or reputable metered taxi fleets (Mai Linh, Taxi Group) via Vo Nguyen Giap expressway.",
+            "duration": { "min_minutes": 35, "max_minutes": 50 },
+            "estimated_price": {
+              "min": 250000,
+              "max": 350000,
+              "currency": "VND"
+            },
+            "operating_hours_summary": "24 hours daily",
+            "pickup_location_summary": "Outer arrival pickup lanes B and C",
+            "best_for_label": "Families, couples, and late-night arrivals",
+            "luggage_summary": "Standard 4-seat sedan or 7-seat SUV trunk",
+            "accessibility_summary": null,
+            "booking_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Domestic Passenger Terminal (Vietnam Airlines, Vietjet, Bamboo)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "International Passenger Terminal (All foreign carriers & intl flights)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Connectivity",
+            "name": "4G/5G Tourist SIM Cards",
+            "summary": "Viettel and Vinaphone official counters at T2 arrivals lobby offering prepaid high-speed data SIMs."
+          },
+          {
+            "category": "Finance",
+            "name": "ATMs & Foreign Exchange",
+            "summary": "Vietcombank, BIDV, and Agribank ATMs available on the ground floors of both terminals."
+          },
+          {
+            "category": "Comfort",
+            "name": "Free High-Speed Wi-Fi",
+            "summary": "Complimentary 'NoiBai Airport Free Wi-Fi' available across domestic and international concourses."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "Song Hong Business Lounge",
+            "location_summary": "Terminal 2 Airside, 4th Floor near Gate 28",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, and walk-in entry pass",
+            "operating_hours_summary": "06:00–02:00 daily",
+            "amenities": [
+              "high_speed_wifi",
+              "hot_food_buffet",
+              "showers",
+              "massage_chairs",
+              "flight_monitors"
+            ],
+            "estimated_price": { "min": 35, "max": 40, "currency": "USD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "name": "Lotus Lounge (Vietnam Airlines)",
+            "location_summary": "T1 Domestic (3rd Floor) & T2 International (4th Floor)",
+            "location_type": "airside",
+            "access_summary": "SkyTeam Elite Plus, Lotusmiles Platinum/Gold, and Business Class passengers",
+            "operating_hours_summary": "04:30–23:00 daily",
+            "amenities": [
+              "wifi",
+              "vietnamese_buffet",
+              "quiet_zone",
+              "shower_suites"
+            ],
+            "estimated_price": null,
+            "affiliate_url": null,
+            "source_url": "https://vietnamairlines.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Avoid Unregistered Taxi Touts",
+            "body": "Decline offers from individuals soliciting rides inside the arrival hall. Only take metered taxis from the official outdoor queue or verified ride-hailing drivers."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How far is Noi Bai Airport from central Hanoi?",
+            "answer": "Noi Bai Airport is approximately 28 km north of Hanoi Old Quarter. Travel by taxi or bus typically takes 35 to 50 minutes via Vo Nguyen Giap expressway."
+          },
+          {
+            "question": "Is there a free transfer between Terminal 1 and Terminal 2?",
+            "answer": "Yes, an official free electric shuttle runs between T1 and T2 every 10 to 15 minutes between 06:00 and 23:30. The transit ride takes approximately 5 minutes."
+          },
+          {
+            "question": "Where do I board the Express Bus 86 at Noi Bai?",
+            "answer": "At Terminal 2 (International), Bus 86 stops at Column 1-2 on the Ground Floor arrival curb. At Terminal 1 (Domestic), it stops at Lane 2 outside the arrival doors."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Hanoi",
+                "path": "/flights-from/hanoi"
+              }
+            ]
+          },
+          {
+            "cluster": "routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore (SIN)",
+                "path": "/flights/hanoi-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to London (LHR)",
+                "path": "/flights/hanoi-to-london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "SIN",
+      "slug": "singapore-changi-sin",
+      "content": {
+        "seo": {
+          "h1": "Singapore Changi Airport (SIN) Guide",
+          "subheadline": "World-class transit hub: terminals, Jewel, Skytrain, and passenger connections",
+          "title": "SIN Airport Guide: Singapore Changi Terminals & Transit | Tripways",
+          "meta_description": "Complete passenger transit and terminal guide for Singapore Changi Airport (SIN). Includes MRT transport, Jewel access, lounges, and transfer tips."
+        },
+        "orientation": {
+          "intro": "Singapore Changi Airport (SIN) consistently ranks among the world's finest airports, located 20 km east of downtown Singapore.",
+          "summary": "With four world-class passenger terminals and the Jewel lifestyle complex, Changi serves over 65 million travelers annually with seamless inter-terminal transit.",
+          "city_distance_km": 20,
+          "terminal_count": 4
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "MRT East-West Line / Grab Taxi",
+            "typical_minutes": { "min": 25, "max": 45 },
+            "estimated_price": { "min": 2, "max": 35, "currency": "SGD" }
+          },
+          "city_distance_km": 20,
+          "terminal_count": 4
+        },
+        "arrival": {
+          "summary": "Arrival procedures, electronic SG Arrival Card verification, and Jewel access.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Electronic SG Arrival Card & Automated Clearance",
+              "body": "Submit the electronic SG Arrival Card (SGAC) with health declaration online within 3 days before arrival. Eligible passport holders from most countries can use the automated biometric clearance lanes directly."
+            },
+            {
+              "audience": "all",
+              "title": "2. Airside Duty-Free & Baggage Reclaim",
+              "body": "Extensive duty-free shopping is accessible airside before passing immigration. After passport control, proceed to the baggage carousels in the ground arrival hall."
+            },
+            {
+              "audience": "all",
+              "title": "3. Ground Transport & Jewel Changi Access",
+              "body": "Jewel Changi Airport is connected to Terminal 1 arrivals hall and via pedestrian air-conditioned bridges from Terminals 2 and 3. MRT train stations are located in the basements of T2 and T3."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Early check-in, automated bag drop, and gate-level security screening.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Early Check-in at Jewel Lounge",
+              "body": "Passengers flying on participating airlines can check in and drop luggage at the Jewel Early Check-in Lounge up to 24 hours prior to scheduled departure."
+            },
+            {
+              "audience": "all",
+              "title": "2. Centralized Automated Immigration",
+              "body": "Departure passport control uses automated facial recognition gates. Terminal concourses feature butterfly gardens, rooftop pools, and transit lounges."
+            },
+            {
+              "audience": "all",
+              "title": "3. Gate-Level Security Screening",
+              "body": "Important note: In Terminals 1, 2, and 3, security screening takes place directly at the individual boarding gate. Arrive at your gate at least 45 minutes before departure."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "SMRT East-West Line (Changi Airport MRT)",
+            "destination_label": "Downtown Singapore / Marina Bay",
+            "summary": "Affordable and punctual rapid transit connecting Changi directly to city center via Tanah Merah interchange.",
+            "duration": { "min_minutes": 32, "max_minutes": 45 },
+            "estimated_price": { "min": 2, "max": 3, "currency": "SGD" },
+            "operating_hours_summary": "05:31–23:18 Monday–Saturday, 05:59–23:18 Sundays",
+            "pickup_location_summary": "Basement 2, between Terminals 2 and 3",
+            "best_for_label": "Solo travelers and commuters",
+            "luggage_summary": "Standard metro carriage space",
+            "accessibility_summary": "Full step-free elevator and barrier-free access",
+            "booking_url": null,
+            "source_url": "https://www.smrt.com.sg",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "taxi",
+            "name": "GrabCar / Metered Airport Taxi",
+            "destination_label": "Any Singapore Destination (Door-to-door)",
+            "summary": "Official metered taxi stands and ride-hailing pick-up bays at arrival levels of all terminals.",
+            "duration": { "min_minutes": 20, "max_minutes": 30 },
+            "estimated_price": { "min": 20, "max": 38, "currency": "SGD" },
+            "operating_hours_summary": "24 hours daily",
+            "pickup_location_summary": "Arrival hall taxi stands (Doors 1-4) or app ride bays",
+            "best_for_label": "Families with children, couples, and heavy luggage",
+            "luggage_summary": "Full sedan or maxi-cab capacity",
+            "accessibility_summary": null,
+            "booking_url": null,
+            "source_url": "https://www.changiairport.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Terminal 1 (Scoot, Emirates, British Airways, Japan Airlines)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "Terminal 2 (Singapore Airlines SE/S.Asia, ANA, Lufthansa, Swiss)",
+            "status": "active"
+          },
+          {
+            "code": "T3",
+            "name": "Terminal 3 (Singapore Airlines Europe/Americas/Oceania, Qatar Airways)",
+            "status": "active"
+          },
+          {
+            "code": "T4",
+            "name": "Terminal 4 (AirAsia, Cathay Pacific, Vietjet, Korean Air)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Leisure",
+            "name": "Jewel Changi Rain Vortex",
+            "summary": "World's tallest indoor waterfall (40m) surrounded by a four-story lush indoor forest canopy."
+          },
+          {
+            "category": "Connectivity",
+            "name": "High-Speed WiFi & Power Stations",
+            "summary": "Free high-speed WiFi (#WiFi@Changi) and over 1,500 USB/AC charging stations throughout all terminals."
+          },
+          {
+            "category": "Transit",
+            "name": "Complimentary Singapore City Tour",
+            "summary": "Free 2.5-hour guided city tours available for transit passengers with layovers of 5.5 hours or more."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "SilverKris Lounge",
+            "location_summary": "Terminal 2 and Terminal 3 Airside, 3rd Floor",
+            "location_type": "airside",
+            "access_summary": "Singapore Airlines and Star Alliance First & Business Class passengers",
+            "operating_hours_summary": "24 hours daily",
+            "amenities": [
+              "shower_suites",
+              "fine_dining_buffet",
+              "barista_coffee",
+              "private_nap_pods",
+              "fast_wifi"
+            ],
+            "estimated_price": null,
+            "affiliate_url": null,
+            "source_url": "https://singaporeair.com",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "name": "SATS Premier Lounge",
+            "location_summary": "Airside Terminals 1, 2, and 3",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, LoungeKey, and walk-in pass",
+            "operating_hours_summary": "24 hours daily",
+            "amenities": [
+              "buffet",
+              "showers",
+              "massage_chairs",
+              "workstations"
+            ],
+            "estimated_price": { "min": 45, "max": 55, "currency": "SGD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Mandatory SG Arrival Card (SGAC)",
+            "body": "All foreign travelers must submit the official SG Arrival Card online via ICA Singapore website or MyICA mobile app within 3 days prior to landing."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How do I transfer between terminals at Singapore Changi?",
+            "answer": "Terminals 1, 2, and 3 are connected both airside and landside by the free Changi Skytrain (05:00 to 02:30) and pedestrian walkways. Terminal 4 connects to T2 via free shuttle buses running 24/7."
+          },
+          {
+            "question": "Can transit passengers visit Jewel Changi Airport?",
+            "answer": "Jewel is located landside outside immigration. To visit Jewel during a transit, you must clear Singapore immigration with valid entry eligibility and re-enter through departure security."
+          },
+          {
+            "question": "What is the cheapest way to reach downtown Singapore from Changi?",
+            "answer": "The MRT train from Changi Airport station (under T2/T3) costs approximately 2.00 to 2.50 SGD and takes 35 minutes to reach central Singapore."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Singapore",
+                "path": "/flights-from/singapore"
+              }
+            ]
+          },
+          {
+            "cluster": "routes",
+            "links": [
+              {
+                "anchor_text": "Flights to London (LHR/LGW)",
+                "path": "/flights/singapore-to-london"
+              },
+              {
+                "anchor_text": "Flights to Hanoi (HAN)",
+                "path": "/flights/hanoi-to-singapore"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "BKK",
+      "slug": "suvarnabhumi-bkk",
+      "content": {
+        "seo": {
+          "h1": "Suvarnabhumi Airport (BKK) Guide",
+          "subheadline": "Bangkok's flagship international hub: terminals, transport, and departure advice",
+          "title": "BKK Airport Guide: Suvarnabhumi Terminals & Transport | Tripways",
+          "meta_description": "Complete passenger guide for Bangkok Suvarnabhumi Airport (BKK). Includes Airport Rail Link transit, Satellite Terminal SAT-1, and taxi advice."
+        },
+        "orientation": {
+          "intro": "Suvarnabhumi Airport (BKK) is Bangkok's primary international airport, located 30 km east of downtown Bangkok in Samut Prakan province.",
+          "summary": "Featuring one of the world's largest single-building passenger terminals and the new Satellite Terminal 1 (SAT-1), serving major long-haul and regional flag carriers.",
+          "city_distance_km": 30,
+          "terminal_count": 2
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Airport Rail Link (ARL) / Metered Taxi",
+            "typical_minutes": { "min": 30, "max": 60 },
+            "estimated_price": { "min": 45, "max": 450, "currency": "THB" }
+          },
+          "city_distance_km": 30,
+          "terminal_count": 2
+        },
+        "arrival": {
+          "summary": "Arrival procedures, immigration clearance, and ground transit connections.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Arrival Concourse & APM Train",
+              "body": "Flights docking at Satellite Terminal SAT-1 connect to the Main Terminal via a 3-minute underground Automated People Mover (APM) train running every 3 minutes."
+            },
+            {
+              "audience": "international",
+              "title": "2. Passport Control & Customs",
+              "body": "Proceed to Immigration on the 2nd Floor. Foreign passport holders should follow signs to international visitor counters. Baggage carousels are located immediately behind passport control."
+            },
+            {
+              "audience": "all",
+              "title": "3. Ground Transport",
+              "body": "Descend to Level 1 for official metered taxi kiosks or Level B for the Airport Rail Link train station directly into central Bangkok."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Departure check-in, security screening, and boarding gate navigation.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Check-in Counters (Level 4)",
+              "body": "All airline departures check in on Level 4. Thai Airways counters are located in Rows A–C; foreign international airlines occupy Rows D–W."
+            },
+            {
+              "audience": "international",
+              "title": "2. Security Screening & Passport Control",
+              "body": "Security screening is situated on the mezzanine level above check-in rows, leading directly down to immigration clearance booths."
+            },
+            {
+              "audience": "all",
+              "title": "3. Gate Navigation & SAT-1 Transfers",
+              "body": "If your boarding gate starts with 'S' (Gates S101–S128), board the automated shuttle train on Basement 1 to reach Concourse SAT-1. Allow 15 extra minutes."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Airport Rail Link (City Line)",
+            "destination_label": "Phaya Thai Station (BTS Interchange)",
+            "summary": "Fast and congestion-free electric train stopping at 8 stations across Bangkok before terminating at Phaya Thai.",
+            "duration": { "min_minutes": 26, "max_minutes": 30 },
+            "estimated_price": { "min": 45, "max": 45, "currency": "THB" },
+            "operating_hours_summary": "05:30–00:00 daily (every 10–15 mins)",
+            "pickup_location_summary": "Basement Level B, beneath the main passenger terminal",
+            "best_for_label": "Solo travelers and downtown commuters",
+            "luggage_summary": "Standard metro space",
+            "accessibility_summary": "Elevators and tactile paving",
+            "booking_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "taxi",
+            "name": "Official Public Metered Taxi",
+            "destination_label": "Any Bangkok Hotel (Door-to-door)",
+            "summary": "Automated ticket kiosk assigns a numbered taxi bay. Regulated meter fare plus 50 THB airport surcharge and expressway tolls.",
+            "duration": { "min_minutes": 35, "max_minutes": 60 },
+            "estimated_price": { "min": 300, "max": 450, "currency": "THB" },
+            "operating_hours_summary": "24 hours daily",
+            "pickup_location_summary": "Level 1 (Ground Floor), Gates 4 and 7",
+            "best_for_label": "Families, luggage, and late-night arrivals",
+            "luggage_summary": "Sedan or 7-seat van",
+            "accessibility_summary": null,
+            "booking_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "Main",
+            "name": "Main Passenger Terminal (Concourses A–G)",
+            "status": "active"
+          },
+          {
+            "code": "SAT-1",
+            "name": "Satellite Terminal 1 (Gates S101–S128)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Connectivity",
+            "name": "Tourist SIM Counters",
+            "summary": "Official AIS, TrueMove H, and dtac kiosks on Level 2 (Arrivals) offering unlimited 5G data packages."
+          },
+          {
+            "category": "Luggage",
+            "name": "Luggage Storage & Delivery",
+            "summary": "Bellugg and Airportels counters available on Level 2 and Level B for same-day hotel delivery."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "Miracle Lounge",
+            "location_summary": "Concourses A, C, D, F, G, and Concourse SAT-1",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, and walk-in pass (~1,300 THB)",
+            "operating_hours_summary": "24 hours daily",
+            "amenities": ["showers", "hot_thai_buffet", "cocktail_bar", "wifi"],
+            "estimated_price": { "min": 35, "max": 45, "currency": "USD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "name": "Thai Airways Royal Orchid Prestige Lounge",
+            "location_summary": "Concourse D, 3rd Floor",
+            "location_type": "airside",
+            "access_summary": "Star Alliance Gold, Royal Orchid Plus, and Royal Silk Business Class",
+            "operating_hours_summary": "05:00–02:00 daily",
+            "amenities": [
+              "spa_treatments",
+              "showers",
+              "a_la_carte_dining",
+              "quiet_rooms"
+            ],
+            "estimated_price": null,
+            "affiliate_url": null,
+            "source_url": "https://thaiairways.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "SAT-1 Gate Walking Times",
+            "body": "If your gate is in Concourse SAT-1, allow at least 20 minutes from immigration to reach your departure gate via the APM train."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How do I take the train from Suvarnabhumi Airport to central Bangkok?",
+            "answer": "Take the Airport Rail Link (ARL) from Basement Level B. A one-way ticket to Phaya Thai station (interchange for the BTS Skytrain) costs 45 THB and takes 26 minutes."
+          },
+          {
+            "question": "Is there free shuttle bus transit between Suvarnabhumi (BKK) and Don Mueang (DMK)?",
+            "answer": "Yes, a free airport shuttle runs between BKK (Level 2, Gate 3) and DMK for passengers holding a valid boarding pass or ticket departing from the connecting airport within 24 hours."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Bangkok",
+                "path": "/flights-from/bangkok"
+              }
+            ]
+          },
+          {
+            "cluster": "routes",
+            "links": [
+              {
+                "anchor_text": "Flights to Singapore (SIN)",
+                "path": "/flights/bangkok-to-singapore"
+              },
+              {
+                "anchor_text": "Flights to Tokyo (HND/NRT)",
+                "path": "/flights/bangkok-to-tokyo"
+              },
+              {
+                "anchor_text": "Flights to London (LHR)",
+                "path": "/flights/bangkok-to-london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "DMK",
+      "slug": "don-mueang-dmk",
+      "content": {
+        "seo": {
+          "h1": "Don Mueang International Airport (DMK) Guide",
+          "subheadline": "Bangkok's dedicated low-cost carrier hub: terminals, SRT Red Line, and tips",
+          "title": "DMK Airport Guide: Don Mueang Terminals & Transport | Tripways",
+          "meta_description": "Complete passenger guide for Don Mueang Airport (DMK) in Bangkok. Includes SRT Red Line train tips, AirAsia flights, and terminal advice."
+        },
+        "orientation": {
+          "intro": "Don Mueang International Airport (DMK) is Asia's oldest operating commercial airport, located 24 km north of central Bangkok.",
+          "summary": "Serving as Bangkok's primary hub for low-cost airlines, including Thai AirAsia, Nok Air, and Thai Lion Air, operating across two adjacent terminals.",
+          "city_distance_km": 24,
+          "terminal_count": 2
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "SRT Dark Red Line / A1 Airport Bus",
+            "typical_minutes": { "min": 25, "max": 45 },
+            "estimated_price": { "min": 30, "max": 250, "currency": "THB" }
+          },
+          "city_distance_km": 24,
+          "terminal_count": 2
+        },
+        "arrival": {
+          "summary": "Arrival corridors, baggage claim, and city transfer options at Don Mueang.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Assignment",
+              "body": "International arrivals land at Terminal 1; all domestic flights land at Terminal 2. Both terminals are connected by a short indoor walkway."
+            },
+            {
+              "audience": "international",
+              "title": "2. Passport Control & Baggage",
+              "body": "Immigration counters are on the 2nd Floor of Terminal 1. After customs clearance, exit to the public arrival concourse."
+            },
+            {
+              "audience": "all",
+              "title": "3. Transport Options",
+              "body": "Take the elevated skybridge to Don Mueang SRT Red Line Station, board the A1/A2 express buses outside Gate 6, or queue for metered taxis."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Check-in rows and security screening procedures at DMK.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. International Departures (Terminal 1)",
+              "body": "Terminal 1 Level 3 handles all international check-in, immigration, and boarding gates 1–26."
+            },
+            {
+              "audience": "all",
+              "title": "2. Domestic Departures (Terminal 2)",
+              "body": "Terminal 2 Level 3 handles all domestic flights (AirAsia, Nok Air, Lion Air). Automated self-check-in kiosks and bag-drop machines are widely available."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "SRT Dark Red Line Electric Train",
+            "destination_label": "Krung Thep Aphiwat Central Station (Bang Sue)",
+            "summary": "Modern elevated train connecting DMK to Bangkok's central railway terminal with MRT Blue Line connection.",
+            "duration": { "min_minutes": 20, "max_minutes": 25 },
+            "estimated_price": { "min": 33, "max": 33, "currency": "THB" },
+            "operating_hours_summary": "05:00–00:00 daily (every 10–15 mins)",
+            "pickup_location_summary": "Direct pedestrian skybridge from Terminal 2 Level 2",
+            "best_for_label": "Budget travelers avoiding expressway traffic",
+            "luggage_summary": "Standard train carriage",
+            "accessibility_summary": "Full elevator access",
+            "booking_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "bus",
+            "name": "Airport Express Bus A1 / A2",
+            "destination_label": "BTS Mo Chit / MRT Chatuchak Park",
+            "summary": "Direct air-conditioned express bus running via tollway directly to the northern Skytrain interchange.",
+            "duration": { "min_minutes": 25, "max_minutes": 40 },
+            "estimated_price": { "min": 30, "max": 30, "currency": "THB" },
+            "operating_hours_summary": "07:00–23:00 daily (every 15 mins)",
+            "pickup_location_summary": "Terminal 1 Gate 6 and Terminal 2 Gate 12",
+            "best_for_label": "Quick connection to the BTS Skytrain",
+            "luggage_summary": "Luggage rack space",
+            "accessibility_summary": null,
+            "booking_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Terminal 1 (International Flights)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "Terminal 2 (Domestic Flights)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Food",
+            "name": "Magic Food Point",
+            "summary": "Affordable local food court located on the 2nd Floor connecting walkway offering traditional Thai meals."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "Miracle Lounge (DMK Domestic & Intl)",
+            "location_summary": "T1 Airside near Gate 2 and T2 Domestic 3rd Floor",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, LoungeKey, DragonPass, and walk-in pass (~750 THB)",
+            "operating_hours_summary": "05:00–20:00 daily",
+            "amenities": ["buffet", "wifi", "beer", "charging_stations"],
+            "estimated_price": { "min": 25, "max": 30, "currency": "USD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Allow Extra Time for Tollway Traffic",
+            "body": "During weekday rush hours (07:00–09:30 and 16:30–19:30), highway congestion along Don Mueang Tollway can add 30 to 45 minutes to taxi rides."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "Can I walk between Terminal 1 and Terminal 2 at Don Mueang?",
+            "answer": "Yes, Terminals 1 and 2 are connected by an enclosed indoor corridor on Level 1 and Level 3. Walking between check-in areas takes less than 5 minutes."
+          },
+          {
+            "question": "How do I take the train from Don Mueang Airport to central Bangkok?",
+            "answer": "Follow signs to the SRT Red Line station via the covered skybridge on Level 2. Trains reach Krung Thep Aphiwat Central Station in 20 minutes for 33 THB."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Bangkok",
+                "path": "/flights-from/bangkok"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "LHR",
+      "slug": "heathrow-lhr",
+      "content": {
+        "seo": {
+          "h1": "Heathrow Airport (LHR) Guide",
+          "subheadline": "London's premier international gateway: terminals, Elizabeth Line, and flight advice",
+          "title": "LHR Airport Guide: London Heathrow Terminals & Transit | Tripways",
+          "meta_description": "Complete passenger transit guide for London Heathrow Airport (LHR). Covers Elizabeth Line, Heathrow Express, terminal transfers, and lounges."
+        },
+        "orientation": {
+          "intro": "London Heathrow Airport (LHR) is one of the world's premier international hubs, situated 24 km west of Central London.",
+          "summary": "Comprising four operational terminals (Terminals 2, 3, 4, and 5) handling over 80 million passengers annually across hundreds of global airline routes.",
+          "city_distance_km": 24,
+          "terminal_count": 4
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Elizabeth Line / Heathrow Express",
+            "typical_minutes": { "min": 15, "max": 40 },
+            "estimated_price": { "min": 6, "max": 25, "currency": "GBP" }
+          },
+          "city_distance_km": 24,
+          "terminal_count": 4
+        },
+        "arrival": {
+          "summary": "UK Border Control, e-Passport gates, and London rail connections.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. e-Passport Clearance",
+              "body": "Citizens of the UK, EU, US, Canada, Australia, Japan, and Singapore can use the automated e-Passport gates at all Heathrow terminals."
+            },
+            {
+              "audience": "all",
+              "title": "2. Baggage Reclaim & Customs",
+              "body": "Follow signs to baggage reclaim and declare goods if required at UK Border Force customs channels."
+            },
+            {
+              "audience": "all",
+              "title": "3. Central London Transit",
+              "body": "All terminals have direct underground access to the Elizabeth Line, Piccadilly Line, and Heathrow Express trains."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Check-in, bag drop, and security screening guidance.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Assignment Confirmation",
+              "body": "Confirm your terminal before arriving: Terminal 2 (Star Alliance), Terminal 3 (Oneworld / Virgin Atlantic), Terminal 4 (SkyTeam), Terminal 5 (British Airways exclusive)."
+            },
+            {
+              "audience": "all",
+              "title": "2. Security Screening",
+              "body": "Security regulations require all liquids under 100ml in transparent bags unless dedicated next-generation CT scanners are active at your lane."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Elizabeth Line",
+            "destination_label": "Paddington, West End, City of London & Canary Wharf",
+            "summary": "Direct, high-frequency modern rail line running directly across central London without requiring tube interchanges.",
+            "duration": { "min_minutes": 28, "max_minutes": 42 },
+            "estimated_price": { "min": 13, "max": 14, "currency": "GBP" },
+            "operating_hours_summary": "05:15–00:00 daily (every 15 mins)",
+            "pickup_location_summary": "Rail stations at Terminals 2/3, Terminal 4, and Terminal 5",
+            "best_for_label": "Best overall balance of speed, price, and direct destinations",
+            "luggage_summary": "Spacious train cars with step-free access",
+            "accessibility_summary": "Full level boarding access",
+            "booking_url": null,
+            "source_url": "https://tfl.gov.uk",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Heathrow Express",
+            "destination_label": "London Paddington (Non-stop)",
+            "summary": "Premium non-stop express rail service reaching London Paddington in exactly 15 minutes.",
+            "duration": { "min_minutes": 15, "max_minutes": 15 },
+            "estimated_price": { "min": 25, "max": 25, "currency": "GBP" },
+            "operating_hours_summary": "05:10–23:50 daily (every 15 mins)",
+            "pickup_location_summary": "Heathrow Central (T2/3) and Terminal 5",
+            "best_for_label": "Business travelers prioritizing minimum transit time",
+            "luggage_summary": "Dedicated luggage racks at car entrances",
+            "accessibility_summary": "Full step-free access",
+            "booking_url": null,
+            "source_url": "https://www.heathrowexpress.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T2",
+            "name": "Terminal 2 - The Queen's Terminal (Star Alliance carriers)",
+            "status": "active"
+          },
+          {
+            "code": "T3",
+            "name": "Terminal 3 (Virgin Atlantic, Emirates, Delta, Cathay Pacific)",
+            "status": "active"
+          },
+          {
+            "code": "T4",
+            "name": "Terminal 4 (Qatar Airways, Air France, KLM, Etihad)",
+            "status": "active"
+          },
+          {
+            "code": "T5",
+            "name": "Terminal 5 (British Airways main hub)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Connectivity",
+            "name": "Free High-Speed Wi-Fi",
+            "summary": "Unlimited high-speed WiFi throughout all Heathrow terminals."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "Plaza Premium Lounge",
+            "location_summary": "Airside in Terminals 2, 4, and 5",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, and walk-in passes (~£44)",
+            "operating_hours_summary": "05:00–21:30 daily",
+            "amenities": ["showers", "hot_food_buffet", "bar", "workstations"],
+            "estimated_price": { "min": 40, "max": 50, "currency": "GBP" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Free Inter-Terminal Train Transit",
+            "body": "Transfers between Terminal 2/3, Terminal 4, and Terminal 5 are completely free using the Elizabeth Line or Heathrow Express rail shuttles."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How do I travel between terminals at Heathrow?",
+            "answer": "Free train transfers run continuously between Terminal 2/3, Terminal 4, and Terminal 5 via the Elizabeth Line and Heathrow Express. Obtain a free inter-terminal transfer ticket at station kiosks."
+          },
+          {
+            "question": "What is the cheapest way to reach central London from Heathrow?",
+            "answer": "The London Underground Piccadilly Line is the cheapest option, costing roughly £5.60 with an Oyster card or contactless payment, taking approximately 50 minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from London",
+                "path": "/flights-from/london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "LGW",
+      "slug": "gatwick-lgw",
+      "content": {
+        "seo": {
+          "h1": "Gatwick Airport (LGW) Guide",
+          "subheadline": "London's second-busiest airport: terminals, Gatwick Express, and passenger tips",
+          "title": "LGW Airport Guide: London Gatwick Terminals & Transport | Tripways",
+          "meta_description": "Complete passenger guide for London Gatwick Airport (LGW). Covers Gatwick Express, Thameslink, inter-terminal monorail, and flight advice."
+        },
+        "orientation": {
+          "intro": "London Gatwick Airport (LGW) is located 45 km south of Central London in West Sussex.",
+          "summary": "Operating two terminals — North Terminal and South Terminal — connected by a free 24-hour automated monorail shuttle.",
+          "city_distance_km": 45,
+          "terminal_count": 2
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Gatwick Express / Thameslink Train",
+            "typical_minutes": { "min": 30, "max": 45 },
+            "estimated_price": { "min": 14, "max": 22, "currency": "GBP" }
+          },
+          "city_distance_km": 45,
+          "terminal_count": 2
+        },
+        "arrival": {
+          "summary": "UK border inspection, baggage collection, and train station access at South Terminal.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Passport Control & Baggage",
+              "body": "Both North and South Terminals have dedicated immigration halls with e-Passport gates and baggage reclaim carousels."
+            },
+            {
+              "audience": "all",
+              "title": "2. Gatwick Railway Station Access",
+              "body": "The railway station is integrated directly into South Terminal. Passengers landing at North Terminal take the 2-minute free monorail shuttle to South Terminal."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "North Terminal and South Terminal check-in procedures.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Confirmation",
+              "body": "easyJet operates from both terminals. British Airways, Norse Atlantic, and Singapore Airlines operate from South Terminal. Emirates and Qatar Airways operate from North Terminal."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Gatwick Express",
+            "destination_label": "London Victoria Station",
+            "summary": "Dedicated non-stop train service connecting Gatwick directly to London Victoria in 30 minutes.",
+            "duration": { "min_minutes": 30, "max_minutes": 30 },
+            "estimated_price": { "min": 21, "max": 22, "currency": "GBP" },
+            "operating_hours_summary": "05:00–23:30 daily (every 15 mins)",
+            "pickup_location_summary": "Gatwick Airport railway station, South Terminal",
+            "best_for_label": "Fast connection to Victoria and the West End",
+            "luggage_summary": "Full luggage racks",
+            "accessibility_summary": "Step-free train access",
+            "booking_url": null,
+            "source_url": "https://www.gatwickexpress.com",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Thameslink Rail",
+            "destination_label": "London Bridge, Blackfriars, Farringdon & St Pancras",
+            "summary": "Regular commuter rail service cutting straight through central London, ideal for business and Eurostar connections.",
+            "duration": { "min_minutes": 32, "max_minutes": 45 },
+            "estimated_price": { "min": 14, "max": 16, "currency": "GBP" },
+            "operating_hours_summary": "24 hours daily",
+            "pickup_location_summary": "Gatwick Airport railway station, South Terminal",
+            "best_for_label": "Best value and direct connections to the City of London",
+            "luggage_summary": "Standard train space",
+            "accessibility_summary": "Step-free access",
+            "booking_url": null,
+            "source_url": "https://www.thameslinkrailway.com",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "North",
+            "name": "North Terminal (easyJet, Emirates, Qatar Airways, TUI)",
+            "status": "active"
+          },
+          {
+            "code": "South",
+            "name": "South Terminal (British Airways, Singapore Airlines, Wizz Air)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Transit",
+            "name": "Inter-Terminal Monorail Shuttle",
+            "summary": "Free automated passenger transit shuttle operating 24 hours between North and South Terminals (2 min ride)."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "No1 Lounge Gatwick",
+            "location_summary": "Airside in North and South Terminals",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, DragonPass, and walk-in pass",
+            "operating_hours_summary": "04:00–21:00 daily",
+            "amenities": ["buffet", "bar", "wifi", "runway_views"],
+            "estimated_price": { "min": 36, "max": 42, "currency": "GBP" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Use Contactless for Train Tickets",
+            "body": "You can tap in and tap out with standard contactless payment cards or Oyster cards on all trains between Gatwick and Central London without buying paper tickets."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How do I get between North Terminal and South Terminal at Gatwick?",
+            "answer": "A free automated elevated shuttle runs 24 hours a day between North and South Terminals. The trip takes roughly 2 minutes with departures every few minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from London",
+                "path": "/flights-from/london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "HND",
+      "slug": "haneda-hnd",
+      "content": {
+        "seo": {
+          "h1": "Tokyo Haneda Airport (HND) Guide",
+          "subheadline": "Tokyo's downtown airport: terminals, Tokyo Monorail, Keikyu Line, and transit",
+          "title": "HND Airport Guide: Tokyo Haneda Terminals & Transport | Tripways",
+          "meta_description": "Complete passenger guide for Tokyo Haneda Airport (HND). Covers Tokyo Monorail, Keikyu Line, Terminal 3 international transit, and lounges."
+        },
+        "orientation": {
+          "intro": "Tokyo Haneda Airport (HND) is situated just 15 km south of downtown Tokyo in Ota City.",
+          "summary": "Consistently recognized as one of the cleanest and most punctual airports in the world, featuring three terminals connected by regular free shuttle buses.",
+          "city_distance_km": 15,
+          "terminal_count": 3
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Tokyo Monorail / Keikyu Airport Line",
+            "typical_minutes": { "min": 13, "max": 25 },
+            "estimated_price": { "min": 330, "max": 500, "currency": "JPY" }
+          },
+          "city_distance_km": 15,
+          "terminal_count": 3
+        },
+        "arrival": {
+          "summary": "Visit Japan Web clearance, customs, and train stations at Terminal 3.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Immigration & Visit Japan Web QR Code",
+              "body": "International arrivals land at Terminal 3 (or Terminal 2 International Concourse). Pre-fill immigration and customs forms on Visit Japan Web to clear electronic gates swiftly."
+            },
+            {
+              "audience": "all",
+              "title": "2. Baggage & Rail Access",
+              "body": "Collect luggage on the 2nd Floor. Train ticket gates for Tokyo Monorail and Keikyu Line are situated immediately past the customs exit."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Terminal verification and departure security procedures.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Assignment",
+              "body": "Terminal 1 handles domestic JAL and Skymark. Terminal 2 handles domestic ANA and select ANA international departures. Terminal 3 handles all foreign carriers and major international flights."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Tokyo Monorail (Haneda Express)",
+            "destination_label": "Hamamatsucho Station (JR Yamanote Line Interchange)",
+            "summary": "Scenic elevated monorail whisking travelers directly to the Yamanote Line loop in 13 minutes.",
+            "duration": { "min_minutes": 13, "max_minutes": 18 },
+            "estimated_price": { "min": 500, "max": 500, "currency": "JPY" },
+            "operating_hours_summary": "05:15–00:10 daily (every 4–5 mins)",
+            "pickup_location_summary": "Monorail stations at Terminals 1, 2, and 3",
+            "best_for_label": "Fast connection to Tokyo Station, Ueno, and Akihabara",
+            "luggage_summary": "Luggage bays in each car",
+            "accessibility_summary": "Full elevator access",
+            "booking_url": null,
+            "source_url": "https://www.tokyo-monorail.co.jp",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Keikyu Airport Line",
+            "destination_label": "Shinagawa Station & Asakusa Subway Line",
+            "summary": "Rapid electric train connecting Haneda directly to Shinagawa (Shinkansen bullet train hub) and through to Ginza and Asakusa.",
+            "duration": { "min_minutes": 11, "max_minutes": 20 },
+            "estimated_price": { "min": 330, "max": 330, "currency": "JPY" },
+            "operating_hours_summary": "05:25–00:00 daily (every 5–10 mins)",
+            "pickup_location_summary": "Keikyu stations at Terminals 1/2 and Terminal 3",
+            "best_for_label": "Best for Shibuya, Shinjuku, and Shinkansen transfers",
+            "luggage_summary": "Standard metro seating",
+            "accessibility_summary": "Full elevator access",
+            "booking_url": null,
+            "source_url": "https://www.keikyu.co.jp",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Terminal 1 (JAL Domestic, Skymark, StarFlyer)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "Terminal 2 (ANA Domestic & selected International)",
+            "status": "active"
+          },
+          {
+            "code": "T3",
+            "name": "Terminal 3 (International Flag Carriers)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Leisure",
+            "name": "Edo Ko-ji Shopping Street & Observation Deck",
+            "summary": "Traditional Edo-period replica streetscape on Terminal 3 4th Floor with authentic ramen, sushi, and rooftop flight viewing."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "TIAT Lounge",
+            "location_summary": "Terminal 3 Airside, 4th Floor near Gate 114",
+            "location_type": "airside",
+            "access_summary": "Priority Pass, LoungeKey, and select credit cards",
+            "operating_hours_summary": "24 hours daily",
+            "amenities": ["buffet", "showers", "japanese_sake", "wifi"],
+            "estimated_price": null,
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Free Terminal Shuttle Buses",
+            "body": "Bright green and white free shuttle buses run continuously between Terminals 1, 2, and 3 outside the arrival curb every 4 minutes."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How quickly can I get to central Tokyo from Haneda Airport?",
+            "answer": "Tokyo Monorail reaches Hamamatsucho on the Yamanote line in 13 minutes, while the Keikyu Line reaches Shinagawa in 11 minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Tokyo",
+                "path": "/flights-from/tokyo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "iata": "NRT",
+      "slug": "narita-nrt",
+      "content": {
+        "seo": {
+          "h1": "Tokyo Narita International Airport (NRT) Guide",
+          "subheadline": "Japan's intercontinental hub: terminals, Skyliner, Narita Express, and transfers",
+          "title": "NRT Airport Guide: Tokyo Narita Terminals & Transit | Tripways",
+          "meta_description": "Complete passenger transit guide for Tokyo Narita Airport (NRT). Covers Keisei Skyliner, JR Narita Express, terminal transfers, and lounges."
+        },
+        "orientation": {
+          "intro": "Narita International Airport (NRT) is situated 60 km east of downtown Tokyo in Chiba Prefecture.",
+          "summary": "Serving as Japan's primary long-haul intercontinental gateway across three terminals, connecting flights across North America, Europe, Asia, and Oceania.",
+          "city_distance_km": 60,
+          "terminal_count": 3
+        },
+        "quick_answers": {
+          "default_transport": {
+            "name": "Keisei Skyliner / JR Narita Express",
+            "typical_minutes": { "min": 36, "max": 60 },
+            "estimated_price": { "min": 1300, "max": 3070, "currency": "JPY" }
+          },
+          "city_distance_km": 60,
+          "terminal_count": 3
+        },
+        "arrival": {
+          "summary": "Immigration, customs, and railway stations at Terminals 1 and 2.",
+          "steps": [
+            {
+              "audience": "international",
+              "title": "1. Arrival Inspection & Visit Japan Web",
+              "body": "Clear passport control and scan your Visit Japan Web customs QR code at the automated declaration terminals before baggage release."
+            },
+            {
+              "audience": "all",
+              "title": "2. Railway Ticket Counters",
+              "body": "JR East Travel Service Centers and Keisei Skyliner ticket offices are located on Basement 1 of Terminals 1 and 2."
+            }
+          ]
+        },
+        "departure": {
+          "summary": "Terminal assignment and check-in procedures.",
+          "steps": [
+            {
+              "audience": "all",
+              "title": "1. Terminal Allocation",
+              "body": "Terminal 1 (Star Alliance & SkyTeam), Terminal 2 (Oneworld carriers), Terminal 3 (dedicated budget airlines including Zipair, Jetstar, and Spring Japan)."
+            }
+          ]
+        },
+        "transport": [
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "Keisei Skyliner Express",
+            "destination_label": "Nippori & Keisei Ueno (Yamanote Line connection)",
+            "summary": "High-speed 160 km/h express train connecting Narita to downtown Tokyo in just 36 minutes.",
+            "duration": { "min_minutes": 36, "max_minutes": 41 },
+            "estimated_price": { "min": 2570, "max": 2570, "currency": "JPY" },
+            "operating_hours_summary": "07:26–23:00 daily (every 20 mins)",
+            "pickup_location_summary": "Basement 1 stations at Terminal 1 and Terminal 2",
+            "best_for_label": "Fastest connection to Tokyo's northern and eastern districts",
+            "luggage_summary": "Reserved seating with large dedicated luggage racks",
+            "accessibility_summary": "Full step-free access",
+            "booking_url": null,
+            "source_url": "https://www.keisei.co.jp",
+            "last_verified_at": "2026-09-01"
+          },
+          {
+            "direction": "from_airport",
+            "type": "train",
+            "name": "JR Narita Express (N'EX)",
+            "destination_label": "Tokyo Station, Shinagawa, Shibuya & Shinjuku",
+            "summary": "Comfortable non-transfer limited express train connecting Narita directly to major commercial hubs in western Tokyo.",
+            "duration": { "min_minutes": 55, "max_minutes": 75 },
+            "estimated_price": { "min": 3070, "max": 3250, "currency": "JPY" },
+            "operating_hours_summary": "07:44–21:44 daily (every 30 mins)",
+            "pickup_location_summary": "JR station tracks at Terminal 1 and Terminal 2",
+            "best_for_label": "Direct transit to Shinjuku, Shibuya, and Tokyo Station",
+            "luggage_summary": "Coded luggage security locks",
+            "accessibility_summary": "Full elevator access",
+            "booking_url": null,
+            "source_url": "https://www.jreast.co.jp",
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "terminals": [
+          {
+            "code": "T1",
+            "name": "Terminal 1 (ANA, United, Singapore Airlines, Vietnam Airlines, Delta)",
+            "status": "active"
+          },
+          {
+            "code": "T2",
+            "name": "Terminal 2 (JAL, British Airways, Cathay Pacific, Emirates)",
+            "status": "active"
+          },
+          {
+            "code": "T3",
+            "name": "Terminal 3 (Zipair, Jetstar Japan, Spring Japan)",
+            "status": "active"
+          }
+        ],
+        "facilities": [
+          {
+            "category": "Connectivity",
+            "name": "SIM & Pocket Wi-Fi Counters",
+            "summary": "Multiple telecom pickup counters and vending machines across arrival lobbies in all three terminals."
+          }
+        ],
+        "lounges": [
+          {
+            "name": "Narita TraveLounge",
+            "location_summary": "Terminal 1 Airside, 3rd Floor near Gate 26",
+            "location_type": "airside",
+            "access_summary": "Priority Pass and walk-in pass (~¥1,220)",
+            "operating_hours_summary": "07:30–20:30 daily",
+            "amenities": ["snacks", "coffee", "runway_view", "wifi"],
+            "estimated_price": { "min": 10, "max": 15, "currency": "USD" },
+            "affiliate_url": null,
+            "source_url": null,
+            "last_verified_at": "2026-09-01"
+          }
+        ],
+        "notices": [
+          {
+            "title": "Terminal 3 Access via Terminal 2",
+            "body": "Terminal 3 has no direct rail station. Arrive at Narita Airport Terminal 2 Station and take the 5-minute free shuttle bus or follow the 300-meter covered walking track."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "What is the fastest way to get from Narita Airport to central Tokyo?",
+            "answer": "The Keisei Skyliner is the fastest option, reaching Nippori Station on the JR Yamanote line in 36 minutes and Ueno in 41 minutes for ¥2,570."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Tokyo",
+                "path": "/flights-from/tokyo"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "routes": [
+    {
+      "slug": "hanoi-to-singapore",
+      "origin_city_slug": "hanoi",
+      "destination_city_slug": "singapore",
+      "content": {
+        "seo": {
+          "h1": "Flights from Hanoi to Singapore",
+          "subheadline": "Compare daily direct flight schedules and airlines between HAN and SIN",
+          "title": "Hanoi to Singapore Flights: Direct Schedules & Airlines | Tripways",
+          "meta_description": "Compare daily direct and 1-stop flights from Hanoi (HAN) to Singapore (SIN). View flight times, operating carriers, and transit details.",
+          "intro": "Direct flights from Hanoi to Singapore bridge Northern Vietnam with Southeast Asia's global financial hub in approximately 3 hours and 30 minutes across a flight distance of 2,207 km."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Nonstop flights average 3 hours 25 minutes to 3 hours 40 minutes southbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "The direct flight distance between Noi Bai (HAN) and Singapore Changi (SIN) is 2,207 km (1,371 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Operating Carriers",
+            "body": "Operated nonstop by Singapore Airlines, Vietnam Airlines, and budget carrier Scoot."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Airlines: Full-Service vs Low-Cost Comparison",
+            "body": "Singapore Airlines and Vietnam Airlines operate daily wide-body and modern narrow-body aircraft featuring complimentary hot meals, checked baggage allowance, and seatback entertainment. Travelers prioritizing cost efficiency can choose Scoot, with à la carte baggage and seat selection."
+          },
+          {
+            "type": "arrival_guide",
+            "heading": "Arriving at Singapore Changi (SIN)",
+            "body": "Flights from Hanoi disembark at Terminal 1 (Scoot) or Terminal 2/3 (Singapore Airlines, Vietnam Airlines). Ensure you submit the mandatory SG Arrival Card (SGAC) online within 3 days prior to landing."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the nonstop flight from Hanoi to Singapore?",
+            "answer": "Direct nonstop flights take roughly 3 hours and 30 minutes. Connecting flights with layovers in Bangkok or Ho Chi Minh City generally take 6 hours or longer."
+          },
+          {
+            "question": "Do Vietnamese citizens need a visa to travel to Singapore?",
+            "answer": "No visa is required for Vietnamese passport holders entering Singapore for tourism stays up to 30 days. You must possess a passport valid for at least 6 months and a submitted SG Arrival Card."
+          },
+          {
+            "question": "Which terminals at Hanoi and Singapore handle these flights?",
+            "answer": "Departures leave from Hanoi Noi Bai Terminal 2 (International). Arrivals at Singapore Changi land at Terminals 1, 2, or 3 depending on the operating airline."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Hanoi",
+                "path": "/flights-from/hanoi"
+              },
+              {
+                "anchor_text": "Flights from Singapore",
+                "path": "/flights-from/singapore"
+              }
+            ]
+          },
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Noi Bai Airport Guide (HAN)",
+                "path": "/airports/noi-bai-han"
+              },
+              {
+                "anchor_text": "Singapore Changi Guide (SIN)",
+                "path": "/airports/singapore-changi-sin"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "singapore-to-london",
+      "origin_city_slug": "singapore",
+      "destination_city_slug": "london",
+      "content": {
+        "seo": {
+          "h1": "Flights from Singapore to London",
+          "subheadline": "Compare direct nonstop flights and competitive 1-stop options between SIN and LON",
+          "title": "Singapore to London Flights: Nonstop Schedules & Airlines | Tripways",
+          "meta_description": "Compare direct flights from Singapore Changi (SIN) to London Heathrow (LHR) and Gatwick (LGW). View flight times, airlines, and transit insights.",
+          "intro": "The Singapore to London air route is one of global aviation's premier long-haul corridors, spanning 10,885 km with direct flight times averaging 13 to 14 hours."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Nonstop Duration",
+            "body": "Direct flights take approximately 13 hours 40 minutes heading westbound and 12 hours 50 minutes eastbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "The flight distance between Singapore Changi (SIN) and London Heathrow (LHR) is 10,885 km (6,764 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Nonstop Airlines",
+            "body": "Singapore Airlines (flying to LHR and LGW) and British Airways (flying to LHR) operate daily nonstop wide-body services."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Direct vs 1-Stop Connecting Options",
+            "body": "Direct nonstop flights save 3 to 6 hours of journey time. One-stop connections via Middle Eastern hubs such as Doha (Qatar Airways) or Dubai (Emirates) frequently provide competitive pricing and break up the 14-hour journey."
+          },
+          {
+            "type": "arrival_guide",
+            "heading": "Arriving in London: Heathrow (LHR) vs Gatwick (LGW)",
+            "body": "Heathrow provides express connectivity via the Elizabeth Line and Heathrow Express straight into Central London. Gatwick offers the Gatwick Express to Victoria Station, serving southern London destinations."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "Which airlines operate direct flights from Singapore to London?",
+            "answer": "Singapore Airlines and British Airways provide daily nonstop flights between Singapore Changi (SIN) and London Heathrow (LHR). Singapore Airlines also operates direct flights to London Gatwick (LGW)."
+          },
+          {
+            "question": "How long does a direct flight from Singapore to London take?",
+            "answer": "Direct flights take roughly 13 hours and 30 minutes westbound, and around 12 hours and 50 minutes on the return eastbound leg due to jet stream tailwinds."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Singapore",
+                "path": "/flights-from/singapore"
+              }
+            ]
+          },
+          {
+            "cluster": "airports",
+            "links": [
+              {
+                "anchor_text": "Singapore Changi Airport Guide",
+                "path": "/airports/singapore-changi-sin"
+              },
+              {
+                "anchor_text": "Heathrow Airport Guide",
+                "path": "/airports/heathrow-lhr"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bangkok-to-singapore",
+      "origin_city_slug": "bangkok",
+      "destination_city_slug": "singapore",
+      "content": {
+        "seo": {
+          "h1": "Flights from Bangkok to Singapore",
+          "subheadline": "Compare daily direct flight options from BKK and DMK to SIN",
+          "title": "Bangkok to Singapore Flights: Direct Schedules & Fares | Tripways",
+          "meta_description": "Compare daily nonstop flights between Bangkok (BKK/DMK) and Singapore (SIN). View airlines, flight times, and airport details.",
+          "intro": "Connecting Thailand's capital with Singapore spans 1,418 km with flight times under two and a half hours, making it one of the busiest trunk routes in ASEAN."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Nonstop flights average 2 hours 20 minutes to 2 hours 35 minutes."
+          },
+          {
+            "type": "distance",
+            "title": "Flight Distance",
+            "body": "1,418 km (881 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Carriers",
+            "body": "Singapore Airlines, Thai Airways, Scoot, and Thai AirAsia."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Departing from Suvarnabhumi (BKK) vs Don Mueang (DMK)",
+            "body": "Full-service carriers (Singapore Airlines, Thai Airways) depart from Suvarnabhumi (BKK). Budget airlines including Thai AirAsia operate primarily out of Don Mueang (DMK), while Scoot operates out of BKK."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the flight from Bangkok to Singapore?",
+            "answer": "Direct flights take approximately 2 hours and 25 minutes."
+          },
+          {
+            "question": "Which airport in Bangkok has the most flights to Singapore?",
+            "answer": "Suvarnabhumi Airport (BKK) operates the highest frequency of daily flights to Singapore."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Bangkok",
+                "path": "/flights-from/bangkok"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bangkok-to-london",
+      "origin_city_slug": "bangkok",
+      "destination_city_slug": "london",
+      "content": {
+        "seo": {
+          "h1": "Flights from Bangkok to London",
+          "subheadline": "Compare nonstop flights and 1-stop options from BKK to London",
+          "title": "Bangkok to London Flights: Nonstop Routes & Airlines | Tripways",
+          "meta_description": "Compare direct and 1-stop flights from Bangkok (BKK) to London Heathrow (LHR) and Gatwick (LGW). View schedules and airline ratings.",
+          "intro": "Flying from Bangkok to London connects Thailand's vibrant capital with the United Kingdom across 9,580 km with nonstop flight durations around 12 to 13 hours."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Direct Flight Time",
+            "body": "Nonstop flights take approximately 12 hours 40 minutes westbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "9,580 km (5,953 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Operating Airlines",
+            "body": "Thai Airways and EVA Air operate daily direct nonstop flights to London Heathrow (LHR)."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Nonstop vs 1-Stop Connecting Routes",
+            "body": "Direct flights on Thai Airways and EVA Air save 4+ hours of travel time. One-stop connections via Qatar Airways (Doha) or Emirates (Dubai) frequently offer substantial price discounts and modern wide-body aircraft comfort."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "Which airlines fly direct from Bangkok to London?",
+            "answer": "Thai Airways and EVA Air operate direct nonstop flights from Bangkok Suvarnabhumi (BKK) to London Heathrow (LHR)."
+          },
+          {
+            "question": "What is the fastest flight time between Bangkok and London?",
+            "answer": "The fastest nonstop flight takes roughly 12 hours and 35 minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Bangkok",
+                "path": "/flights-from/bangkok"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "bangkok-to-tokyo",
+      "origin_city_slug": "bangkok",
+      "destination_city_slug": "tokyo",
+      "content": {
+        "seo": {
+          "h1": "Flights from Bangkok to Tokyo",
+          "subheadline": "Compare direct flights from Bangkok to Haneda (HND) and Narita (NRT)",
+          "title": "Bangkok to Tokyo Flights: Direct Routes & Airlines | Tripways",
+          "meta_description": "Find direct flights from Bangkok (BKK/DMK) to Tokyo (HND/NRT). Compare flight times, airlines, and airport options.",
+          "intro": "The Bangkok to Tokyo flight corridor connects two of Asia's most dynamic capital cities, covering 4,600 km with average nonstop flight times of 5 hours 45 minutes to 6 hours 15 minutes."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Direct flights take approximately 5 hours 45 minutes to 6 hours 15 minutes."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "4,580 km (2,846 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Carriers",
+            "body": "Thai Airways, Japan Airlines (JAL), All Nippon Airways (ANA), Zipair, and Thai AirAsia X."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Arriving at Haneda (HND) vs Narita (NRT)",
+            "body": "Flights landing at Haneda Airport (HND) offer faster downtown access via Tokyo Monorail (15 mins). Flights landing at Narita (NRT) often provide lower fares via budget carriers like Zipair."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the flight from Bangkok to Tokyo?",
+            "answer": "Nonstop flights take approximately 6 hours heading eastbound."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Bangkok",
+                "path": "/flights-from/bangkok"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "hanoi-to-london",
+      "origin_city_slug": "hanoi",
+      "destination_city_slug": "london",
+      "content": {
+        "seo": {
+          "h1": "Flights from Hanoi to London",
+          "subheadline": "Compare direct nonstop flights and 1-stop options from HAN to London",
+          "title": "Hanoi to London Flights: Nonstop Schedules & Airlines | Tripways",
+          "meta_description": "Compare direct flights and 1-stop routes from Hanoi (HAN) to London Heathrow (LHR). View schedules, durations, and airlines.",
+          "intro": "Direct flights from Hanoi to London connect Vietnam's historical capital directly with the United Kingdom, spanning 9,230 km with direct flight times around 12 to 13 hours."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Nonstop Flight Duration",
+            "body": "Direct flights take approximately 12 hours 45 minutes westbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "9,230 km (5,735 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Operating Airlines",
+            "body": "Vietnam Airlines operates direct Boeing 787-9 Dreamliner services to London Heathrow (LHR)."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Direct Flights vs 1-Stop Connections",
+            "body": "Vietnam Airlines operates direct flights between Hanoi and London Heathrow. For passengers seeking flexible dates or lower fares, one-stop itineraries via Doha (Qatar Airways) or Dubai (Emirates) are popular alternatives."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "Does any airline fly direct from Hanoi to London?",
+            "answer": "Yes, Vietnam Airlines operates nonstop flights from Hanoi Noi Bai (HAN) to London Heathrow (LHR)."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Hanoi",
+                "path": "/flights-from/hanoi"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ho-chi-minh-city-to-bangkok",
+      "origin_city_slug": "ho-chi-minh-city",
+      "destination_city_slug": "bangkok",
+      "content": {
+        "seo": {
+          "h1": "Flights from Ho Chi Minh City to Bangkok",
+          "subheadline": "Compare multiple daily flights between SGN and Bangkok (BKK/DMK)",
+          "title": "Ho Chi Minh City to Bangkok Flights: Direct Schedules | Tripways",
+          "meta_description": "Find all direct flights from Ho Chi Minh City (SGN) to Bangkok (BKK/DMK). Compare airlines, flight times, and fares.",
+          "intro": "The Ho Chi Minh City to Bangkok route connects Vietnam's southern commercial hub with Thailand's capital in just 1 hour and 30 minutes across 717 km."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Nonstop flights take approximately 1 hour 30 minutes."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "717 km (446 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Airlines Flying",
+            "body": "Vietnam Airlines, Thai Airways, Vietjet Air, and Thai AirAsia."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Suvarnabhumi (BKK) vs Don Mueang (DMK)",
+            "body": "Flights arriving at Suvarnabhumi (BKK) connect directly to long-haul departures and the Airport Rail Link. Flights arriving at Don Mueang (DMK) are primarily operated by low-cost carriers like Thai AirAsia."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the flight from Ho Chi Minh City to Bangkok?",
+            "answer": "Direct flights take roughly 1 hour and 30 minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Ho Chi Minh City",
+                "path": "/flights-from/ho-chi-minh-city"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "ho-chi-minh-city-to-hanoi",
+      "origin_city_slug": "ho-chi-minh-city",
+      "destination_city_slug": "hanoi",
+      "content": {
+        "seo": {
+          "h1": "Flights from Ho Chi Minh City to Hanoi",
+          "subheadline": "Compare hourly direct flights on Vietnam's busiest domestic air corridor",
+          "title": "Ho Chi Minh City to Hanoi Flights: Schedules & Fares | Tripways",
+          "meta_description": "Compare daily direct flights between Ho Chi Minh City (SGN) and Hanoi (HAN). View hourly departures, flight times, and airline options.",
+          "intro": "The Ho Chi Minh City to Hanoi air corridor ranks among the world's top five busiest domestic routes, with over 50 daily flights connecting Vietnam's northern and southern metropolises in roughly 2 hours."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Nonstop flights take approximately 2 hours to 2 hours 15 minutes."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "1,160 km (721 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Operating Airlines",
+            "body": "Vietnam Airlines, Vietjet Air, Bamboo Airways, and Vietravel Airlines."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Airline Choices: Full Service vs Budget",
+            "body": "Vietnam Airlines operates high-frequency wide-body flights (Airbus A350 and Boeing 787) with full meal service and baggage. Vietjet Air provides cost-effective hourly departures throughout the day and evening."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the flight from Ho Chi Minh City to Hanoi?",
+            "answer": "Direct flights take approximately 2 hours and 10 minutes."
+          },
+          {
+            "question": "How many flights operate daily between SGN and HAN?",
+            "answer": "There are more than 50 scheduled daily flights across all major Vietnamese carriers."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Ho Chi Minh City",
+                "path": "/flights-from/ho-chi-minh-city"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "london-to-ho-chi-minh-city",
+      "origin_city_slug": "london",
+      "destination_city_slug": "ho-chi-minh-city",
+      "content": {
+        "seo": {
+          "h1": "Flights from London to Ho Chi Minh City",
+          "subheadline": "Compare direct nonstop flights and 1-stop options from London to SGN",
+          "title": "London to Ho Chi Minh City Flights: Direct Schedules | Tripways",
+          "meta_description": "Compare direct flights from London Heathrow (LHR) to Ho Chi Minh City (SGN). View flight times, airlines, and booking tips.",
+          "intro": "Direct flights from London to Ho Chi Minh City connect the UK capital with Southern Vietnam across 10,200 km in approximately 12 hours and 30 minutes."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Direct Duration",
+            "body": "Nonstop flights take approximately 12 hours 30 minutes eastbound."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "10,200 km (6,338 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Airlines",
+            "body": "Vietnam Airlines operates direct Boeing 787 flights from London Heathrow (LHR)."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Nonstop vs 1-Stop Options",
+            "body": "Vietnam Airlines provides the only direct nonstop service from London Heathrow. Competitive one-stop options are available via Singapore Airlines (Singapore), Qatar Airways (Doha), and Emirates (Dubai)."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "Which London airport has direct flights to Ho Chi Minh City?",
+            "answer": "London Heathrow (LHR) Terminal 4 offers direct nonstop flights to Ho Chi Minh City with Vietnam Airlines."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from London",
+                "path": "/flights-from/london"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tokyo-to-singapore",
+      "origin_city_slug": "tokyo",
+      "destination_city_slug": "singapore",
+      "content": {
+        "seo": {
+          "h1": "Flights from Tokyo to Singapore",
+          "subheadline": "Compare daily nonstop flights from Haneda (HND) and Narita (NRT) to SIN",
+          "title": "Tokyo to Singapore Flights: Direct Schedules & Airlines | Tripways",
+          "meta_description": "Compare direct flights from Tokyo to Singapore. View flight times, airlines, and airport departure comparisons.",
+          "intro": "Connecting Tokyo with Singapore is a cornerstone business corridor in East Asia, spanning 5,310 km with average nonstop flight times of 7 hours to 7 hours 30 minutes."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Direct flights take approximately 7 hours 15 minutes."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "5,310 km (3,300 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Carriers",
+            "body": "Singapore Airlines, Japan Airlines (JAL), All Nippon Airways (ANA), and Scoot."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Departing from Haneda (HND) vs Narita (NRT)",
+            "body": "Haneda offers downtown convenience and red-eye overnight flights that arrive in Singapore early morning. Narita offers daytime wide-body flights and budget options via Scoot."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the flight from Tokyo to Singapore?",
+            "answer": "Direct flights take roughly 7 hours to 7 hours and 30 minutes."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Tokyo",
+                "path": "/flights-from/tokyo"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "slug": "tokyo-to-london",
+      "origin_city_slug": "tokyo",
+      "destination_city_slug": "london",
+      "content": {
+        "seo": {
+          "h1": "Flights from Tokyo to London",
+          "subheadline": "Compare direct nonstop flights and connecting schedules from Tokyo to London",
+          "title": "Tokyo to London Flights: Nonstop Schedules & Airlines | Tripways",
+          "meta_description": "Compare nonstop flights from Tokyo (HND/NRT) to London Heathrow (LHR). View flight times, airlines, and routings.",
+          "intro": "The Tokyo to London route is a historic intercontinental link connecting Japan with the United Kingdom across 9,585 km with nonstop flight times of 14 to 15 hours."
+        },
+        "travel_facts": [
+          {
+            "type": "duration",
+            "title": "Flight Duration",
+            "body": "Direct flights take approximately 14 hours 30 minutes to 15 hours."
+          },
+          {
+            "type": "distance",
+            "title": "Route Distance",
+            "body": "9,585 km (5,956 miles)."
+          },
+          {
+            "type": "airlines",
+            "title": "Direct Carriers",
+            "body": "British Airways, Japan Airlines (JAL), and All Nippon Airways (ANA)."
+          }
+        ],
+        "editorial_sections": [
+          {
+            "type": "comparison",
+            "heading": "Flight Routings & Airlines",
+            "body": "Direct flights depart from Tokyo Haneda (HND) to London Heathrow (LHR) operated by JAL, ANA, and British Airways. Flight times reflect modern polar or southern route corridors."
+          }
+        ],
+        "faqs": [
+          {
+            "question": "How long is the nonstop flight from Tokyo to London?",
+            "answer": "Direct flights currently take roughly 14 to 15 hours."
+          }
+        ],
+        "internal_link_groups": [
+          {
+            "cluster": "city",
+            "links": [
+              {
+                "anchor_text": "Flights from Tokyo",
+                "path": "/flights-from/tokyo"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

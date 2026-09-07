@@ -1,0 +1,202 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "LHR",
+  "slug": "heathrow-airport",
+  "name": "Heathrow Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Heathrow Airport (LHR) Guide",
+      "title": "LHR Airport Guide: London Heathrow Terminals & Transit | Tripways",
+      "subheadline": "London's premier international gateway: terminals, Elizabeth Line, and flight advice",
+      "meta_description": "Complete passenger transit guide for London Heathrow Airport (LHR). Covers Elizabeth Line, Heathrow Express, terminal transfers, and lounges."
+    },
+    "faqs": [
+      {
+        "answer": "Free train transfers run continuously between Terminal 2/3, Terminal 4, and Terminal 5 via the Elizabeth Line and Heathrow Express. Obtain a free inter-terminal transfer ticket at station kiosks.",
+        "question": "How do I travel between terminals at Heathrow?"
+      },
+      {
+        "answer": "The London Underground Piccadilly Line is the cheapest option, costing roughly £5.60 with an Oyster card or contactless payment, taking approximately 50 minutes.",
+        "question": "What is the cheapest way to reach central London from Heathrow?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "Citizens of the UK, EU, US, Canada, Australia, Japan, and Singapore can use the automated e-Passport gates at all Heathrow terminals.",
+          "title": "1. e-Passport Clearance",
+          "audience": "international"
+        },
+        {
+          "body": "Follow signs to baggage reclaim and declare goods if required at UK Border Force customs channels.",
+          "title": "2. Baggage Reclaim & Customs",
+          "audience": "all"
+        },
+        {
+          "body": "All terminals have direct underground access to the Elizabeth Line, Piccadilly Line, and Heathrow Express trains.",
+          "title": "3. Central London Transit",
+          "audience": "all"
+        }
+      ],
+      "summary": "UK Border Control, e-Passport gates, and London rail connections."
+    },
+    "lounges": [
+      {
+        "name": "Plaza Premium Lounge",
+        "amenities": [
+          "showers",
+          "hot_food_buffet",
+          "bar",
+          "workstations"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, DragonPass, and walk-in passes (~£44)",
+        "estimated_price": {
+          "max": 50,
+          "min": 40,
+          "currency": "GBP"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Airside in Terminals 2, 4, and 5",
+        "operating_hours_summary": "05:00–21:30 daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "Transfers between Terminal 2/3, Terminal 4, and Terminal 5 are completely free using the Elizabeth Line or Heathrow Express rail shuttles.",
+        "title": "Free Inter-Terminal Train Transit"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "Confirm your terminal before arriving: Terminal 2 (Star Alliance), Terminal 3 (Oneworld / Virgin Atlantic), Terminal 4 (SkyTeam), Terminal 5 (British Airways exclusive).",
+          "title": "1. Terminal Assignment Confirmation",
+          "audience": "all"
+        },
+        {
+          "body": "Security regulations require all liquids under 100ml in transparent bags unless dedicated next-generation CT scanners are active at your lane.",
+          "title": "2. Security Screening",
+          "audience": "all"
+        }
+      ],
+      "summary": "Check-in, bag drop, and security screening guidance."
+    },
+    "terminals": [
+      {
+        "code": "T2",
+        "name": "Terminal 2 - The Queen's Terminal (Star Alliance carriers)",
+        "status": "active"
+      },
+      {
+        "code": "T3",
+        "name": "Terminal 3 (Virgin Atlantic, Emirates, Delta, Cathay Pacific)",
+        "status": "active"
+      },
+      {
+        "code": "T4",
+        "name": "Terminal 4 (Qatar Airways, Air France, KLM, Etihad)",
+        "status": "active"
+      },
+      {
+        "code": "T5",
+        "name": "Terminal 5 (British Airways main hub)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Elizabeth Line",
+        "type": "train",
+        "summary": "Direct, high-frequency modern rail line running directly across central London without requiring tube interchanges.",
+        "duration": {
+          "max_minutes": 42,
+          "min_minutes": 28
+        },
+        "direction": "from_airport",
+        "source_url": "https://tfl.gov.uk",
+        "booking_url": null,
+        "best_for_label": "Best overall balance of speed, price, and direct destinations",
+        "estimated_price": {
+          "max": 14,
+          "min": 13,
+          "currency": "GBP"
+        },
+        "luggage_summary": "Spacious train cars with step-free access",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Paddington, West End, City of London & Canary Wharf",
+        "accessibility_summary": "Full level boarding access",
+        "operating_hours_summary": "05:15–00:00 daily (every 15 mins)",
+        "pickup_location_summary": "Rail stations at Terminals 2/3, Terminal 4, and Terminal 5"
+      },
+      {
+        "name": "Heathrow Express",
+        "type": "train",
+        "summary": "Premium non-stop express rail service reaching London Paddington in exactly 15 minutes.",
+        "duration": {
+          "max_minutes": 15,
+          "min_minutes": 15
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.heathrowexpress.com",
+        "booking_url": null,
+        "best_for_label": "Business travelers prioritizing minimum transit time",
+        "estimated_price": {
+          "max": 25,
+          "min": 25,
+          "currency": "GBP"
+        },
+        "luggage_summary": "Dedicated luggage racks at car entrances",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "London Paddington (Non-stop)",
+        "accessibility_summary": "Full step-free access",
+        "operating_hours_summary": "05:10–23:50 daily (every 15 mins)",
+        "pickup_location_summary": "Heathrow Central (T2/3) and Terminal 5"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Free High-Speed Wi-Fi",
+        "summary": "Unlimited high-speed WiFi throughout all Heathrow terminals.",
+        "category": "Connectivity"
+      }
+    ],
+    "orientation": {
+      "intro": "London Heathrow Airport (LHR) is one of the world's premier international hubs, situated 24 km west of Central London.",
+      "summary": "Comprising four operational terminals (Terminals 2, 3, 4, and 5) handling over 80 million passengers annually across hundreds of global airline routes.",
+      "terminal_count": 4,
+      "city_distance_km": 24
+    },
+    "quick_answers": {
+      "terminal_count": 4,
+      "city_distance_km": 24,
+      "default_transport": {
+        "name": "Elizabeth Line / Heathrow Express",
+        "estimated_price": {
+          "max": 25,
+          "min": 6,
+          "currency": "GBP"
+        },
+        "typical_minutes": {
+          "max": 40,
+          "min": 15
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/london",
+            "anchor_text": "Flights from London"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

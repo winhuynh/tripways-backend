@@ -1,0 +1,63 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "city",
+  "slug": "bangkok",
+  "name": "Bangkok",
+  "iata": "BKK",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Direct Flights from Bangkok",
+      "intro": "Bangkok is mainland Southeast Asia's primary aviation crossroads, served by Suvarnabhumi Airport (BKK) for long-haul flag carriers and Don Mueang International Airport (DMK) primarily for regional low-cost routes.",
+      "title": "Direct Flights from Bangkok: Nonstop Routes & Airports | Tripways",
+      "subheadline": "Explore nonstop connections from Suvarnabhumi (BKK) and Don Mueang (DMK)",
+      "meta_description": "Discover all nonstop flight routes departing Bangkok. Compare Suvarnabhumi (BKK) and Don Mueang (DMK), operating airlines, and flight durations."
+    },
+    "faqs": [
+      {
+        "answer": "Choose Suvarnabhumi (BKK) for full-service international flights, long-haul connections, and Airport Rail Link train access. Choose Don Mueang (DMK) for regional low-cost carriers including AirAsia, Nok Air, and Lion Air.",
+        "question": "Which airport in Bangkok should I fly out of?"
+      },
+      {
+        "answer": "Bangkok offers direct nonstop flights to over 140 destinations worldwide, spanning ASEAN capital cities, East Asia, South Asia, Europe, and Australasia.",
+        "question": "How many direct destinations are reachable from Bangkok?"
+      },
+      {
+        "answer": "Allow at least 3.5 to 4 hours between connecting flights. The driving distance between BKK and DMK is approximately 45 km, taking 50 to 90 minutes by expressway depending on traffic.",
+        "question": "How much time is required to transfer between BKK and DMK?"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/airports/suvarnabhumi-bkk",
+            "anchor_text": "Suvarnabhumi Airport Guide (BKK)"
+          },
+          {
+            "path": "/airports/don-mueang-dmk",
+            "anchor_text": "Don Mueang Airport Guide (DMK)"
+          }
+        ],
+        "cluster": "airports"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/bangkok-to-singapore",
+            "anchor_text": "Flights to Singapore"
+          },
+          {
+            "path": "/flights/bangkok-to-tokyo",
+            "anchor_text": "Flights to Tokyo"
+          },
+          {
+            "path": "/flights/bangkok-to-london",
+            "anchor_text": "Flights to London"
+          }
+        ],
+        "cluster": "popular_routes"
+      }
+    ]
+  }
+}

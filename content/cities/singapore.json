@@ -1,0 +1,59 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "city",
+  "slug": "singapore",
+  "name": "Singapore",
+  "iata": "SIN",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Direct Flights from Singapore",
+      "intro": "Singapore is one of the world's preeminent global aviation crossroads. Operating out of Singapore Changi Airport (SIN), passengers can access nonstop connections to more than 140 destinations across Southeast Asia, East Asia, Oceania, Europe, and North America.",
+      "title": "Direct Flights from Singapore: Nonstop Routes & Airlines | Tripways",
+      "subheadline": "Explore nonstop global routes from world-renowned Singapore Changi Airport",
+      "meta_description": "Discover all nonstop flight routes departing Singapore (SIN). Compare airlines, flight times, and destinations across Asia, Australia, Europe, and the Americas."
+    },
+    "faqs": [
+      {
+        "answer": "Virtually all scheduled commercial passenger flights depart from Singapore Changi Airport (SIN). Seletar Airport (XSP) primarily handles turboprop flights to Malaysia and private aviation charters.",
+        "question": "Which airport handles commercial passenger flights in Singapore?"
+      },
+      {
+        "answer": "For international flights, plan to arrive 2 to 3 hours prior to departure. While automated check-in and luggage drop are fast, Terminals 1, 2, and 3 perform security screening at the individual boarding gate rather than a central checkpoint.",
+        "question": "How early should I arrive at Singapore Changi Airport?"
+      },
+      {
+        "answer": "Singapore Airlines operates one of the world's longest commercial flights directly between Singapore Changi (SIN) and New York (JFK / Newark EWR), taking approximately 18 to 19 hours.",
+        "question": "What is the longest nonstop flight departing from Singapore?"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/airports/singapore-changi-sin",
+            "anchor_text": "Singapore Changi Airport Guide (SIN)"
+          }
+        ],
+        "cluster": "airports"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/hanoi-to-singapore",
+            "anchor_text": "Flights to Hanoi"
+          },
+          {
+            "path": "/flights/singapore-to-london",
+            "anchor_text": "Flights to London"
+          },
+          {
+            "path": "/flights/ho-chi-minh-city-to-singapore",
+            "anchor_text": "Flights to Ho Chi Minh City"
+          }
+        ],
+        "cluster": "popular_routes"
+      }
+    ]
+  }
+}

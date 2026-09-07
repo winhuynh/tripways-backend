@@ -1,0 +1,274 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "SGN",
+  "slug": "tan-son-nhat-international-airport",
+  "name": "Tan Son Nhat International Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Tan Son Nhat International Airport (SGN) Guide",
+      "title": "SGN Airport Guide: Tan Son Nhat Terminals & Transit | Tripways",
+      "subheadline": "Vietnam busiest aviation hub: terminals, transport & essential tips",
+      "meta_description": "Complete passenger transit and terminal guide for Tan Son Nhat Airport (SGN) in Ho Chi Minh City. Includes express bus routes, Grab pick-up points, lounge access, and departure tips."
+    },
+    "faqs": [
+      {
+        "answer": "It is roughly 8 km north of District 1. Travel time is typically 30 to 50 minutes depending on rush-hour traffic.",
+        "question": "How far is Tan Son Nhat Airport from District 1?"
+      },
+      {
+        "answer": "Yes, a sheltered pedestrian corridor connects Domestic Terminal 1 and International Terminal 2. The walk takes approximately 5 minutes.",
+        "question": "Can I walk between Terminal 1 and Terminal 2?"
+      },
+      {
+        "answer": "For Terminal 2 arrivals, walk across Lane B to the ground floor pick-up bays or the multi-level TCP parking structure.",
+        "question": "Where do I catch a Grab car at SGN?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "Follow arrival signage to Ground Floor passport control. Visa-on-arrival counter is situated directly before the main passport control desks.",
+          "title": "1. Passport Control & Visa",
+          "audience": "international"
+        },
+        {
+          "body": "Retrieve checked baggage from belts 1-6. All international arrivals must pass customs X-ray screening before exiting to the public arrival hall.",
+          "title": "2. Baggage Reclaim & Customs",
+          "audience": "international"
+        },
+        {
+          "body": "Official telecom kiosks (Viettel, Vinaphone) and licensed currency exchange booths line the exit lobby. Proceed to Lane B or D for app-based taxis.",
+          "title": "3. SIM Cards, Currency & Transport",
+          "audience": "all"
+        }
+      ],
+      "summary": "Arrival procedures for domestic and international passengers landing at Tan Son Nhat."
+    },
+    "lounges": [
+      {
+        "name": "Lotus Lounge (T2 International)",
+        "amenities": [
+          "high_speed_wifi",
+          "hot_buffet",
+          "showers",
+          "massage_chairs",
+          "flight_monitors"
+        ],
+        "source_url": "https://vietnamairlines.com",
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Business Class passengers, SkyTeam Elite Plus, Lotusmiles Platinum, or walk-in lounge pass (~$35 USD)",
+        "estimated_price": {
+          "max": 45,
+          "min": 35,
+          "currency": "USD"
+        },
+        "last_verified_at": "2026-08-04",
+        "location_summary": "Terminal 2 Airside, near Gate 18",
+        "operating_hours_summary": "24 hours"
+      },
+      {
+        "name": "Le Saigonnais Business Lounge",
+        "amenities": [
+          "wifi",
+          "asian_buffet",
+          "quiet_zone",
+          "beverages"
+        ],
+        "source_url": "https://example.com/lesaigonnais",
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, DragonPass, and selected airline premium passengers",
+        "estimated_price": {
+          "max": 40,
+          "min": 30,
+          "currency": "USD"
+        },
+        "last_verified_at": "2026-08-04",
+        "location_summary": "Terminal 1 Airside (Domestic) & Terminal 2 Gate 11 (Intl)",
+        "operating_hours_summary": "04:30–23:00"
+      }
+    ],
+    "notices": [
+      {
+        "body": "A brand new passenger terminal (T3) is slated for domestic expansion. Expect periodic road diversions around Truong Son entrance.",
+        "title": "Terminal T3 Construction Underway"
+      },
+      {
+        "body": "Ignore unsolicited touts inside the arrival hall claiming to be Grab or metered drivers. Only board cars in official queue lanes.",
+        "title": "Beware Unofficial Taxi Touts"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "International flights depart from T2 2nd Floor; domestic flights depart from T1. Online check-in bag drop closes 60 minutes before scheduled departure.",
+          "title": "1. Terminal & Check-in Desk",
+          "audience": "all"
+        },
+        {
+          "body": "Automated e-Gates are available for eligible biometric passport holders. Security requires laptops and liquids placed in separate trays.",
+          "title": "2. Immigration & Security Check",
+          "audience": "international"
+        },
+        {
+          "body": "VAT refund verification counter is located airside near Gate 17. Boarding commences 40 minutes prior to departure.",
+          "title": "3. Boarding Gates & VAT Refund",
+          "audience": "all"
+        }
+      ],
+      "summary": "Departure check-in, security, and boarding gates guide."
+    },
+    "terminals": [
+      {
+        "code": "T1",
+        "name": "Domestic Terminal (Vietnam Airlines, Vietjet, Bamboo)",
+        "status": "active"
+      },
+      {
+        "code": "T2",
+        "name": "International Terminal (All foreign carriers & intl flights)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Bus 109 Express",
+        "type": "bus",
+        "summary": "Air-conditioned yellow express bus directly connecting SGN to central Saigon hotels.",
+        "duration": {
+          "max_minutes": 45,
+          "min_minutes": 30
+        },
+        "direction": "from_airport",
+        "source_url": "https://example.com/bus109",
+        "booking_url": null,
+        "best_for_label": "Budget & solo travelers",
+        "estimated_price": {
+          "max": 20000,
+          "min": 20000,
+          "currency": "VND"
+        },
+        "luggage_summary": "Spacious low-floor luggage racks",
+        "last_verified_at": "2026-08-04",
+        "destination_label": "District 1 (Ben Thanh Market)",
+        "accessibility_summary": "Wheelchair ramp available",
+        "operating_hours_summary": "05:30–01:00 (every 20 mins)",
+        "pickup_location_summary": "Column 12, Terminal 2 Ground Floor (outside arrival gate)"
+      },
+      {
+        "name": "GrabCar / Be",
+        "type": "taxi",
+        "summary": "App-based ride-hailing with upfront transparent fares without risk of meter tampering.",
+        "duration": {
+          "max_minutes": 60,
+          "min_minutes": 30
+        },
+        "direction": "from_airport",
+        "source_url": "https://example.com/grab",
+        "booking_url": null,
+        "best_for_label": "Families with heavy luggage",
+        "estimated_price": {
+          "max": 220000,
+          "min": 120000,
+          "currency": "VND"
+        },
+        "luggage_summary": "Standard sedan or 7-seat SUV trunk",
+        "last_verified_at": "2026-08-04",
+        "destination_label": "Door-to-door (Ho Chi Minh City)",
+        "accessibility_summary": null,
+        "operating_hours_summary": "24 hours daily",
+        "pickup_location_summary": "Lane D / TCP Parking Garage 3rd-5th floors"
+      },
+      {
+        "name": "Metered Taxi (Vinasun / Mai Linh)",
+        "type": "taxi",
+        "summary": "Reputable traditional metered taxi companies drop off right outside departure check-in doors.",
+        "duration": {
+          "max_minutes": 50,
+          "min_minutes": 25
+        },
+        "direction": "to_airport",
+        "source_url": "https://example.com/taxi",
+        "booking_url": null,
+        "best_for_label": "Convenient early morning departures",
+        "estimated_price": {
+          "max": 200000,
+          "min": 130000,
+          "currency": "VND"
+        },
+        "luggage_summary": "Full trunk capacity",
+        "last_verified_at": "2026-08-04",
+        "destination_label": "Tan Son Nhat Departure Hall (T1/T2)",
+        "accessibility_summary": null,
+        "operating_hours_summary": "24 hours",
+        "pickup_location_summary": "Flag down in city or call dispatch hotlines"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Tourist eSIM & SIM Cards",
+        "summary": "Official Viettel and Vinaphone counters at T2 arrivals lobby offering 4G/5G data packages from 200,000 VND.",
+        "category": "Connectivity"
+      },
+      {
+        "name": "ATMs & Currency Exchange",
+        "summary": "Vietcombank, BIDV, and HSBC ATMs located in both departure and arrival lobbies.",
+        "category": "Finance"
+      },
+      {
+        "name": "Free High-Speed Wi-Fi & Charging",
+        "summary": "Complimentary \"FreeWifi TanSonNhat Airport\" available throughout both passenger terminals.",
+        "category": "Comfort"
+      }
+    ],
+    "orientation": {
+      "intro": "Welcome to Tan Son Nhat International Airport (SGN), the main international gateway to Southern Vietnam located just 8 km north of downtown Ho Chi Minh City.",
+      "summary": "With two connected terminals handling domestic (T1) and international (T2) flights, SGN accommodates over 38 million passengers annually.",
+      "terminal_count": 2,
+      "city_distance_km": 8
+    },
+    "quick_answers": {
+      "terminal_count": 2,
+      "city_distance_km": 8,
+      "default_transport": {
+        "name": "Airport Bus 109 / Grab Taxi",
+        "estimated_price": {
+          "max": 150000,
+          "min": 20000,
+          "currency": "VND"
+        },
+        "typical_minutes": {
+          "max": 60,
+          "min": 30
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/ho-chi-minh-city",
+            "anchor_text": "Flights from Ho Chi Minh City"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/flights/ho-chi-minh-city-to-singapore",
+            "anchor_text": "Flights to Singapore (SIN)"
+          },
+          {
+            "path": "/flights/ho-chi-minh-city-to-london",
+            "anchor_text": "Flights to London (LHR)"
+          }
+        ],
+        "cluster": "routes"
+      }
+    ]
+  }
+}

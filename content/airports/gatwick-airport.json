@@ -1,0 +1,178 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "LGW",
+  "slug": "gatwick-airport",
+  "name": "Gatwick Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Gatwick Airport (LGW) Guide",
+      "title": "LGW Airport Guide: London Gatwick Terminals & Transport | Tripways",
+      "subheadline": "London's second-busiest airport: terminals, Gatwick Express, and passenger tips",
+      "meta_description": "Complete passenger guide for London Gatwick Airport (LGW). Covers Gatwick Express, Thameslink, inter-terminal monorail, and flight advice."
+    },
+    "faqs": [
+      {
+        "answer": "A free automated elevated shuttle runs 24 hours a day between North and South Terminals. The trip takes roughly 2 minutes with departures every few minutes.",
+        "question": "How do I get between North Terminal and South Terminal at Gatwick?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "Both North and South Terminals have dedicated immigration halls with e-Passport gates and baggage reclaim carousels.",
+          "title": "1. Passport Control & Baggage",
+          "audience": "all"
+        },
+        {
+          "body": "The railway station is integrated directly into South Terminal. Passengers landing at North Terminal take the 2-minute free monorail shuttle to South Terminal.",
+          "title": "2. Gatwick Railway Station Access",
+          "audience": "all"
+        }
+      ],
+      "summary": "UK border inspection, baggage collection, and train station access at South Terminal."
+    },
+    "lounges": [
+      {
+        "name": "No1 Lounge Gatwick",
+        "amenities": [
+          "buffet",
+          "bar",
+          "wifi",
+          "runway_views"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass, DragonPass, and walk-in pass",
+        "estimated_price": {
+          "max": 42,
+          "min": 36,
+          "currency": "GBP"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Airside in North and South Terminals",
+        "operating_hours_summary": "04:00–21:00 daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "You can tap in and tap out with standard contactless payment cards or Oyster cards on all trains between Gatwick and Central London without buying paper tickets.",
+        "title": "Use Contactless for Train Tickets"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "easyJet operates from both terminals. British Airways, Norse Atlantic, and Singapore Airlines operate from South Terminal. Emirates and Qatar Airways operate from North Terminal.",
+          "title": "1. Terminal Confirmation",
+          "audience": "all"
+        }
+      ],
+      "summary": "North Terminal and South Terminal check-in procedures."
+    },
+    "terminals": [
+      {
+        "code": "North",
+        "name": "North Terminal (easyJet, Emirates, Qatar Airways, TUI)",
+        "status": "active"
+      },
+      {
+        "code": "South",
+        "name": "South Terminal (British Airways, Singapore Airlines, Wizz Air)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Gatwick Express",
+        "type": "train",
+        "summary": "Dedicated non-stop train service connecting Gatwick directly to London Victoria in 30 minutes.",
+        "duration": {
+          "max_minutes": 30,
+          "min_minutes": 30
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.gatwickexpress.com",
+        "booking_url": null,
+        "best_for_label": "Fast connection to Victoria and the West End",
+        "estimated_price": {
+          "max": 22,
+          "min": 21,
+          "currency": "GBP"
+        },
+        "luggage_summary": "Full luggage racks",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "London Victoria Station",
+        "accessibility_summary": "Step-free train access",
+        "operating_hours_summary": "05:00–23:30 daily (every 15 mins)",
+        "pickup_location_summary": "Gatwick Airport railway station, South Terminal"
+      },
+      {
+        "name": "Thameslink Rail",
+        "type": "train",
+        "summary": "Regular commuter rail service cutting straight through central London, ideal for business and Eurostar connections.",
+        "duration": {
+          "max_minutes": 45,
+          "min_minutes": 32
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.thameslinkrailway.com",
+        "booking_url": null,
+        "best_for_label": "Best value and direct connections to the City of London",
+        "estimated_price": {
+          "max": 16,
+          "min": 14,
+          "currency": "GBP"
+        },
+        "luggage_summary": "Standard train space",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "London Bridge, Blackfriars, Farringdon & St Pancras",
+        "accessibility_summary": "Step-free access",
+        "operating_hours_summary": "24 hours daily",
+        "pickup_location_summary": "Gatwick Airport railway station, South Terminal"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "Inter-Terminal Monorail Shuttle",
+        "summary": "Free automated passenger transit shuttle operating 24 hours between North and South Terminals (2 min ride).",
+        "category": "Transit"
+      }
+    ],
+    "orientation": {
+      "intro": "London Gatwick Airport (LGW) is located 45 km south of Central London in West Sussex.",
+      "summary": "Operating two terminals — North Terminal and South Terminal — connected by a free 24-hour automated monorail shuttle.",
+      "terminal_count": 2,
+      "city_distance_km": 45
+    },
+    "quick_answers": {
+      "terminal_count": 2,
+      "city_distance_km": 45,
+      "default_transport": {
+        "name": "Gatwick Express / Thameslink Train",
+        "estimated_price": {
+          "max": 22,
+          "min": 14,
+          "currency": "GBP"
+        },
+        "typical_minutes": {
+          "max": 45,
+          "min": 30
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/london",
+            "anchor_text": "Flights from London"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

@@ -6,17 +6,13 @@ BEGIN;
 INSERT INTO admin.data_sources (
   id,
   code,
-  name,
-  source_type,
-  environment_scope
+  name
 )
 VALUES
   (
     '00000000-0000-0000-0000-000000000001',
     'fixture',
-    'Development Fixture',
-    'development_fixture',
-    'development'
+    'Development Fixture'
   );
 
 INSERT INTO public.countries (id, iso2, iso3, name, slug, source_id, source_record_id)

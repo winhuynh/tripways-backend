@@ -1,0 +1,78 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "ho-chi-minh-city-to-singapore",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Ho Chi Minh City to Singapore",
+      "intro": "The Ho Chi Minh City to Singapore air corridor is one of Southeast Asia busiest business and leisure routes, spanning roughly 1,090 km with average flight times under two hours.",
+      "title": "Ho Chi Minh City to Singapore Flights: Direct Routes & Schedules | Tripways",
+      "subheadline": "Compare daily nonstop flights between SGN and SIN from top airlines",
+      "meta_description": "Find all nonstop flights from Ho Chi Minh City (SGN) to Singapore Changi (SIN). Compare flight schedules, prices, airlines, and airport transit info."
+    },
+    "faqs": [
+      {
+        "answer": "A direct flight from Tan Son Nhat Airport (SGN) to Singapore Changi (SIN) takes approximately 2 hours and 5 minutes.",
+        "question": "How long is the flight from Ho Chi Minh City to Singapore?"
+      },
+      {
+        "answer": "Vietnamese passport holders are eligible for visa-free entry to Singapore for stays up to 30 days. An electronic SG Arrival Card submission is mandatory.",
+        "question": "Do I need a visa to travel from Vietnam to Singapore?"
+      },
+      {
+        "answer": "Singapore Airlines and Scoot generally arrive at Terminal 1, 2, or 3, while Vietjet Air typically operates from Terminal 4.",
+        "question": "Which terminal does the flight land at in Singapore?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "Direct nonstop flights take roughly 2 hours to 2 hours 15 minutes.",
+        "type": "duration",
+        "title": "Flight Time"
+      },
+      {
+        "body": "The flight distance from Tan Son Nhat (SGN) to Singapore Changi (SIN) is approximately 1,090 km (677 miles).",
+        "type": "distance",
+        "title": "Route Distance"
+      },
+      {
+        "body": "There are multiple daily departures operated by full-service and low-cost carriers.",
+        "type": "frequency",
+        "title": "Flight Frequency"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Singapore Airlines and Vietnam Airlines offer premium full-service experiences including meals and checked luggage. Budget travelers can choose Scoot or Vietjet Air for lower base fares.",
+        "type": "comparison",
+        "heading": "Airlines Flying Between SGN and SIN"
+      },
+      {
+        "body": "Singapore Changi Airport features four interconnected terminals. All foreign visitors must submit the electronic SG Arrival Card (SGAC) within 3 days prior to arrival.",
+        "type": "arrival_guide",
+        "heading": "Arriving at Singapore Changi (SIN)"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/ho-chi-minh-city",
+            "anchor_text": "Flights from Ho Chi Minh City"
+          }
+        ],
+        "cluster": "city"
+      },
+      {
+        "links": [
+          {
+            "path": "/airports/tan-son-nhat-sgn",
+            "anchor_text": "Tan Son Nhat Airport Guide"
+          }
+        ],
+        "cluster": "airports"
+      }
+    ]
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "route",
+  "slug": "ho-chi-minh-city-to-london",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Flights from Ho Chi Minh City to London",
+      "intro": "Flying from Ho Chi Minh City to London connects Vietnam Southern metropolis with the capital of the United Kingdom. Direct flights take approximately 13 hours with Vietnam Airlines, while convenient one-stop connections are offered via Doha, Dubai, and Singapore.",
+      "title": "Ho Chi Minh City to London Flights: Nonstop & 1-Stop Options | Tripways",
+      "subheadline": "Compare direct flights and 1-stop connecting schedules from SGN to LON",
+      "meta_description": "Compare direct flights and one-stop connections between Ho Chi Minh City (SGN) and London (LHR/LGW). Find airlines, flight durations, and booking insights."
+    },
+    "faqs": [
+      {
+        "answer": "Vietnam Airlines is currently the sole carrier operating direct nonstop flights between Ho Chi Minh City (SGN) and London Heathrow (LHR).",
+        "question": "How many airlines fly direct from Ho Chi Minh City to London?"
+      },
+      {
+        "answer": "The fastest nonstop flight takes roughly 13 hours 15 minutes.",
+        "question": "What is the fastest travel time between SGN and London?"
+      }
+    ],
+    "travel_facts": [
+      {
+        "body": "The flight distance between Ho Chi Minh City (SGN) and London (LHR) is approximately 10,210 km (6,344 miles).",
+        "type": "distance",
+        "title": "Flight Distance"
+      },
+      {
+        "body": "Nonstop flights take approximately 13 hours 15 minutes heading westbound.",
+        "type": "duration",
+        "title": "Direct Flight Duration"
+      },
+      {
+        "body": "Vietnam Airlines operates direct non-stop flights to London Heathrow (LHR). Qatar Airways, Emirates, and Singapore Airlines offer competitive 1-stop routes.",
+        "type": "airlines",
+        "title": "Operating Airlines"
+      }
+    ],
+    "editorial_sections": [
+      {
+        "body": "Direct flights save between 3 and 7 hours of total journey time. However, one-stop itineraries via the Middle East frequently offer significant fare discounts and modern wide-body aircraft comfort.",
+        "type": "guide",
+        "heading": "Direct vs One-Stop Options"
+      },
+      {
+        "body": "Book at least 8-12 weeks in advance for summer travel (June-August) and the Christmas holiday period to secure the best fares.",
+        "type": "tips",
+        "heading": "Best Time to Book"
+      }
+    ],
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/ho-chi-minh-city",
+            "anchor_text": "Flights from Ho Chi Minh City"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}

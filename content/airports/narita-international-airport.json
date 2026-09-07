@@ -1,0 +1,183 @@
+{
+  "$schema": "https://tripways.io/schemas/editorial-content.v1.json",
+  "page_type": "airport",
+  "iata": "NRT",
+  "slug": "narita-international-airport",
+  "name": "Narita International Airport",
+  "locale": "en-GB",
+  "content": {
+    "seo": {
+      "h1": "Tokyo Narita International Airport (NRT) Guide",
+      "title": "NRT Airport Guide: Tokyo Narita Terminals & Transit | Tripways",
+      "subheadline": "Japan's intercontinental hub: terminals, Skyliner, Narita Express, and transfers",
+      "meta_description": "Complete passenger transit guide for Tokyo Narita Airport (NRT). Covers Keisei Skyliner, JR Narita Express, terminal transfers, and lounges."
+    },
+    "faqs": [
+      {
+        "answer": "The Keisei Skyliner is the fastest option, reaching Nippori Station on the JR Yamanote line in 36 minutes and Ueno in 41 minutes for ¥2,570.",
+        "question": "What is the fastest way to get from Narita Airport to central Tokyo?"
+      }
+    ],
+    "arrival": {
+      "steps": [
+        {
+          "body": "Clear passport control and scan your Visit Japan Web customs QR code at the automated declaration terminals before baggage release.",
+          "title": "1. Arrival Inspection & Visit Japan Web",
+          "audience": "international"
+        },
+        {
+          "body": "JR East Travel Service Centers and Keisei Skyliner ticket offices are located on Basement 1 of Terminals 1 and 2.",
+          "title": "2. Railway Ticket Counters",
+          "audience": "all"
+        }
+      ],
+      "summary": "Immigration, customs, and railway stations at Terminals 1 and 2."
+    },
+    "lounges": [
+      {
+        "name": "Narita TraveLounge",
+        "amenities": [
+          "snacks",
+          "coffee",
+          "runway_view",
+          "wifi"
+        ],
+        "source_url": null,
+        "affiliate_url": null,
+        "location_type": "airside",
+        "access_summary": "Priority Pass and walk-in pass (~¥1,220)",
+        "estimated_price": {
+          "max": 15,
+          "min": 10,
+          "currency": "USD"
+        },
+        "last_verified_at": "2026-09-01",
+        "location_summary": "Terminal 1 Airside, 3rd Floor near Gate 26",
+        "operating_hours_summary": "07:30–20:30 daily"
+      }
+    ],
+    "notices": [
+      {
+        "body": "Terminal 3 has no direct rail station. Arrive at Narita Airport Terminal 2 Station and take the 5-minute free shuttle bus or follow the 300-meter covered walking track.",
+        "title": "Terminal 3 Access via Terminal 2"
+      }
+    ],
+    "departure": {
+      "steps": [
+        {
+          "body": "Terminal 1 (Star Alliance & SkyTeam), Terminal 2 (Oneworld carriers), Terminal 3 (dedicated budget airlines including Zipair, Jetstar, and Spring Japan).",
+          "title": "1. Terminal Allocation",
+          "audience": "all"
+        }
+      ],
+      "summary": "Terminal assignment and check-in procedures."
+    },
+    "terminals": [
+      {
+        "code": "T1",
+        "name": "Terminal 1 (ANA, United, Singapore Airlines, Vietnam Airlines, Delta)",
+        "status": "active"
+      },
+      {
+        "code": "T2",
+        "name": "Terminal 2 (JAL, British Airways, Cathay Pacific, Emirates)",
+        "status": "active"
+      },
+      {
+        "code": "T3",
+        "name": "Terminal 3 (Zipair, Jetstar Japan, Spring Japan)",
+        "status": "active"
+      }
+    ],
+    "transport": [
+      {
+        "name": "Keisei Skyliner Express",
+        "type": "train",
+        "summary": "High-speed 160 km/h express train connecting Narita to downtown Tokyo in just 36 minutes.",
+        "duration": {
+          "max_minutes": 41,
+          "min_minutes": 36
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.keisei.co.jp",
+        "booking_url": null,
+        "best_for_label": "Fastest connection to Tokyo's northern and eastern districts",
+        "estimated_price": {
+          "max": 2570,
+          "min": 2570,
+          "currency": "JPY"
+        },
+        "luggage_summary": "Reserved seating with large dedicated luggage racks",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Nippori & Keisei Ueno (Yamanote Line connection)",
+        "accessibility_summary": "Full step-free access",
+        "operating_hours_summary": "07:26–23:00 daily (every 20 mins)",
+        "pickup_location_summary": "Basement 1 stations at Terminal 1 and Terminal 2"
+      },
+      {
+        "name": "JR Narita Express (N'EX)",
+        "type": "train",
+        "summary": "Comfortable non-transfer limited express train connecting Narita directly to major commercial hubs in western Tokyo.",
+        "duration": {
+          "max_minutes": 75,
+          "min_minutes": 55
+        },
+        "direction": "from_airport",
+        "source_url": "https://www.jreast.co.jp",
+        "booking_url": null,
+        "best_for_label": "Direct transit to Shinjuku, Shibuya, and Tokyo Station",
+        "estimated_price": {
+          "max": 3250,
+          "min": 3070,
+          "currency": "JPY"
+        },
+        "luggage_summary": "Coded luggage security locks",
+        "last_verified_at": "2026-09-01",
+        "destination_label": "Tokyo Station, Shinagawa, Shibuya & Shinjuku",
+        "accessibility_summary": "Full elevator access",
+        "operating_hours_summary": "07:44–21:44 daily (every 30 mins)",
+        "pickup_location_summary": "JR station tracks at Terminal 1 and Terminal 2"
+      }
+    ],
+    "facilities": [
+      {
+        "name": "SIM & Pocket Wi-Fi Counters",
+        "summary": "Multiple telecom pickup counters and vending machines across arrival lobbies in all three terminals.",
+        "category": "Connectivity"
+      }
+    ],
+    "orientation": {
+      "intro": "Narita International Airport (NRT) is situated 60 km east of downtown Tokyo in Chiba Prefecture.",
+      "summary": "Serving as Japan's primary long-haul intercontinental gateway across three terminals, connecting flights across North America, Europe, Asia, and Oceania.",
+      "terminal_count": 3,
+      "city_distance_km": 60
+    },
+    "quick_answers": {
+      "terminal_count": 3,
+      "city_distance_km": 60,
+      "default_transport": {
+        "name": "Keisei Skyliner / JR Narita Express",
+        "estimated_price": {
+          "max": 3070,
+          "min": 1300,
+          "currency": "JPY"
+        },
+        "typical_minutes": {
+          "max": 60,
+          "min": 36
+        }
+      }
+    },
+    "internal_link_groups": [
+      {
+        "links": [
+          {
+            "path": "/flights-from/tokyo",
+            "anchor_text": "Flights from Tokyo"
+          }
+        ],
+        "cluster": "city"
+      }
+    ]
+  }
+}
