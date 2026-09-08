@@ -21,6 +21,7 @@
     "ourairports:generate-local": "deno run --allow-net=davidmegginson.github.io,raw.githubusercontent.com --allow-read=supabase/seed/ourairports --allow-write=supabase/seed/ourairports scripts/generate-ourairports-local-data.ts",
     "ourairports:import-local": "deno run --allow-env=LOCAL_DATABASE_URL --allow-read=supabase/seed/ourairports --allow-run=psql scripts/import-ourairports-local-data.ts",
     "routes:import-sample": "deno run --allow-net --allow-env --allow-read --allow-run=psql scripts/import-sample-direct-routes.ts",
+    "airlines:import-travelpayouts": "deno run --allow-net --allow-env --allow-read --allow-run=psql scripts/import-travelpayouts-airlines.ts",
     "content:generate": "deno run --allow-read --allow-write content/generate_content_migration.ts",
     "content:apply": "deno run --allow-read --allow-write --allow-env --allow-run content/generate_content_migration.ts --apply",
     "verify:p0a": "bash scripts/verify-p0a-local.sh"
