@@ -45,150 +45,206 @@ export function createRouteCacheHandler(
 
       const client = options.getSupabaseClient();
 
-      const leaseParams = {
-        p_origin_iata: parsed.originIata,
-        p_destination_iata: parsed.destIata ?? null,
-        p_currency_code: parsed.currency ?? 'USD',
-        p_market_code: parsed.market ?? 'us',
-      };
-
-      const { data: leaseData, error: leaseError } = await client.rpc(
-        'rpc_acquire_price_refresh_lease',
-        leaseParams,
-      );
-
-      if (leaseError) {
-        logEdgeError('ROUTE_CACHE_LEASE_RPC_ERROR', leaseError, logContext);
-        throw leaseError;
-      }
-
-      if (!leaseData || typeof leaseData !== 'object') {
-        throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
-      }
-
-      const leaseObj = leaseData as Record<string, unknown>;
-
-      if (leaseObj.status === 'failed') {
-        if (leaseObj.error === 'ERR_INVALID_IATA') {
-          throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
-        }
-        throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
-      }
-
-      if (leaseObj.status === 'fresh') {
-        const durationMs = Math.round(performance.now() - startTime);
-        logEdgeInfo('ROUTE_CACHE_HIT_FRESH', {
-          ...logContext,
-          durationMs,
-          origin: parsed.originIata,
-          destination: parsed.destIata,
-        });
-        return successResponse(leaseObj, 200, { 'x-request-id': requestId });
-      }
-
-      if (leaseObj.status === 'lease_acquired') {
-        const fetchPrices = options.fetchProviderPrices ?? fetchRoutePricesFromTravelpayouts;
-        const config: TravelpayoutsConfig = options.travelpayoutsConfig ?? {
-          token: Deno.env.get('TRAVELPAYOUTS_TOKEN') ?? Deno.env.get('TRAVELPAYOUTS_API_TOKEN'),
+      // Helper to process a single origin/destination route cache refresh
+      const processRoute = async (
+        originIata: string,
+        destIata?: string,
+        forceRefresh = false,
+      ): Promise<Record<string, unknown>> => {
+        const leaseParams = {
+          p_origin_iata: originIata,
+          p_destination_iata: destIata ?? null,
+          p_currency_code: parsed.currency ?? 'USD',
+          p_market_code: parsed.market ?? 'us',
+          p_force_refresh: forceRefresh,
         };
 
-        let observations: NormalizedPriceObservation[];
-        try {
-          observations = await fetchPrices(config, {
-            originIata: parsed.originIata,
-            destIata: parsed.destIata,
-            currency: parsed.currency,
-            market: parsed.market,
-            locale: parsed.locale,
-          });
-        } catch (providerError) {
-          logEdgeWarn('ROUTE_CACHE_PROVIDER_FETCH_FAILED', providerError, logContext);
+        const { data: leaseData, error: leaseError } = await client.rpc(
+          'rpc_acquire_price_refresh_lease',
+          leaseParams,
+        );
+
+        if (leaseError) {
+          logEdgeError('ROUTE_CACHE_LEASE_RPC_ERROR', leaseError, logContext);
+          throw leaseError;
+        }
+
+        if (!leaseData || typeof leaseData !== 'object') {
           throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
         }
 
-        const leaseToken = (leaseObj.lease_token ?? leaseObj.lease_id ?? null) as string | null;
+        const leaseObj = leaseData as Record<string, unknown>;
 
-        const publishParams = {
-          p_origin_iata: parsed.originIata,
-          p_destination_iata: parsed.destIata ?? null,
-          p_currency_code: parsed.currency ?? 'USD',
-          p_market_code: parsed.market ?? 'us',
-          p_observations: observations,
-          p_lease_token: leaseToken,
-        };
+        if (leaseObj.status === 'failed') {
+          if (leaseObj.error === 'ERR_INVALID_IATA') {
+            throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+          }
+          throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
+        }
 
-        const { data: publishData, error: publishError } = await client.rpc(
-          'rpc_publish_price_observations',
-          publishParams,
-        );
+        if (leaseObj.status === 'fresh') {
+          return leaseObj;
+        }
 
-        if (publishError) {
-          logEdgeError('ROUTE_CACHE_PUBLISH_RPC_ERROR', publishError, logContext);
-          throw publishError;
+        if (leaseObj.status === 'cooldown') {
+          return {
+            ...leaseObj,
+            status: 'empty',
+            origin: originIata,
+            destination: destIata ?? null,
+            observations: [],
+          };
+        }
+
+        if (leaseObj.status === 'refreshing') {
+          return {
+            ...leaseObj,
+            status: 'loading',
+            origin: originIata,
+            destination: destIata ?? null,
+          };
+        }
+
+        if (leaseObj.status === 'lease_acquired') {
+          const fetchPrices = options.fetchProviderPrices ?? fetchRoutePricesFromTravelpayouts;
+          const config: TravelpayoutsConfig = options.travelpayoutsConfig ?? {
+            token: Deno.env.get('TRAVELPAYOUTS_TOKEN') ?? Deno.env.get('TRAVELPAYOUTS_API_TOKEN'),
+          };
+
+          let observations: NormalizedPriceObservation[];
+          try {
+            observations = await fetchPrices(config, {
+              originIata,
+              destIata,
+              currency: parsed.currency,
+              market: parsed.market,
+              locale: parsed.locale,
+            });
+          } catch (providerError) {
+            logEdgeWarn('ROUTE_CACHE_PROVIDER_FETCH_FAILED', providerError, logContext);
+            throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
+          }
+
+          const leaseToken = (leaseObj.lease_token ?? leaseObj.lease_id ?? null) as string | null;
+
+          const publishParams = {
+            p_origin_iata: originIata,
+            p_destination_iata: destIata ?? null,
+            p_currency_code: parsed.currency ?? 'USD',
+            p_market_code: parsed.market ?? 'us',
+            p_observations: observations,
+            p_lease_token: leaseToken,
+          };
+
+          const { data: publishData, error: publishError } = await client.rpc(
+            'rpc_publish_price_observations',
+            publishParams,
+          );
+
+          if (publishError) {
+            logEdgeError('ROUTE_CACHE_PUBLISH_RPC_ERROR', publishError, logContext);
+            throw publishError;
+          }
+
+          const pubObj = typeof publishData === 'object' && publishData !== null
+            ? (publishData as Record<string, unknown>)
+            : {};
+
+          if (pubObj.status === 'failed') {
+            logEdgeWarn('ROUTE_CACHE_PUBLISH_FAILED', pubObj, logContext);
+            throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
+          }
+
+          const publishedCount = typeof pubObj.published_count === 'number'
+            ? pubObj.published_count
+            : (typeof pubObj.count === 'number' ? pubObj.count : observations.length);
+
+          const finalStatus = pubObj.status === 'empty' || publishedCount === 0 ? 'empty' : 'fresh';
+
+          const finalObservations = Array.isArray(pubObj.observations)
+            ? pubObj.observations
+            : (publishedCount === 0 ? [] : observations);
+
+          return {
+            ...pubObj,
+            status: finalStatus,
+            origin: originIata,
+            destination: destIata ?? null,
+            count: publishedCount,
+            observations: finalObservations,
+          };
+        }
+
+        return leaseObj;
+      };
+
+      // Handle batch cron mode without origin
+      if (!parsed.originIata && parsed.mode) {
+        let hubIatas = ['SGN', 'SIN', 'BKK'];
+        if (typeof client.from === 'function') {
+          try {
+            const { data: hubs } = await client
+              .from('airports')
+              .select('iata')
+              .or('is_hub.eq.true,iata.in.(SGN,SIN,BKK,HAN,LHR)')
+              .eq('status', 'active')
+              .order('iata', { ascending: true })
+              .limit(10);
+            if (hubs && hubs.length > 0) {
+              hubIatas = hubs.map((h: { iata: string }) => h.iata);
+            }
+          } catch {
+            // fallback to default hubs
+          }
+        }
+
+        const forceRefresh = parsed.mode === 'day6_active_refresh';
+        const batchResults: Array<Record<string, unknown>> = [];
+
+        for (const hub of hubIatas) {
+          try {
+            const itemResult = await processRoute(hub, undefined, forceRefresh);
+            batchResults.push(itemResult);
+          } catch (itemErr) {
+            logEdgeWarn('ROUTE_CACHE_BATCH_ITEM_FAILED', { hub, error: itemErr }, logContext);
+          }
         }
 
         const durationMs = Math.round(performance.now() - startTime);
-        logEdgeInfo('ROUTE_CACHE_LEASE_PUBLISHED', {
+        logEdgeInfo('ROUTE_CACHE_BATCH_COMPLETED', {
           ...logContext,
           durationMs,
-          origin: parsed.originIata,
-          destination: parsed.destIata,
-          count: observations.length,
+          mode: parsed.mode,
+          processedCount: batchResults.length,
         });
 
-        const result = {
-          status: 'fresh',
-          origin: parsed.originIata,
-          destination: parsed.destIata ?? null,
-          count: observations.length,
-          observations,
-          ...(typeof publishData === 'object' && publishData !== null ? publishData : {}),
-        };
-
-        return successResponse(result, 200, { 'x-request-id': requestId });
-      }
-
-      if (leaseObj.status === 'cooldown') {
-        const durationMs = Math.round(performance.now() - startTime);
-        logEdgeInfo('ROUTE_CACHE_COOLDOWN', {
-          ...logContext,
-          durationMs,
-          origin: parsed.originIata,
-          destination: parsed.destIata,
-        });
         return successResponse(
           {
-            ...leaseObj,
-            status: 'empty',
-            origin: parsed.originIata,
-            destination: parsed.destIata ?? null,
+            status: 'success',
+            mode: parsed.mode,
+            processed_count: batchResults.length,
+            results: batchResults,
           },
           200,
           { 'x-request-id': requestId },
         );
       }
 
-      if (leaseObj.status === 'refreshing') {
-        const durationMs = Math.round(performance.now() - startTime);
-        logEdgeInfo('ROUTE_CACHE_REFRESHING', {
-          ...logContext,
-          durationMs,
-          origin: parsed.originIata,
-          destination: parsed.destIata,
-        });
-        return successResponse(
-          {
-            ...leaseObj,
-            status: 'loading',
-            origin: parsed.originIata,
-            destination: parsed.destIata ?? null,
-          },
-          200,
-          { 'x-request-id': requestId },
-        );
-      }
+      // Handle standard single-route request
+      const originIata = parsed.originIata!;
+      const forceRefresh = parsed.mode === 'day6_active_refresh';
+      const result = await processRoute(originIata, parsed.destIata, forceRefresh);
 
-      return successResponse(leaseObj, 200, { 'x-request-id': requestId });
+      const durationMs = Math.round(performance.now() - startTime);
+      logEdgeInfo('ROUTE_CACHE_COMPLETED', {
+        ...logContext,
+        durationMs,
+        origin: originIata,
+        destination: parsed.destIata,
+        status: typeof result.status === 'string' ? result.status : undefined,
+      });
+
+      return successResponse(result, 200, { 'x-request-id': requestId });
     } catch (error) {
       const durationMs = Math.round(performance.now() - startTime);
       return errorResponse(error, {

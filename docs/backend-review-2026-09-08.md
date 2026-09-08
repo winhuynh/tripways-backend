@@ -1,5 +1,7 @@
 # Backend Review — 2026-09-08
 
+> Báo cáo này ghi nhận trạng thái **trước bản sửa `025ff51`**. Xem [kết quả kiểm tra lại bản sửa](/Users/winn/Documents/Tripways/tripways-backend/docs/backend-review-2026-09-08-recheck.md) để biết lỗi nào đã được xử lý và lỗi nào còn tồn tại. Các số liệu DB dưới đây là kết quả của lần kiểm tra đầu tiên.
+
 **Kết luận: chưa đủ ổn để đưa pipeline data/cache hiện tại vào production.** Có lỗi chặn runtime, lỗi cache concurrency/expiry và lỗi làm sai hoặc mất liên kết dữ liệu. 160 test hiện có pass nhưng không chứng minh được các ranh giới Edge ↔ RPC ↔ schema hoạt động đúng.
 
 Phạm vi: `tripways-backend`, gồm schema/migration, RPC, Edge entrypoints/handlers/providers, ingestion, read models, publication, cache, quyền truy cập, seed/content tooling và verification scripts. Không review toàn bộ frontend, không gọi provider trả phí, không deploy. DB local chỉ được truy vấn với `default_transaction_read_only=on`; không reset, không chạy ingestion/publication/purge trên dữ liệu hiện tại. Chỉ thêm báo cáo này, không sửa implementation.

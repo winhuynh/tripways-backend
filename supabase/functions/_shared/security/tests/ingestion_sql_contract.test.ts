@@ -283,7 +283,7 @@ Deno.test('airport route cache lease functions enforce service_role and lease li
   assert.ok(
     includesSql(
       finalizeSql,
-      'grant execute on function admin.rpc_finalize_airport_route_refresh_lease(text, text, text) to service_role',
+      'grant execute on function admin.rpc_finalize_airport_route_refresh_lease(text, text, text, uuid) to service_role',
     ),
   );
 });

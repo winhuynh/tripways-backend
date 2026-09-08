@@ -142,6 +142,13 @@ BEGIN
     SELECT id
     FROM public.publication_versions
     WHERE status = 'retired'
+      AND id IS DISTINCT FROM (
+        SELECT id
+        FROM public.publication_versions
+        WHERE status = 'retired'
+        ORDER BY published_at DESC NULLS LAST
+        LIMIT 1
+      )
   );
 
   DELETE FROM public.city_page_read_models
@@ -149,6 +156,13 @@ BEGIN
     SELECT id
     FROM public.publication_versions
     WHERE status = 'retired'
+      AND id IS DISTINCT FROM (
+        SELECT id
+        FROM public.publication_versions
+        WHERE status = 'retired'
+        ORDER BY published_at DESC NULLS LAST
+        LIMIT 1
+      )
   );
 
   DELETE FROM public.airport_page_read_models
@@ -156,6 +170,13 @@ BEGIN
     SELECT id
     FROM public.publication_versions
     WHERE status = 'retired'
+      AND id IS DISTINCT FROM (
+        SELECT id
+        FROM public.publication_versions
+        WHERE status = 'retired'
+        ORDER BY published_at DESC NULLS LAST
+        LIMIT 1
+      )
   );
 
   DELETE FROM public.route_page_read_models
@@ -163,6 +184,13 @@ BEGIN
     SELECT id
     FROM public.publication_versions
     WHERE status = 'retired'
+      AND id IS DISTINCT FROM (
+        SELECT id
+        FROM public.publication_versions
+        WHERE status = 'retired'
+        ORDER BY published_at DESC NULLS LAST
+        LIMIT 1
+      )
   );
 
   DELETE FROM public.publication_versions
@@ -184,7 +212,3 @@ $$;
 REVOKE ALL ON FUNCTION public.publish_read_model_version(TEXT, BOOLEAN)
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.publish_read_model_version(TEXT, BOOLEAN) TO service_role;
-
-REVOKE ALL ON FUNCTION public.publish_read_model_version(TEXT)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.publish_read_model_version(TEXT) TO service_role;

@@ -1,7 +1,7 @@
 import { isRecord } from '@shared/contracts/guards.ts';
 
 export type RouteCacheRequest = {
-  originIata: string;
+  originIata?: string;
   destIata?: string;
   currency?: string;
   market?: string;
@@ -28,13 +28,7 @@ const ALLOWED_KEYS = new Set([
   'mode',
 ]);
 
-export function parseRouteCacheRequest(value: unknown): {
-  originIata: string;
-  destIata?: string;
-  currency?: string;
-  market?: string;
-  locale?: string;
-} {
+export function parseRouteCacheRequest(value: unknown): RouteCacheRequest {
   if (!isRecord(value)) {
     throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
   }
@@ -45,12 +39,30 @@ export function parseRouteCacheRequest(value: unknown): {
     }
   }
 
-  const rawOrigin = value.originIata ?? value.origin ?? value.origin_iata;
-  if (typeof rawOrigin !== 'string') {
-    throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+  const rawMode = value.mode;
+  let mode: string | undefined = undefined;
+  if (rawMode !== undefined && rawMode !== null && rawMode !== '') {
+    if (typeof rawMode !== 'string') {
+      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+    }
+    mode = rawMode.trim();
+    if (mode !== 'warm_top_routes' && mode !== 'day6_active_refresh') {
+      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+    }
   }
-  const originIata = rawOrigin.trim().toUpperCase();
-  if (!/^[A-Z]{3}$/.test(originIata)) {
+
+  const rawOrigin = value.originIata ?? value.origin ?? value.origin_iata;
+  let originIata: string | undefined = undefined;
+  if (rawOrigin !== undefined && rawOrigin !== null && rawOrigin !== '') {
+    if (typeof rawOrigin !== 'string') {
+      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+    }
+    const norm = rawOrigin.trim().toUpperCase();
+    if (!/^[A-Z]{3}$/.test(norm)) {
+      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+    }
+    originIata = norm;
+  } else if (!mode) {
     throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
   }
 
@@ -65,7 +77,10 @@ export function parseRouteCacheRequest(value: unknown): {
       throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
     }
     const normDest = rawDest.trim().toUpperCase();
-    if (!/^[A-Z]{3}$/.test(normDest) || normDest === originIata) {
+    if (!/^[A-Z]{3}$/.test(normDest) || (originIata && normDest === originIata)) {
+      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+    }
+    if (!originIata) {
       throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
     }
     destIata = normDest;
@@ -110,27 +125,11 @@ export function parseRouteCacheRequest(value: unknown): {
     locale = normLocale;
   }
 
-  const rawMode = value.mode;
-  let mode: string | undefined = undefined;
-  if (rawMode !== undefined && rawMode !== null && rawMode !== '') {
-    if (typeof rawMode !== 'string') {
-      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
-    }
-    mode = rawMode.trim();
-  }
-
-  const result: {
-    originIata: string;
-    destIata?: string;
-    currency?: string;
-    market?: string;
-    locale?: string;
-    mode?: string;
-  } = {
-    originIata,
+  const result: RouteCacheRequest = {
     currency,
     market,
   };
+  if (originIata) result.originIata = originIata;
   if (destIata) result.destIata = destIata;
   if (locale) result.locale = locale;
   if (mode) result.mode = mode;

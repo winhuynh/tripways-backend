@@ -8,16 +8,18 @@ CREATE OR REPLACE FUNCTION public.rpc_acquire_price_refresh_lease(
   p_origin_iata TEXT,
   p_destination_iata TEXT DEFAULT NULL,
   p_currency_code TEXT DEFAULT 'USD',
-  p_market_code TEXT DEFAULT 'us'
+  p_market_code TEXT DEFAULT 'us',
+  p_force_refresh BOOLEAN DEFAULT FALSE
 )
 RETURNS JSONB
 LANGUAGE sql
 SECURITY INVOKER
 SET search_path = ''
 AS $$
-  SELECT admin.rpc_acquire_price_refresh_lease(p_origin_iata, p_destination_iata, p_currency_code, p_market_code);
+  SELECT admin.rpc_acquire_price_refresh_lease(p_origin_iata, p_destination_iata, p_currency_code, p_market_code, p_force_refresh);
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT)
+REVOKE ALL ON FUNCTION public.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT, BOOLEAN)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT, BOOLEAN) TO service_role;
+

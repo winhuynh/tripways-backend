@@ -19,6 +19,7 @@ DECLARE
   v_origin_norm CHAR(3);
   v_status_norm VARCHAR(20);
   v_failure_code VARCHAR(50);
+  v_row_count INTEGER := 0;
 BEGIN
   v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
   v_status_norm := pg_catalog.lower(pg_catalog.btrim(COALESCE(p_status, '')));
@@ -35,6 +36,10 @@ BEGIN
     RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_STATUS');
   END IF;
 
+  IF p_lease_token IS NULL THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_LEASE_TOKEN_REQUIRED');
+  END IF;
+
   UPDATE admin.airport_route_cache_leases
   SET
     status = v_status_norm,
@@ -48,7 +53,17 @@ BEGIN
     failure_code = v_failure_code,
     updated_at = pg_catalog.now()
   WHERE origin_iata = v_origin_norm
-    AND (p_lease_token IS NULL OR lease_token IS NULL OR lease_token = p_lease_token);
+    AND lease_token = p_lease_token;
+
+  GET DIAGNOSTICS v_row_count = ROW_COUNT;
+
+  IF v_row_count = 0 THEN
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'failed',
+      'error', 'ERR_LEASE_LOST',
+      'origin', v_origin_norm
+    );
+  END IF;
 
   RETURN pg_catalog.jsonb_build_object(
     'status', 'success',
@@ -60,5 +75,3 @@ $$;
 
 REVOKE ALL ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT, UUID) FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT, UUID) TO service_role;
-
--- grant execute on function admin.rpc_finalize_airport_route_refresh_lease(text, text, text) to service_role

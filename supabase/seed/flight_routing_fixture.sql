@@ -1,6 +1,12 @@
 -- Minimal provider-neutral fixture for local route and pSEO testing.
-INSERT INTO admin.data_sources (id,code,name)
-VALUES ('10000000-0000-4000-8000-000000000001','route_discovery_fixture','Route Discovery Development Fixture');
+INSERT INTO admin.data_sources (id, code, name, is_fixture, is_approved, environment)
+VALUES ('10000000-0000-4000-8000-000000000001', 'route_discovery_fixture', 'Route Discovery Development Fixture', true, true, 'development')
+ON CONFLICT (code) DO UPDATE SET
+  name = EXCLUDED.name,
+  is_fixture = EXCLUDED.is_fixture,
+  is_approved = EXCLUDED.is_approved,
+  environment = EXCLUDED.environment,
+  updated_at = now();
 
 INSERT INTO public.countries (id,iso2,iso3,name,slug,region,subregion,source_id,source_record_id) VALUES
 ('20000000-0000-4000-8000-000000000001','VN','VNM','Vietnam','vietnam','Asia','South-Eastern Asia','10000000-0000-4000-8000-000000000001','country-vn'),

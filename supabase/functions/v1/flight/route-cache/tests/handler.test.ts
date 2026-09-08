@@ -355,3 +355,78 @@ Deno.test('route-cache handler: supports GET request with query parameters', asy
   assert.equal(json.error, null);
   assert.equal(json.data.status, 'fresh');
 });
+
+Deno.test('route-cache handler: batch warm_top_routes cron processes hubs', async () => {
+  const hubsProcessed: string[] = [];
+  const mockClient = createMockSupabaseClient((name, params) => {
+    if (name === 'rpc_acquire_price_refresh_lease') {
+      const origin = params.p_origin_iata as string;
+      hubsProcessed.push(origin);
+      return Promise.resolve({
+        data: {
+          status: 'fresh',
+          origin,
+          count: 1,
+          observations: [],
+        },
+        error: null,
+      });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+
+  const handler = createRouteCacheHandler({
+    getSupabaseClient: () => mockClient,
+  });
+
+  const request = new Request('http://local/route-cache', {
+    method: 'POST',
+    body: JSON.stringify({ mode: 'warm_top_routes' }),
+  });
+
+  const response = await handler(request);
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.error, null);
+  assert.equal(json.data.status, 'success');
+  assert.equal(json.data.mode, 'warm_top_routes');
+  assert.ok(json.data.processed_count > 0);
+  assert.ok(hubsProcessed.length > 0);
+});
+
+Deno.test('route-cache handler: batch day6_active_refresh forces lease refresh', async () => {
+  let forcedRefreshPassed = false;
+  const mockClient = createMockSupabaseClient((name, params) => {
+    if (name === 'rpc_acquire_price_refresh_lease') {
+      if (params.p_force_refresh === true) {
+        forcedRefreshPassed = true;
+      }
+      return Promise.resolve({
+        data: {
+          status: 'fresh',
+          origin: params.p_origin_iata,
+          count: 1,
+          observations: [],
+        },
+        error: null,
+      });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+
+  const handler = createRouteCacheHandler({
+    getSupabaseClient: () => mockClient,
+  });
+
+  const request = new Request('http://local/route-cache', {
+    method: 'POST',
+    body: JSON.stringify({ mode: 'day6_active_refresh' }),
+  });
+
+  const response = await handler(request);
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.error, null);
+  assert.equal(json.data.status, 'success');
+  assert.equal(forcedRefreshPassed, true);
+});

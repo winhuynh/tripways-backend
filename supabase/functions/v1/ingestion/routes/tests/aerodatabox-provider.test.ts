@@ -113,3 +113,36 @@ Deno.test('fetchDirectRoutesFromAeroDataBox propagates API errors', async () => 
     /AeroDataBox API HTTP 429/,
   );
 });
+
+Deno.test('fetchDirectRoutesFromAeroDataBox aborts if response body read times out', async () => {
+  const mockFetch: typeof fetch = (_input, init) => {
+    const signal = (init as { signal?: AbortSignal })?.signal;
+    return Promise.resolve({
+      status: 200,
+      ok: true,
+      json: () =>
+        new Promise((_resolve, reject) => {
+          if (signal?.aborted) {
+            reject(new DOMException('The signal has been aborted', 'AbortError'));
+          } else {
+            signal?.addEventListener('abort', () => {
+              reject(new DOMException('The signal has been aborted', 'AbortError'));
+            });
+            // Simulate abort after 10ms for fast test execution
+            setTimeout(() => {
+              reject(new DOMException('The signal has been aborted', 'AbortError'));
+            }, 10);
+          }
+        }),
+    } as unknown as Response);
+  };
+
+  await assert.rejects(
+    () =>
+      fetchDirectRoutesFromAeroDataBox('SGN', {
+        apiKey: 'test-key-12345678',
+        fetchFn: mockFetch,
+      }),
+    /AeroDataBox API request timed out/,
+  );
+});

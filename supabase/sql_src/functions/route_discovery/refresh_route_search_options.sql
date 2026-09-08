@@ -80,6 +80,14 @@ BEGIN
       AND observed.status = 'published'
       AND observed.valid_until > now()
       AND (
+        (v_source_type = 'production' AND observed.source_id IN (
+          SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE AND environment IN ('production', 'all')
+        ))
+        OR (v_source_type <> 'production' AND observed.source_id IN (
+          SELECT id FROM admin.data_sources WHERE is_approved = TRUE
+        ))
+      )
+      AND (
         observed.provider_airline_iata IS NULL
         OR observed.provider_airline_iata = r.airline_iata
       )
@@ -95,10 +103,12 @@ BEGIN
     AND destination_airport.status = 'active'
     AND origin_city.id <> destination_city.id
     AND (
-      v_source_type <> 'production'
-      OR r.source_id IN (
-        SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE
-      )
+      (v_source_type = 'production' AND r.source_id IN (
+        SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE AND environment IN ('production', 'all')
+      ))
+      OR (v_source_type <> 'production' AND r.source_id IN (
+        SELECT id FROM admin.data_sources WHERE is_approved = TRUE
+      ))
     );
 
   GET DIAGNOSTICS v_direct_count = ROW_COUNT;
@@ -163,6 +173,14 @@ BEGIN
       AND observed.transfer_count = 1
       AND observed.status = 'published'
       AND observed.valid_until > now()
+      AND (
+        (v_source_type = 'production' AND observed.source_id IN (
+          SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE AND environment IN ('production', 'all')
+        ))
+        OR (v_source_type <> 'production' AND observed.source_id IN (
+          SELECT id FROM admin.data_sources WHERE is_approved = TRUE
+        ))
+      )
     ORDER BY observed.observed_amount ASC NULLS LAST, observed.observed_at DESC
     LIMIT 1
   ) AS price ON TRUE
@@ -176,11 +194,14 @@ BEGIN
     AND r1.origin_airport_id <> r2.destination_airport_id
     AND cardinality(admin.calculate_route_schedule_intersection(r1.days_of_week, r2.days_of_week)) > 0
     AND (
-      v_source_type <> 'production'
-      OR (
-        r1.source_id IN (SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE)
-        AND r2.source_id IN (SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE)
-      )
+      (v_source_type = 'production' AND (
+        r1.source_id IN (SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE AND environment IN ('production', 'all'))
+        AND r2.source_id IN (SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE AND environment IN ('production', 'all'))
+      ))
+      OR (v_source_type <> 'production' AND (
+        r1.source_id IN (SELECT id FROM admin.data_sources WHERE is_approved = TRUE)
+        AND r2.source_id IN (SELECT id FROM admin.data_sources WHERE is_approved = TRUE)
+      ))
     );
 
   GET DIAGNOSTICS v_connecting_count = ROW_COUNT;

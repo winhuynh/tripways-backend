@@ -147,8 +147,9 @@ export function createAirportRoutesCacheHandler(
         const leaseToken = (leaseObj.lease_token ?? leaseObj.lease_id ?? null) as string | null;
 
         if (fetchSuccess) {
+          let upsertedCount = routes.length;
           if (routes.length > 0) {
-            const { error: ingestError } = await client.rpc(
+            const { data: ingestData, error: ingestError } = await client.rpc(
               'rpc_ingest_direct_flight_routes',
               {
                 p_source_code: 'aerodatabox',
@@ -160,14 +161,26 @@ export function createAirportRoutesCacheHandler(
               logEdgeError('AIRPORT_ROUTES_CACHE_INGEST_RPC_ERROR', ingestError, logContext);
               throw ingestError;
             }
+
+            if (
+              ingestData &&
+              typeof ingestData === 'object' &&
+              typeof (ingestData as Record<string, unknown>).upserted_count === 'number'
+            ) {
+              upsertedCount = (ingestData as Record<string, unknown>).upserted_count as number;
+            }
+          } else {
+            upsertedCount = 0;
           }
 
+          const leaseFinalStatus = upsertedCount > 0 ? 'fresh' : 'empty';
+
           // Finalize lease state as fresh or empty
-          const { error: finalizeErr } = await client.rpc(
+          const { data: finalizeData, error: finalizeErr } = await client.rpc(
             'rpc_finalize_airport_route_refresh_lease',
             {
               p_origin_iata: parsed.originIata,
-              p_status: routes.length > 0 ? 'fresh' : 'empty',
+              p_status: leaseFinalStatus,
               p_failure_code: null,
               p_lease_token: leaseToken,
             },
@@ -175,6 +188,16 @@ export function createAirportRoutesCacheHandler(
 
           if (finalizeErr) {
             logEdgeError('AIRPORT_ROUTES_CACHE_FINALIZE_RPC_ERROR', finalizeErr, logContext);
+            throw finalizeErr;
+          }
+
+          if (
+            finalizeData &&
+            typeof finalizeData === 'object' &&
+            (finalizeData as Record<string, unknown>).status === 'failed'
+          ) {
+            logEdgeWarn('AIRPORT_ROUTES_CACHE_FINALIZE_FAILED', finalizeData, logContext);
+            throw new Error('ERR_AIRPORT_ROUTES_CACHE_UNAVAILABLE');
           }
 
           const durationMs = Math.round(performance.now() - startTime);
@@ -182,14 +205,14 @@ export function createAirportRoutesCacheHandler(
             ...logContext,
             durationMs,
             origin: parsed.originIata,
-            routesCount: routes.length,
+            routesCount: upsertedCount,
           });
 
           return successResponse(
             {
-              status: routes.length > 0 ? 'fresh' : 'empty',
+              status: leaseFinalStatus,
               origin: parsed.originIata,
-              routes_count: routes.length,
+              routes_count: upsertedCount,
             },
             200,
             { 'x-request-id': requestId },

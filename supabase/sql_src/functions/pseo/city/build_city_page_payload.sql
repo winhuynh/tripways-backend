@@ -162,14 +162,38 @@ BEGIN
             min(opt.total_duration_minutes) AS shortest_duration_minutes,
             max(opt.total_duration_minutes) AS longest_duration_minutes,
             opt.route_path,
-            (ARRAY_AGG(opt.price_amount ORDER BY opt.price_amount ASC NULLS LAST))[1] AS price_min,
-            (ARRAY_AGG(opt.price_amount ORDER BY (opt.price_currency = (ARRAY_AGG(opt.price_currency ORDER BY opt.price_amount ASC NULLS LAST))[1]) DESC, opt.price_amount DESC NULLS LAST))[1] AS price_max,
-            coalesce((ARRAY_AGG(opt.price_currency ORDER BY opt.price_amount ASC NULLS LAST))[1], 'GBP') AS price_currency,
+            min(price_stat.lat_price_min) AS price_min,
+            max(price_stat.lat_price_max) AS price_max,
+            coalesce(min(price_stat.lat_price_currency), 'GBP') AS price_currency,
             max(opt.confidence_score) AS max_confidence,
             row_number() OVER (ORDER BY max(opt.confidence_score) DESC, dest_c.name ASC) AS rn
           FROM public.flight_route_options opt
           JOIN public.cities dest_c ON dest_c.id = opt.destination_city_id
           JOIN public.countries dest_co ON dest_co.id = dest_c.country_id
+          LEFT JOIN LATERAL (
+            SELECT
+              min(p.price_amount) AS lat_price_min,
+              max(p.price_amount) AS lat_price_max,
+              p.price_currency AS lat_price_currency
+            FROM public.flight_route_options p
+            WHERE p.publication_version_id = v_version
+              AND p.origin_city_id = v_city.id
+              AND p.destination_city_id = dest_c.id
+              AND p.stops = 0
+              AND p.price_amount IS NOT NULL
+              AND p.price_currency = (
+                SELECT c.price_currency
+                FROM public.flight_route_options c
+                WHERE c.publication_version_id = v_version
+                  AND c.origin_city_id = v_city.id
+                  AND c.destination_city_id = dest_c.id
+                  AND c.stops = 0
+                  AND c.price_amount IS NOT NULL
+                ORDER BY c.price_amount ASC
+                LIMIT 1
+              )
+            GROUP BY p.price_currency
+          ) price_stat ON TRUE
           WHERE opt.publication_version_id = v_version
             AND opt.origin_city_id = v_city.id
             AND opt.stops = 0

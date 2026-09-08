@@ -33,21 +33,47 @@ DECLARE
   v_airline_id UUID;
   v_obs_at TIMESTAMPTZ;
   v_valid_until TIMESTAMPTZ;
+  v_lease_token UUID;
+  v_lease_expires_at TIMESTAMPTZ;
+  v_lease_status VARCHAR(20);
+  v_published_observations JSONB := '[]'::JSONB;
 BEGIN
   v_origin_norm := upper(trim(p_origin_iata));
   v_dest_norm := CASE WHEN p_destination_iata IS NOT NULL AND length(trim(p_destination_iata)) > 0 THEN upper(trim(p_destination_iata)) ELSE NULL END;
   v_curr_norm := upper(trim(coalesce(p_currency_code, 'USD')));
   v_market_norm := lower(trim(coalesce(p_market_code, 'us')));
 
+  IF p_lease_token IS NULL THEN
+    RETURN jsonb_build_object('published_count', 0, 'status', 'failed', 'error', 'ERR_LEASE_TOKEN_REQUIRED');
+  END IF;
+
+  -- 1. Verify data source approval (Finding R8)
   SELECT id INTO v_source_id
   FROM admin.data_sources
   WHERE code = 'travelpayouts'
+    AND is_approved = true
   LIMIT 1;
 
   IF v_source_id IS NULL THEN
-    INSERT INTO admin.data_sources (code, name, is_fixture, is_approved, environment)
-    VALUES ('travelpayouts', 'Travelpayouts Data API', false, true, 'all')
-    RETURNING id INTO v_source_id;
+    RETURN jsonb_build_object('published_count', 0, 'status', 'failed', 'error', 'ERR_UNAPPROVED_DATA_SOURCE');
+  END IF;
+
+  -- 2. Lock lease row and verify token fencing BEFORE writing any prices (Finding R3)
+  SELECT lease_token, lease_expires_at, status
+  INTO v_lease_token, v_lease_expires_at, v_lease_status
+  FROM admin.route_price_cache_leases
+  WHERE origin_iata = v_origin_norm
+    AND destination_iata IS NOT DISTINCT FROM v_dest_norm
+    AND market_code = v_market_norm
+    AND currency_code = v_curr_norm
+  FOR UPDATE;
+
+  IF v_lease_token IS NULL OR v_lease_token <> p_lease_token THEN
+    RETURN jsonb_build_object(
+      'published_count', 0,
+      'status', 'failed',
+      'error', 'ERR_LEASE_LOST'
+    );
   END IF;
 
   -- Count items in payload
@@ -68,9 +94,9 @@ BEGIN
       AND destination_iata IS NOT DISTINCT FROM v_dest_norm
       AND market_code = v_market_norm
       AND currency_code = v_curr_norm
-      AND (p_lease_token IS NULL OR lease_token IS NULL OR lease_token = p_lease_token);
+      AND lease_token = p_lease_token;
 
-    RETURN jsonb_build_object('published_count', 0, 'status', 'empty');
+    RETURN jsonb_build_object('published_count', 0, 'status', 'empty', 'observations', '[]'::JSONB);
   END IF;
 
   -- Iterate and insert observations
@@ -165,6 +191,31 @@ BEGIN
     v_inserted_count := v_inserted_count + 1;
   END LOOP;
 
+  -- If all observations were skipped, lease status is empty with cooldown (Finding R6)
+  IF v_inserted_count = 0 THEN
+    UPDATE admin.route_price_cache_leases
+    SET status = 'empty',
+        last_attempted_at = now(),
+        next_allowed_refresh_at = now() + interval '6 hours',
+        lease_expires_at = NULL,
+        lease_token = NULL,
+        updated_at = now()
+    WHERE origin_iata = v_origin_norm
+      AND destination_iata IS NOT DISTINCT FROM v_dest_norm
+      AND market_code = v_market_norm
+      AND currency_code = v_curr_norm
+      AND lease_token = p_lease_token;
+
+    RETURN jsonb_build_object(
+      'published_count', 0,
+      'status', 'empty',
+      'origin', v_origin_norm,
+      'destination', v_dest_norm,
+      'count', 0,
+      'observations', '[]'::JSONB
+    );
+  END IF;
+
   -- Update lease status to fresh
   UPDATE admin.route_price_cache_leases
   SET status = 'fresh',
@@ -177,11 +228,39 @@ BEGIN
     AND destination_iata IS NOT DISTINCT FROM v_dest_norm
     AND market_code = v_market_norm
     AND currency_code = v_curr_norm
-    AND (p_lease_token IS NULL OR lease_token IS NULL OR lease_token = p_lease_token);
+    AND lease_token = p_lease_token;
+
+  -- Query and return canonical DTO with observation_ref (Finding R6)
+  SELECT coalesce(jsonb_agg(
+    jsonb_build_object(
+      'observation_ref', p.public_reference,
+      'observed_amount', p.observed_amount,
+      'currency_code', p.currency_code,
+      'departure_date', p.departure_date,
+      'direct', p.direct,
+      'transfer_count', p.transfer_count,
+      'duration_minutes', p.duration_minutes,
+      'observed_at', p.observed_at,
+      'valid_until', p.valid_until
+    ) ORDER BY p.observed_amount ASC NULLS LAST
+  ), '[]'::JSONB)
+  INTO v_published_observations
+  FROM public.flight_route_prices AS p
+  JOIN public.airports AS oa ON oa.id = p.origin_airport_id AND oa.iata = v_origin_norm
+  LEFT JOIN public.airports AS da ON da.id = p.destination_airport_id AND da.iata = v_dest_norm
+  WHERE p.status = 'published'
+    AND p.valid_until > now()
+    AND p.currency_code = v_curr_norm
+    AND p.market_code = v_market_norm
+    AND (v_dest_norm IS NULL OR da.id IS NOT NULL);
 
   RETURN jsonb_build_object(
     'published_count', v_inserted_count,
-    'status', 'fresh'
+    'status', 'fresh',
+    'origin', v_origin_norm,
+    'destination', v_dest_norm,
+    'count', v_inserted_count,
+    'observations', v_published_observations
   );
 END;
 $$;

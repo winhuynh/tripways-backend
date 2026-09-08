@@ -69,6 +69,24 @@ Deno.test('parseRouteCacheRequest: supports cron mode parameters', () => {
     market: 'us',
     mode: 'day6_active_refresh',
   });
+
+  const parsedCron1 = parseRouteCacheRequest({
+    mode: 'warm_top_routes',
+  });
+  assert.deepEqual(parsedCron1, {
+    currency: 'USD',
+    market: 'us',
+    mode: 'warm_top_routes',
+  });
+
+  const parsedCron2 = parseRouteCacheRequest({
+    mode: 'day6_active_refresh',
+  });
+  assert.deepEqual(parsedCron2, {
+    currency: 'USD',
+    market: 'us',
+    mode: 'day6_active_refresh',
+  });
 });
 
 Deno.test('parseRouteCacheRequest: throws on invalid inputs', () => {

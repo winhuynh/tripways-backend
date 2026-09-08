@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION admin.rpc_acquire_price_refresh_lease(
   p_origin_iata TEXT,
   p_destination_iata TEXT DEFAULT NULL,
   p_currency_code TEXT DEFAULT 'USD',
-  p_market_code TEXT DEFAULT 'us'
+  p_market_code TEXT DEFAULT 'us',
+  p_force_refresh BOOLEAN DEFAULT FALSE
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -58,7 +59,7 @@ BEGIN
     AND p.market_code = v_market_norm
     AND (v_dest_norm IS NULL OR da.id IS NOT NULL);
 
-  IF v_fresh_count > 0 THEN
+  IF NOT p_force_refresh AND v_fresh_count > 0 THEN
     RETURN jsonb_build_object(
       'status', 'fresh',
       'origin', v_origin_norm,
@@ -130,6 +131,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT)
+REVOKE ALL ON FUNCTION admin.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT, BOOLEAN)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION admin.rpc_acquire_price_refresh_lease(TEXT, TEXT, TEXT, TEXT, BOOLEAN) TO service_role;

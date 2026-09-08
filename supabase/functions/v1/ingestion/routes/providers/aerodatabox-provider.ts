@@ -212,13 +212,26 @@ export async function fetchDirectRoutesFromAeroDataBox(
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-  let response: Response;
   try {
-    response = await fetcher(url, {
+    const response = await fetcher(url, {
       method: 'GET',
       headers,
       signal: controller.signal,
     });
+
+    if (response.status === 404) {
+      return [];
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => '');
+      throw new Error(
+        `AeroDataBox API HTTP ${response.status}: ${errorText || response.statusText}`,
+      );
+    }
+
+    const json = await response.json();
+    return parseAeroDataBoxDirectRoutes(normOrigin, json);
   } catch (fetchError) {
     if (
       (fetchError instanceof DOMException && fetchError.name === 'AbortError') ||
@@ -234,16 +247,4 @@ export async function fetchDirectRoutesFromAeroDataBox(
   } finally {
     clearTimeout(timeoutId);
   }
-
-  if (response.status === 404) {
-    return [];
-  }
-
-  if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    throw new Error(`AeroDataBox API HTTP ${response.status}: ${errorText || response.statusText}`);
-  }
-
-  const json = await response.json();
-  return parseAeroDataBoxDirectRoutes(normOrigin, json);
 }
