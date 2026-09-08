@@ -11,6 +11,7 @@ CREATE TABLE admin.route_price_cache_leases (
   market_code VARCHAR(2) NOT NULL DEFAULT 'us',
   currency_code VARCHAR(3) NOT NULL DEFAULT 'USD',
   status VARCHAR(20) NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'refreshing', 'fresh', 'empty', 'failed')),
+  lease_token UUID NULL,
   lease_expires_at TIMESTAMPTZ NULL,
   last_attempted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_succeeded_at TIMESTAMPTZ NULL,
@@ -19,7 +20,7 @@ CREATE TABLE admin.route_price_cache_leases (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-  CONSTRAINT uq_route_price_cache_scope UNIQUE (origin_iata, destination_iata, market_code, currency_code)
+  CONSTRAINT uq_route_price_cache_scope UNIQUE NULLS NOT DISTINCT (origin_iata, destination_iata, market_code, currency_code)
 );
 
 CREATE INDEX idx_route_price_cache_leases_lookup

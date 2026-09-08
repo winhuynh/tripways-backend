@@ -102,12 +102,17 @@ BEGIN
           'route_type', option.route_type,
           'route_path', option.route_path
         ) ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id)
-        FROM public.flight_route_options AS option
-        WHERE option.publication_version_id = v_version
-          AND (
-            option.origin_airport_id = v_airport.id
-            OR option.destination_airport_id = v_airport.id
-          )
+        FROM (
+          SELECT *
+          FROM public.flight_route_options AS option
+          WHERE option.publication_version_id = v_version
+            AND (
+              option.origin_airport_id = v_airport.id
+              OR option.destination_airport_id = v_airport.id
+            )
+          ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id
+          LIMIT COALESCE(NULLIF(p_input->>'destination_limit', '')::INTEGER, 50)
+        ) AS option
       ), '[]'::JSONB)
     ),
     'meta', jsonb_build_object(
@@ -115,7 +120,16 @@ BEGIN
       'is_indexable', v_registry.is_indexable,
       'noindex_reason', v_registry.noindex_reason,
       'data_version', 'v_' || md5(v_version::TEXT),
-      'source_freshness_at', v_registry.source_freshness_at
+      'source_freshness_at', v_registry.source_freshness_at,
+      'total_routes', (
+        SELECT count(*)
+        FROM public.flight_route_options AS option
+        WHERE option.publication_version_id = v_version
+          AND (
+            option.origin_airport_id = v_airport.id
+            OR option.destination_airport_id = v_airport.id
+          )
+      )
     ),
     'error', NULL
   );

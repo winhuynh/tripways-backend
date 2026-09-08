@@ -10,6 +10,7 @@ export interface NormalizedPriceObservation {
   transferCount: number | null;
   durationMinutes: number | null;
   foundAt: string;
+  observedAt?: string;
   validUntil: string;
   affiliatePath: string | null;
 }
@@ -259,6 +260,7 @@ export function parseTravelpayoutsFareObservations(
       transferCount,
       durationMinutes,
       foundAt,
+      observedAt: foundAt,
       validUntil,
       affiliatePath,
     });

@@ -33,7 +33,7 @@ BEGIN
   ) INTO v_intersection;
 
   IF cardinality(v_intersection) = 0 THEN
-    RETURN p_days1;
+    RETURN '{}'::INTEGER[];
   END IF;
 
   RETURN v_intersection;

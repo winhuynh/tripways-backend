@@ -8,7 +8,7 @@ export interface RouteIngestionDbClient {
   rpc(
     functionName: string,
     args: Record<string, unknown>,
-  ): Promise<{ data: unknown; error: { message: string; code?: string } | null }>;
+  ): PromiseLike<{ data: unknown; error: { message: string; code?: string } | null }>;
 }
 
 export interface IngestRoutesResult {

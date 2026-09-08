@@ -44,11 +44,9 @@ export function createAirportRoutesCacheHandler(
       }
 
       const client = options.getSupabaseClient();
-      const adminClient = (typeof client.schema === 'function' ? client.schema('admin') : client) ??
-        client;
 
       // 1. Acquire lease or verify freshness
-      const { data: leaseData, error: leaseError } = await adminClient.rpc(
+      const { data: leaseData, error: leaseError } = await client.rpc(
         'rpc_acquire_airport_route_refresh_lease',
         { p_origin_iata: parsed.originIata },
       );
@@ -146,6 +144,8 @@ export function createAirportRoutesCacheHandler(
           failureCode = providerError instanceof Error ? providerError.message : 'ERR_FETCH_FAILED';
         }
 
+        const leaseToken = (leaseObj.lease_token ?? leaseObj.lease_id ?? null) as string | null;
+
         if (fetchSuccess) {
           if (routes.length > 0) {
             const { error: ingestError } = await client.rpc(
@@ -163,11 +163,19 @@ export function createAirportRoutesCacheHandler(
           }
 
           // Finalize lease state as fresh or empty
-          await adminClient.rpc('rpc_finalize_airport_route_refresh_lease', {
-            p_origin_iata: parsed.originIata,
-            p_status: routes.length > 0 ? 'fresh' : 'empty',
-            p_failure_code: null,
-          });
+          const { error: finalizeErr } = await client.rpc(
+            'rpc_finalize_airport_route_refresh_lease',
+            {
+              p_origin_iata: parsed.originIata,
+              p_status: routes.length > 0 ? 'fresh' : 'empty',
+              p_failure_code: null,
+              p_lease_token: leaseToken,
+            },
+          );
+
+          if (finalizeErr) {
+            logEdgeError('AIRPORT_ROUTES_CACHE_FINALIZE_RPC_ERROR', finalizeErr, logContext);
+          }
 
           const durationMs = Math.round(performance.now() - startTime);
           logEdgeInfo('AIRPORT_ROUTES_CACHE_LEASE_COMPLETED', {
@@ -188,21 +196,22 @@ export function createAirportRoutesCacheHandler(
           );
         } else {
           // Finalize lease state as failed
-          await adminClient.rpc('rpc_finalize_airport_route_refresh_lease', {
-            p_origin_iata: parsed.originIata,
-            p_status: 'failed',
-            p_failure_code: failureCode,
-          });
-
-          return successResponse(
+          const sanitizedCode = failureCode ? failureCode.slice(0, 50) : 'ERR_FETCH_FAILED';
+          const { error: finalizeErr } = await client.rpc(
+            'rpc_finalize_airport_route_refresh_lease',
             {
-              status: 'empty',
-              origin: parsed.originIata,
-              routes_count: 0,
+              p_origin_iata: parsed.originIata,
+              p_status: 'failed',
+              p_failure_code: sanitizedCode,
+              p_lease_token: leaseToken,
             },
-            200,
-            { 'x-request-id': requestId },
           );
+
+          if (finalizeErr) {
+            logEdgeError('AIRPORT_ROUTES_CACHE_FINALIZE_RPC_ERROR', finalizeErr, logContext);
+          }
+
+          throw new Error('ERR_AIRPORT_ROUTES_CACHE_UNAVAILABLE');
         }
       }
 

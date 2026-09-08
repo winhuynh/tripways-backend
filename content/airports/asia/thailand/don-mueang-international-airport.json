@@ -45,12 +45,7 @@
     "lounges": [
       {
         "name": "Miracle Lounge (DMK Domestic & Intl)",
-        "amenities": [
-          "buffet",
-          "wifi",
-          "beer",
-          "charging_stations"
-        ],
+        "amenities": ["buffet", "wifi", "beer", "charging_stations"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

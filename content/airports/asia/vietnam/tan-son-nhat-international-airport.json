@@ -71,12 +71,7 @@
       },
       {
         "name": "Le Saigonnais Business Lounge",
-        "amenities": [
-          "wifi",
-          "asian_buffet",
-          "quiet_zone",
-          "beverages"
-        ],
+        "amenities": ["wifi", "asian_buffet", "quiet_zone", "beverages"],
         "source_url": "https://example.com/lesaigonnais",
         "affiliate_url": null,
         "location_type": "airside",

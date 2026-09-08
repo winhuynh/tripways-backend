@@ -55,7 +55,7 @@ BEGIN
       AND table_schema = 'admin'
   ) OR has_function_privilege(
     'anon',
-    'public.rpc_get_flight_affiliate_handoff(uuid)',
+    'public.rpc_get_flight_affiliate_handoff(text)',
     'EXECUTE'
   )
   THEN

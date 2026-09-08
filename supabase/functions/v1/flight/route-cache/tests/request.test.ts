@@ -47,6 +47,30 @@ Deno.test('parseRouteCacheRequest: supports aliased property names', () => {
   });
 });
 
+Deno.test('parseRouteCacheRequest: supports cron mode parameters', () => {
+  const parsed1 = parseRouteCacheRequest({
+    origin_iata: 'SFO',
+    mode: 'warm_top_routes',
+  });
+  assert.deepEqual(parsed1, {
+    originIata: 'SFO',
+    currency: 'USD',
+    market: 'us',
+    mode: 'warm_top_routes',
+  });
+
+  const parsed2 = parseRouteCacheRequest({
+    origin_iata: 'SFO',
+    mode: 'day6_active_refresh',
+  });
+  assert.deepEqual(parsed2, {
+    originIata: 'SFO',
+    currency: 'USD',
+    market: 'us',
+    mode: 'day6_active_refresh',
+  });
+});
+
 Deno.test('parseRouteCacheRequest: throws on invalid inputs', () => {
   // Non-object
   assert.throws(() => parseRouteCacheRequest(null), /ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST/);

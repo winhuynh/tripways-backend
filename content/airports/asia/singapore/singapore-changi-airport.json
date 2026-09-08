@@ -67,12 +67,7 @@
       },
       {
         "name": "SATS Premier Lounge",
-        "amenities": [
-          "buffet",
-          "showers",
-          "massage_chairs",
-          "workstations"
-        ],
+        "amenities": ["buffet", "showers", "massage_chairs", "workstations"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

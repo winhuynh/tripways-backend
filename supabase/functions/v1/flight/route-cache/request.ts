@@ -6,6 +6,7 @@ export type RouteCacheRequest = {
   currency?: string;
   market?: string;
   locale?: string;
+  mode?: string;
 };
 
 const ALLOWED_KEYS = new Set([
@@ -24,6 +25,7 @@ const ALLOWED_KEYS = new Set([
   'marketCode',
   'market_code',
   'locale',
+  'mode',
 ]);
 
 export function parseRouteCacheRequest(value: unknown): {
@@ -108,12 +110,22 @@ export function parseRouteCacheRequest(value: unknown): {
     locale = normLocale;
   }
 
+  const rawMode = value.mode;
+  let mode: string | undefined = undefined;
+  if (rawMode !== undefined && rawMode !== null && rawMode !== '') {
+    if (typeof rawMode !== 'string') {
+      throw new Error('ERR_FLIGHT_ROUTE_CACHE_INVALID_REQUEST');
+    }
+    mode = rawMode.trim();
+  }
+
   const result: {
     originIata: string;
     destIata?: string;
     currency?: string;
     market?: string;
     locale?: string;
+    mode?: string;
   } = {
     originIata,
     currency,
@@ -121,5 +133,6 @@ export function parseRouteCacheRequest(value: unknown): {
   };
   if (destIata) result.destIata = destIata;
   if (locale) result.locale = locale;
+  if (mode) result.mode = mode;
   return result;
 }

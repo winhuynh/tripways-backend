@@ -96,6 +96,8 @@ BEGIN
       'status', v_existing_batch.status,
       'batchId', v_existing_batch.id,
       'duplicate', TRUE,
+      'acceptedCount', 0,
+      'rejectedCount', 0,
       'errorCode', 'ERR_INGESTION_BATCH_DUPLICATE'
     );
   END IF;
@@ -389,48 +391,52 @@ BEGIN
 
     v_slug := trim(BOTH '-' FROM regexp_replace(lower(v_city ->> 'name'), '[^a-z0-9]+', '-', 'g'));
 
-    INSERT INTO public.cities (
-      country_id,
-      name,
-      slug,
-      iata_code,
-      currency_code,
-      primary_language,
-      latitude,
-      longitude,
-      timezone,
-      source_id,
-      source_record_id
-    )
-    VALUES (
-      v_country_id,
-      btrim(v_city ->> 'name'),
-      v_slug,
-      NULLIF(btrim(v_city ->> 'iataCode'), ''),
-      NULLIF(btrim(v_city ->> 'currencyCode'), ''),
-      NULLIF(btrim(v_city ->> 'primaryLanguage'), ''),
-      (v_city ->> 'latitude')::DOUBLE PRECISION,
-      (v_city ->> 'longitude')::DOUBLE PRECISION,
-      NULLIF(btrim(v_city ->> 'timezone'), ''),
-      v_source_id,
-      v_city ->> 'sourceId'
-    )
-    ON CONFLICT (country_id, slug) DO NOTHING;
-
-    UPDATE public.cities AS city
-    SET
-      country_id = v_country_id,
-      name = btrim(v_city ->> 'name'),
-      slug = v_slug,
-      iata_code = COALESCE(NULLIF(btrim(v_city ->> 'iataCode'), ''), city.iata_code),
-      currency_code = COALESCE(NULLIF(btrim(v_city ->> 'currencyCode'), ''), city.currency_code),
-      primary_language = COALESCE(NULLIF(btrim(v_city ->> 'primaryLanguage'), ''), city.primary_language),
-      latitude = COALESCE((v_city ->> 'latitude')::DOUBLE PRECISION, city.latitude),
-      longitude = COALESCE((v_city ->> 'longitude')::DOUBLE PRECISION, city.longitude),
-      timezone = COALESCE(NULLIF(btrim(v_city ->> 'timezone'), ''), city.timezone),
-      updated_at = now()
-    WHERE city.source_id = v_source_id
-      AND city.source_record_id = v_city ->> 'sourceId';
+    IF EXISTS (
+      SELECT 1 FROM public.cities WHERE source_id = v_source_id AND source_record_id = v_city ->> 'sourceId'
+    ) THEN
+      UPDATE public.cities AS city
+      SET
+        country_id = v_country_id,
+        name = btrim(v_city ->> 'name'),
+        slug = v_slug,
+        iata_code = COALESCE(NULLIF(btrim(v_city ->> 'iataCode'), ''), city.iata_code),
+        currency_code = COALESCE(NULLIF(btrim(v_city ->> 'currencyCode'), ''), city.currency_code),
+        primary_language = COALESCE(NULLIF(btrim(v_city ->> 'primaryLanguage'), ''), city.primary_language),
+        latitude = COALESCE((v_city ->> 'latitude')::DOUBLE PRECISION, city.latitude),
+        longitude = COALESCE((v_city ->> 'longitude')::DOUBLE PRECISION, city.longitude),
+        timezone = COALESCE(NULLIF(btrim(v_city ->> 'timezone'), ''), city.timezone),
+        updated_at = now()
+      WHERE city.source_id = v_source_id
+        AND city.source_record_id = v_city ->> 'sourceId';
+    ELSE
+      INSERT INTO public.cities (
+        country_id,
+        name,
+        slug,
+        iata_code,
+        currency_code,
+        primary_language,
+        latitude,
+        longitude,
+        timezone,
+        source_id,
+        source_record_id
+      )
+      VALUES (
+        v_country_id,
+        btrim(v_city ->> 'name'),
+        v_slug,
+        NULLIF(btrim(v_city ->> 'iataCode'), ''),
+        NULLIF(btrim(v_city ->> 'currencyCode'), ''),
+        NULLIF(btrim(v_city ->> 'primaryLanguage'), ''),
+        (v_city ->> 'latitude')::DOUBLE PRECISION,
+        (v_city ->> 'longitude')::DOUBLE PRECISION,
+        NULLIF(btrim(v_city ->> 'timezone'), ''),
+        v_source_id,
+        v_city ->> 'sourceId'
+      )
+      ON CONFLICT (country_id, slug) DO NOTHING;
+    END IF;
   END LOOP;
 
   FOR v_airport IN
@@ -532,7 +538,7 @@ BEGIN
       name = EXCLUDED.name,
       slug = EXCLUDED.slug,
       image_path = COALESCE(EXCLUDED.image_path, airports.image_path),
-      city_id = EXCLUDED.city_id,
+      city_id = COALESCE(EXCLUDED.city_id, airports.city_id),
       country_id = EXCLUDED.country_id,
       latitude = EXCLUDED.latitude,
       longitude = EXCLUDED.longitude,

@@ -36,12 +36,7 @@
     "lounges": [
       {
         "name": "TIAT Lounge",
-        "amenities": [
-          "buffet",
-          "showers",
-          "japanese_sake",
-          "wifi"
-        ],
+        "amenities": ["buffet", "showers", "japanese_sake", "wifi"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

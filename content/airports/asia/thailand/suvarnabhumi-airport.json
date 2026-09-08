@@ -45,12 +45,7 @@
     "lounges": [
       {
         "name": "Miracle Lounge",
-        "amenities": [
-          "showers",
-          "hot_thai_buffet",
-          "cocktail_bar",
-          "wifi"
-        ],
+        "amenities": ["showers", "hot_thai_buffet", "cocktail_bar", "wifi"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

@@ -210,3 +210,59 @@ Deno.test('airport-routes-cache handler: cooldown returns empty response', async
   assert.equal(body.data.origin, 'VCL');
   assert.equal(body.data.routes_count, 0);
 });
+
+Deno.test('airport-routes-cache handler: provider failure finalizes as failed and returns 503', async () => {
+  const rpcCalls: { name: string; params: Record<string, unknown> }[] = [];
+
+  const mockClient = createMockSupabaseClient((name, params) => {
+    rpcCalls.push({ name, params });
+    if (name === 'rpc_acquire_airport_route_refresh_lease') {
+      return Promise.resolve({
+        data: {
+          status: 'lease_acquired',
+          origin: 'VCL',
+          lease_id: 'test-lease-id',
+        },
+        error: null,
+      });
+    }
+    if (name === 'rpc_finalize_airport_route_refresh_lease') {
+      return Promise.resolve({
+        data: { status: 'success' },
+        error: null,
+      });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+
+  const fetchRoutes = (): Promise<AeroDataBoxRoute[]> => {
+    return Promise.reject(
+      new Error('Provider timeout error with a very long message explaining upstream failure'),
+    );
+  };
+
+  const handler = createAirportRoutesCacheHandler({
+    getSupabaseClient: () => mockClient,
+    fetchRoutes,
+  });
+
+  const request = new Request('http://localhost/functions/v1/flight/airport-routes-cache', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ origin: 'VCL' }),
+  });
+
+  const response = await handler(request);
+  assert.equal(response.status, 503);
+
+  const body = await response.json();
+  assert.equal(body.error?.code, 'ERR_AIRPORT_ROUTES_CACHE_UNAVAILABLE');
+
+  const finalizeCall = rpcCalls.find((c) => c.name === 'rpc_finalize_airport_route_refresh_lease');
+  assert.ok(finalizeCall !== undefined);
+  assert.equal(finalizeCall?.params.p_status, 'failed');
+  assert.equal(finalizeCall?.params.p_lease_token, 'test-lease-id');
+  // Check failure code is truncated to <= 50 chars
+  assert.ok(typeof finalizeCall?.params.p_failure_code === 'string');
+  assert.ok((finalizeCall?.params.p_failure_code as string).length <= 50);
+});

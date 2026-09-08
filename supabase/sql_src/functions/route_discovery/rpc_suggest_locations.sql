@@ -96,7 +96,12 @@ BEGIN
         END,
         'latitude', latitude,
         'longitude', longitude
-      )), '[]'::JSONB)
+      )), '[]'::JSONB),
+      'meta', jsonb_build_object(
+        'data_version', 'v1',
+        'count', count(iata)
+      ),
+      'error', NULL
     ) INTO v_result
     FROM nearby_filtered;
 
@@ -146,7 +151,12 @@ BEGIN
       'subtitle', country_name,
       'latitude', latitude,
       'longitude', longitude
-    )), '[]'::JSONB)
+    )), '[]'::JSONB),
+    'meta', jsonb_build_object(
+      'data_version', 'v1',
+      'count', count(iata)
+    ),
+    'error', NULL
   ) INTO v_result
   FROM airport_matches;
 

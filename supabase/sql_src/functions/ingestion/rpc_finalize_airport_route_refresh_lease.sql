@@ -7,7 +7,8 @@
 CREATE OR REPLACE FUNCTION admin.rpc_finalize_airport_route_refresh_lease(
   p_origin_iata TEXT,
   p_status TEXT,
-  p_failure_code TEXT DEFAULT NULL
+  p_failure_code TEXT DEFAULT NULL,
+  p_lease_token UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -17,9 +18,14 @@ AS $$
 DECLARE
   v_origin_norm CHAR(3);
   v_status_norm VARCHAR(20);
+  v_failure_code VARCHAR(50);
 BEGIN
   v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
   v_status_norm := pg_catalog.lower(pg_catalog.btrim(COALESCE(p_status, '')));
+  v_failure_code := CASE
+    WHEN p_failure_code IS NOT NULL THEN pg_catalog.substr(pg_catalog.btrim(p_failure_code), 1, 50)
+    ELSE NULL
+  END;
 
   IF v_origin_norm !~ '^[A-Z]{3}$' THEN
     RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_IATA');
@@ -32,15 +38,17 @@ BEGIN
   UPDATE admin.airport_route_cache_leases
   SET
     status = v_status_norm,
+    lease_token = NULL,
     lease_expires_at = NULL,
     last_succeeded_at = CASE WHEN v_status_norm = 'fresh' THEN pg_catalog.now() ELSE last_succeeded_at END,
     next_allowed_refresh_at = CASE
       WHEN v_status_norm = 'fresh' THEN pg_catalog.now() + INTERVAL '7 days'
       ELSE pg_catalog.now() + INTERVAL '24 hours'
     END,
-    failure_code = p_failure_code,
+    failure_code = v_failure_code,
     updated_at = pg_catalog.now()
-  WHERE origin_iata = v_origin_norm;
+  WHERE origin_iata = v_origin_norm
+    AND (p_lease_token IS NULL OR lease_token IS NULL OR lease_token = p_lease_token);
 
   RETURN pg_catalog.jsonb_build_object(
     'status', 'success',
@@ -50,6 +58,7 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT)
-FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT) TO service_role;
+REVOKE ALL ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT, UUID) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT, UUID) TO service_role;
+
+-- grant execute on function admin.rpc_finalize_airport_route_refresh_lease(text, text, text) to service_role

@@ -162,9 +162,9 @@ BEGIN
             min(opt.total_duration_minutes) AS shortest_duration_minutes,
             max(opt.total_duration_minutes) AS longest_duration_minutes,
             opt.route_path,
-            min(opt.price_amount) AS price_min,
-            max(opt.price_amount) AS price_max,
-            coalesce(min(opt.price_currency), 'GBP') AS price_currency,
+            (ARRAY_AGG(opt.price_amount ORDER BY opt.price_amount ASC NULLS LAST))[1] AS price_min,
+            (ARRAY_AGG(opt.price_amount ORDER BY (opt.price_currency = (ARRAY_AGG(opt.price_currency ORDER BY opt.price_amount ASC NULLS LAST))[1]) DESC, opt.price_amount DESC NULLS LAST))[1] AS price_max,
+            coalesce((ARRAY_AGG(opt.price_currency ORDER BY opt.price_amount ASC NULLS LAST))[1], 'GBP') AS price_currency,
             max(opt.confidence_score) AS max_confidence,
             row_number() OVER (ORDER BY max(opt.confidence_score) DESC, dest_c.name ASC) AS rn
           FROM public.flight_route_options opt
@@ -218,12 +218,17 @@ BEGIN
           'route_type', option.route_type,
           'route_path', option.route_path
         ) ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id)
-        FROM public.flight_route_options AS option
-        WHERE option.publication_version_id = v_version
-          AND (
-            (v_direction = 'outbound' AND option.origin_city_id = v_city.id)
-            OR (v_direction = 'inbound' AND option.destination_city_id = v_city.id)
-          )
+        FROM (
+          SELECT *
+          FROM public.flight_route_options AS option
+          WHERE option.publication_version_id = v_version
+            AND (
+              (v_direction = 'outbound' AND option.origin_city_id = v_city.id)
+              OR (v_direction = 'inbound' AND option.destination_city_id = v_city.id)
+            )
+          ORDER BY option.stops ASC, option.total_duration_minutes ASC, option.confidence_score DESC, option.id
+          LIMIT COALESCE(NULLIF(p_input->>'destination_limit', '')::INTEGER, 50)
+        ) AS option
       ), '[]'::JSONB)
     ),
     'meta', jsonb_build_object(
@@ -231,7 +236,16 @@ BEGIN
       'is_indexable', v_registry.is_indexable,
       'noindex_reason', v_registry.noindex_reason,
       'data_version', 'v_' || md5(v_version::TEXT),
-      'source_freshness_at', v_registry.source_freshness_at
+      'source_freshness_at', v_registry.source_freshness_at,
+      'total_routes', (
+        SELECT count(*)
+        FROM public.flight_route_options AS option
+        WHERE option.publication_version_id = v_version
+          AND (
+            (v_direction = 'outbound' AND option.origin_city_id = v_city.id)
+            OR (v_direction = 'inbound' AND option.destination_city_id = v_city.id)
+          )
+      )
     ),
     'error', NULL
   );

@@ -79,8 +79,8 @@ function isPublicationResult(value: unknown): value is PublicationResult {
   const result = value as Record<string, unknown>;
   return (
     typeof result.status === 'string' &&
-    typeof result.acceptedCount === 'number' &&
-    typeof result.rejectedCount === 'number' &&
-    (typeof result.errorCode === 'string' || result.errorCode === null)
+    (typeof result.acceptedCount === 'number' || result.duplicate === true) &&
+    (typeof result.rejectedCount === 'number' || result.duplicate === true) &&
+    (typeof result.errorCode === 'string' || result.errorCode === null || result.duplicate === true)
   );
 }

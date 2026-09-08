@@ -1,8 +1,8 @@
 -- ============================================================================
 -- Editorial Content Seed / Migration
--- Source: content/{cities,airports,routes}/*.json
+-- Source: content/{cities,airports,routes}/**/*.json
 -- Total: 6 cities, 9 airports, 13 routes
--- Generated at: 2026-09-07T17:19:10.176Z
+-- Generated at: 2026-09-08T05:19:53.694Z
 -- ============================================================================
 
 BEGIN;

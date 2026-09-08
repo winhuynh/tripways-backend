@@ -33,12 +33,15 @@ BEGIN
   WHERE code = p_source_code;
 
   IF v_source_id IS NULL THEN
-    -- Fallback: auto-register provider data source if not present
-    INSERT INTO admin.data_sources (
-      id, code, name
-    ) VALUES (
-      gen_random_uuid(), p_source_code, 'AeroDataBox Flight Routes'
-    ) RETURNING id INTO v_source_id;
+    IF p_source_code = 'aerodatabox' THEN
+      INSERT INTO admin.data_sources (
+        id, code, name, is_fixture, is_approved, environment
+      ) VALUES (
+        gen_random_uuid(), 'aerodatabox', 'AeroDataBox Flight Routes', false, true, 'all'
+      ) RETURNING id INTO v_source_id;
+    ELSE
+      RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_UNAPPROVED_DATA_SOURCE';
+    END IF;
   END IF;
 
   IF jsonb_array_length(p_routes) = 0 THEN

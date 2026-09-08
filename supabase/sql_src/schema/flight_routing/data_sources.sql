@@ -7,6 +7,9 @@ CREATE TABLE admin.data_sources (
   id          UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   code        TEXT         NOT NULL UNIQUE,
   name        TEXT         NOT NULL,
+  is_fixture  BOOLEAN      NOT NULL DEFAULT false,
+  is_approved BOOLEAN      NOT NULL DEFAULT false,
+  environment TEXT         NOT NULL DEFAULT 'development',
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
   updated_at  TIMESTAMPTZ  NOT NULL DEFAULT now(),
 
@@ -14,7 +17,10 @@ CREATE TABLE admin.data_sources (
     CHECK (code ~ '^[a-z0-9]+(?:[_-][a-z0-9]+)*$'),
 
   CONSTRAINT data_sources_name_trimmed_check
-    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120)
+    CHECK (name = btrim(name) AND char_length(name) BETWEEN 1 AND 120),
+
+  CONSTRAINT data_sources_environment_check
+    CHECK (environment IN ('development', 'staging', 'production', 'all'))
 );
 
 REVOKE ALL ON TABLE admin.data_sources FROM public, anon, authenticated;

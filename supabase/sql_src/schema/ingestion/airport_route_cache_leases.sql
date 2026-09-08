@@ -8,6 +8,7 @@ CREATE TABLE admin.airport_route_cache_leases (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   origin_iata CHAR(3) NOT NULL UNIQUE,
   status VARCHAR(20) NOT NULL DEFAULT 'idle' CHECK (status IN ('idle', 'refreshing', 'fresh', 'empty', 'failed')),
+  lease_token UUID NULL,
   lease_expires_at TIMESTAMPTZ NULL,
   last_attempted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   last_succeeded_at TIMESTAMPTZ NULL,

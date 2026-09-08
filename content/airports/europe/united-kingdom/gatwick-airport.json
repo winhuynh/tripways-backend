@@ -36,12 +36,7 @@
     "lounges": [
       {
         "name": "No1 Lounge Gatwick",
-        "amenities": [
-          "buffet",
-          "bar",
-          "wifi",
-          "runway_views"
-        ],
+        "amenities": ["buffet", "bar", "wifi", "runway_views"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

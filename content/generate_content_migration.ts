@@ -11,8 +11,8 @@ const repoRoot = resolve(currentDir, "..");
 
 const args = parseArgs(Deno.args, {
   boolean: ["apply", "help"],
-  string: ["input", "migration-output", "seed-output", "db-url"],
-  alias: { a: "apply", h: "help", i: "input" },
+  string: ["input", "migration-output", "seed-output", "db-url", "environment"],
+  alias: { a: "apply", h: "help", i: "input", e: "environment" },
 });
 
 if (args.help) {
@@ -20,9 +20,10 @@ if (args.help) {
 Usage: deno run --allow-read --allow-write --allow-env --allow-run generate_content_migration.ts [options]
 
 Options:
-  -i, --input             Path to content JSON file (default: content/han_sin_editorial.json)
+  -i, --input             Path to content JSON file or directory (default: content/{cities,airports,routes})
   --migration-output      Path to output migration SQL file (default: supabase/migrations/20260714081100_editorial_content.sql)
   --seed-output           Path to output seed SQL file (default: supabase/seed/editorial_content.sql)
+  -e, --environment       Environment / source_type for publication (default: development_fixture)
   -a, --apply             Execute the generated SQL directly on local database (via psql)
   --db-url                PostgreSQL connection string (default: from LOCAL_DATABASE_URL or default local Supabase)
   -h, --help              Show this help message
@@ -71,43 +72,54 @@ interface RouteItem {
 
 async function loadJsonFilesFromDir(dirPath: string): Promise<any[]> {
   const items: any[] = [];
-  try {
-    for await (const entry of Deno.readDir(dirPath)) {
-      if (entry.isFile && entry.name.endsWith(".json")) {
-        const filePath = resolve(dirPath, entry.name);
-        const text = await Deno.readTextFile(filePath);
-        try {
-          items.push(JSON.parse(text));
-        } catch (err) {
-          console.warn(`Warning: Failed to parse ${filePath}:`, err);
+  async function scan(current: string) {
+    try {
+      for await (const entry of Deno.readDir(current)) {
+        const fullPath = resolve(current, entry.name);
+        if (entry.isDirectory) {
+          await scan(fullPath);
+        } else if (entry.isFile && entry.name.endsWith(".json")) {
+          const text = await Deno.readTextFile(fullPath);
+          try {
+            items.push(JSON.parse(text));
+          } catch (err) {
+            console.warn(`Warning: Failed to parse ${fullPath}:`, err);
+          }
         }
       }
+    } catch {
+      // Directory might not exist or be accessible
     }
-  } catch {
-    // Directory might not exist or be accessible
   }
+  await scan(dirPath);
   return items;
 }
 
 const cities: CityItem[] = [];
 const airports: AirportItem[] = [];
 const routes: RouteItem[] = [];
-let sourceDescription = "content/{cities,airports,routes}/*.json";
+let sourceDescription = "content/{cities,airports,routes}/**/*.json";
 
 if (args.input) {
   const inputPath = resolve(args.input);
   const stat = await Deno.stat(inputPath);
   if (stat.isDirectory) {
-    sourceDescription = `${inputPath}/*`;
+    sourceDescription = `${inputPath}/**/*`;
     cities.push(...(await loadJsonFilesFromDir(resolve(inputPath, "cities"))));
-    airports.push(...(await loadJsonFilesFromDir(resolve(inputPath, "airports"))));
+    airports.push(
+      ...(await loadJsonFilesFromDir(resolve(inputPath, "airports"))),
+    );
     routes.push(...(await loadJsonFilesFromDir(resolve(inputPath, "routes"))));
   } else {
     sourceDescription = inputPath.split("/").pop() || inputPath;
     console.log(`Reading editorial content from file: ${inputPath}`);
     const rawJson = await Deno.readTextFile(inputPath);
     const parsed = JSON.parse(rawJson);
-    if (Array.isArray(parsed.cities) || Array.isArray(parsed.airports) || Array.isArray(parsed.routes)) {
+    if (
+      Array.isArray(parsed.cities) ||
+      Array.isArray(parsed.airports) ||
+      Array.isArray(parsed.routes)
+    ) {
       if (Array.isArray(parsed.cities)) cities.push(...parsed.cities);
       if (Array.isArray(parsed.airports)) airports.push(...parsed.airports);
       if (Array.isArray(parsed.routes)) routes.push(...parsed.routes);
@@ -128,21 +140,6 @@ if (args.input) {
   cities.push(...(await loadJsonFilesFromDir(defaultCitiesDir)));
   airports.push(...(await loadJsonFilesFromDir(defaultAirportsDir)));
   routes.push(...(await loadJsonFilesFromDir(defaultRoutesDir)));
-
-  // Fallback to legacy file if modular folders are empty
-  if (cities.length === 0 && airports.length === 0 && routes.length === 0) {
-    const legacyFile = resolve(currentDir, "editorial_network_en.json");
-    try {
-      const rawJson = await Deno.readTextFile(legacyFile);
-      const parsed = JSON.parse(rawJson);
-      sourceDescription = "content/editorial_network_en.json (legacy fallback)";
-      if (Array.isArray(parsed.cities)) cities.push(...parsed.cities);
-      if (Array.isArray(parsed.airports)) airports.push(...parsed.airports);
-      if (Array.isArray(parsed.routes)) routes.push(...parsed.routes);
-    } catch {
-      console.warn("No content files found in modular directories or legacy fallback.");
-    }
-  }
 }
 
 // Sort deterministically
@@ -161,7 +158,9 @@ sqlStatements.push(
 );
 sqlStatements.push(`-- Editorial Content Seed / Migration`);
 sqlStatements.push(`-- Source: ${sourceDescription}`);
-sqlStatements.push(`-- Total: ${cities.length} cities, ${airports.length} airports, ${routes.length} routes`);
+sqlStatements.push(
+  `-- Total: ${cities.length} cities, ${airports.length} airports, ${routes.length} routes`,
+);
 sqlStatements.push(`-- Generated at: ${new Date().toISOString()}`);
 sqlStatements.push(
   `-- ============================================================================\n`,
@@ -194,7 +193,9 @@ for (const airport of airports) {
   const locale = airport.locale || "en-GB";
   const safeTag = (airport.slug || iata).replace(/[^a-zA-Z0-9_]/g, "_");
   const jsonStr = JSON.stringify(airport.content);
-  sqlStatements.push(`-- Airport Hub: ${airport.iata} (${airport.slug}) [${locale}]`);
+  sqlStatements.push(
+    `-- Airport Hub: ${airport.iata} (${airport.slug}) [${locale}]`,
+  );
   sqlStatements.push(`UPDATE public.airport_pages`);
   sqlStatements.push(`SET`);
   sqlStatements.push(
@@ -229,11 +230,15 @@ for (const route of routes) {
 }
 
 // 4. Refresh read models for current version
+const environment = (args.environment || "development_fixture").replace(
+  /[^a-zA-Z0-9_]/g,
+  "",
+);
 sqlStatements.push(
   `-- Refresh publication read models to reflect updated editorial content`,
 );
 sqlStatements.push(
-  `SELECT public.publish_read_model_version('development_fixture');\n`,
+  `SELECT public.publish_read_model_version('${environment}');\n`,
 );
 sqlStatements.push(`COMMIT;\n`);
 

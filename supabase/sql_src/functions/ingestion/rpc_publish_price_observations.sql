@@ -9,7 +9,8 @@ CREATE OR REPLACE FUNCTION admin.rpc_publish_price_observations(
   p_destination_iata TEXT,
   p_currency_code TEXT,
   p_market_code TEXT,
-  p_observations JSONB
+  p_observations JSONB,
+  p_lease_token UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -30,6 +31,8 @@ DECLARE
   v_origin_airport_id UUID;
   v_dest_airport_id UUID;
   v_airline_id UUID;
+  v_obs_at TIMESTAMPTZ;
+  v_valid_until TIMESTAMPTZ;
 BEGIN
   v_origin_norm := upper(trim(p_origin_iata));
   v_dest_norm := CASE WHEN p_destination_iata IS NOT NULL AND length(trim(p_destination_iata)) > 0 THEN upper(trim(p_destination_iata)) ELSE NULL END;
@@ -38,12 +41,12 @@ BEGIN
 
   SELECT id INTO v_source_id
   FROM admin.data_sources
-  WHERE provider_code = 'travelpayouts'
+  WHERE code = 'travelpayouts'
   LIMIT 1;
 
   IF v_source_id IS NULL THEN
-    INSERT INTO admin.data_sources (provider_code, name, source_type, is_active)
-    VALUES ('travelpayouts', 'Travelpayouts Data API', 'api', true)
+    INSERT INTO admin.data_sources (code, name, is_fixture, is_approved, environment)
+    VALUES ('travelpayouts', 'Travelpayouts Data API', false, true, 'all')
     RETURNING id INTO v_source_id;
   END IF;
 
@@ -59,11 +62,13 @@ BEGIN
         last_attempted_at = now(),
         next_allowed_refresh_at = now() + interval '6 hours',
         lease_expires_at = NULL,
+        lease_token = NULL,
         updated_at = now()
     WHERE origin_iata = v_origin_norm
       AND destination_iata IS NOT DISTINCT FROM v_dest_norm
       AND market_code = v_market_norm
-      AND currency_code = v_curr_norm;
+      AND currency_code = v_curr_norm
+      AND (p_lease_token IS NULL OR lease_token IS NULL OR lease_token = p_lease_token);
 
     RETURN jsonb_build_object('published_count', 0, 'status', 'empty');
   END IF;
@@ -81,11 +86,8 @@ BEGIN
       (elem->>'durationMinutes')::INTEGER AS duration_minutes,
       (elem->>'departureDate')::DATE AS departure_date,
       (elem->>'returnDate')::DATE AS return_date,
-      coalesce((elem->>'observedAt')::TIMESTAMPTZ, now()) AS observed_at,
-      least(
-        coalesce((elem->>'validUntil')::TIMESTAMPTZ, now() + interval '7 days'),
-        now() + interval '7 days'
-      ) AS valid_until,
+      coalesce((elem->>'observedAt')::TIMESTAMPTZ, (elem->>'foundAt')::TIMESTAMPTZ, now()) AS observed_at,
+      (elem->>'validUntil')::TIMESTAMPTZ AS valid_until_raw,
       coalesce(elem->>'affiliatePath', '/search/' || (elem->>'originIata') || (elem->>'destinationIata')) AS affiliate_path
     FROM jsonb_array_elements(p_observations) AS elem
   LOOP
@@ -115,6 +117,12 @@ BEGIN
       LIMIT 1;
     END IF;
 
+    v_obs_at := v_item.observed_at;
+    v_valid_until := least(
+      greatest(coalesce(v_item.valid_until_raw, v_obs_at + interval '7 days'), v_obs_at + interval '1 minute'),
+      v_obs_at + interval '7 days'
+    );
+
     -- Insert or update price observation
     INSERT INTO public.flight_route_prices (
       origin_city_id, destination_city_id, origin_airport_id, destination_airport_id,
@@ -124,17 +132,31 @@ BEGIN
       source_record_id, observed_at, valid_until, affiliate_path, status
     ) VALUES (
       v_origin_city_id, v_dest_city_id, v_origin_airport_id, v_dest_airport_id,
-      v_airline_id, NULLIF(v_item.provider_airline, ''), 'cached_fare', 'one_way',
+      v_airline_id, NULLIF(v_item.provider_airline, ''), 'cached_fare',
+      CASE WHEN v_item.return_date IS NOT NULL THEN 'return' ELSE 'one_way' END,
       v_item.direct, coalesce(v_item.transfer_count, CASE WHEN v_item.direct THEN 0 ELSE 1 END),
       v_item.observed_amount, v_item.currency, v_market_norm, 'en-GB',
       v_item.departure_date, v_item.return_date, v_item.duration_minutes, v_source_id, 'travelpayouts',
-      'tp_' || v_item.origin_iata || '_' || v_item.destination_iata || '_' || to_char(coalesce(v_item.departure_date, CURRENT_DATE), 'YYYYMMDD') || '_' || v_item.currency,
-      v_item.observed_at, v_item.valid_until, v_item.affiliate_path, 'published'
+      'tp_' || v_item.origin_iata || '_' || v_item.destination_iata || '_' ||
+        to_char(coalesce(v_item.departure_date, CURRENT_DATE), 'YYYYMMDD') || '_' ||
+        coalesce(to_char(v_item.return_date, 'YYYYMMDD'), 'ow') || '_' ||
+        coalesce(v_item.provider_airline, 'none') || '_' ||
+        CASE WHEN v_item.direct THEN 'dir' ELSE 'con' END || '_' ||
+        v_market_norm || '_' || v_item.currency,
+      v_obs_at, v_valid_until, v_item.affiliate_path, 'published'
     )
     ON CONFLICT (source_id, source_record_id)
     DO UPDATE SET
       observed_amount = EXCLUDED.observed_amount,
       currency_code = EXCLUDED.currency_code,
+      direct = EXCLUDED.direct,
+      transfer_count = EXCLUDED.transfer_count,
+      duration_minutes = EXCLUDED.duration_minutes,
+      canonical_airline_id = EXCLUDED.canonical_airline_id,
+      provider_airline_iata = EXCLUDED.provider_airline_iata,
+      trip_type = EXCLUDED.trip_type,
+      departure_date = EXCLUDED.departure_date,
+      return_date = EXCLUDED.return_date,
       observed_at = EXCLUDED.observed_at,
       valid_until = EXCLUDED.valid_until,
       affiliate_path = EXCLUDED.affiliate_path,
@@ -149,11 +171,13 @@ BEGIN
       last_succeeded_at = now(),
       next_allowed_refresh_at = now() + interval '24 hours',
       lease_expires_at = NULL,
+      lease_token = NULL,
       updated_at = now()
   WHERE origin_iata = v_origin_norm
     AND destination_iata IS NOT DISTINCT FROM v_dest_norm
     AND market_code = v_market_norm
-    AND currency_code = v_curr_norm;
+    AND currency_code = v_curr_norm
+    AND (p_lease_token IS NULL OR lease_token IS NULL OR lease_token = p_lease_token);
 
   RETURN jsonb_build_object(
     'published_count', v_inserted_count,
@@ -162,6 +186,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.rpc_publish_price_observations(TEXT, TEXT, TEXT, TEXT, JSONB)
+REVOKE ALL ON FUNCTION admin.rpc_publish_price_observations(TEXT, TEXT, TEXT, TEXT, JSONB, UUID)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin.rpc_publish_price_observations(TEXT, TEXT, TEXT, TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION admin.rpc_publish_price_observations(TEXT, TEXT, TEXT, TEXT, JSONB, UUID) TO service_role;

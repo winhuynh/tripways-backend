@@ -45,12 +45,7 @@
     "lounges": [
       {
         "name": "Plaza Premium Lounge",
-        "amenities": [
-          "showers",
-          "hot_food_buffet",
-          "bar",
-          "workstations"
-        ],
+        "amenities": ["showers", "hot_food_buffet", "bar", "workstations"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

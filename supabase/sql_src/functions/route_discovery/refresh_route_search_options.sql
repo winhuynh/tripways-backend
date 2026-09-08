@@ -13,13 +13,16 @@ SET search_path = ''
 AS $$
 DECLARE
   v_count INTEGER;
+  v_direct_count INTEGER := 0;
+  v_connecting_count INTEGER := 0;
+  v_source_type TEXT;
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM public.publication_versions AS version
-    WHERE version.id = p_publication_version_id
-      AND version.status = 'building'
-  ) THEN
+  SELECT source_type INTO v_source_type
+  FROM public.publication_versions
+  WHERE id = p_publication_version_id
+    AND status = 'building';
+
+  IF v_source_type IS NULL THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_PUBLICATION_VERSION_INVALID';
   END IF;
 
@@ -90,7 +93,15 @@ BEGIN
     AND r.last_synced_at >= now() - INTERVAL '7 days'
     AND origin_airport.status = 'active'
     AND destination_airport.status = 'active'
-    AND origin_city.id <> destination_city.id;
+    AND origin_city.id <> destination_city.id
+    AND (
+      v_source_type <> 'production'
+      OR r.source_id IN (
+        SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE
+      )
+    );
+
+  GET DIAGNOSTICS v_direct_count = ROW_COUNT;
 
   -- 2. Insert 1-Stop Connecting Routes via Dynamic Hubs
   INSERT INTO public.flight_route_options (
@@ -162,9 +173,18 @@ BEGIN
     AND origin_airport.status = 'active'
     AND destination_airport.status = 'active'
     AND origin_city.id <> destination_city.id
-    AND r1.origin_airport_id <> r2.destination_airport_id;
+    AND r1.origin_airport_id <> r2.destination_airport_id
+    AND cardinality(admin.calculate_route_schedule_intersection(r1.days_of_week, r2.days_of_week)) > 0
+    AND (
+      v_source_type <> 'production'
+      OR (
+        r1.source_id IN (SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE)
+        AND r2.source_id IN (SELECT id FROM admin.data_sources WHERE is_fixture = FALSE AND is_approved = TRUE)
+      )
+    );
 
-  GET DIAGNOSTICS v_count = ROW_COUNT;
+  GET DIAGNOSTICS v_connecting_count = ROW_COUNT;
+  v_count := v_direct_count + v_connecting_count;
   RETURN v_count;
 END;
 $$;

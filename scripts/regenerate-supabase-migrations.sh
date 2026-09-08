@@ -51,7 +51,7 @@ emit_migration() {
 }
 
 mkdir -p "$migrations_dir"
-find "$migrations_dir" -maxdepth 1 -type f -name "*.sql" -delete
+find "$migrations_dir" -maxdepth 1 -type f -name "*.sql" ! -name "*editorial_content.sql" -delete
 
 emit_migration \
   "20260714080000_platform.sql" \
@@ -152,6 +152,10 @@ emit_migration \
   "supabase/sql_src/functions/ingestion/rpc_publish_price_observations.sql" \
   "supabase/sql_src/functions/ingestion/rpc_acquire_airport_route_refresh_lease.sql" \
   "supabase/sql_src/functions/ingestion/rpc_finalize_airport_route_refresh_lease.sql" \
+  "supabase/sql_src/functions/ingestion/transport_acquire_price_refresh_lease.sql" \
+  "supabase/sql_src/functions/ingestion/transport_publish_price_observations.sql" \
+  "supabase/sql_src/functions/ingestion/transport_acquire_airport_route_refresh_lease.sql" \
+  "supabase/sql_src/functions/ingestion/transport_finalize_airport_route_refresh_lease.sql" \
   "supabase/sql_src/operations/configure_ingestion_crons.sql"
 
 

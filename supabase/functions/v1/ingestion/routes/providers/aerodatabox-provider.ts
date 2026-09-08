@@ -19,29 +19,32 @@ export interface AeroDataBoxConfig {
   delayMs?: number;
 }
 
-export function parseIsoDurationMinutes(durationStr: unknown): number {
+export function parseIsoDurationMinutes(durationStr: unknown, distanceKm?: number): number {
   if (typeof durationStr === 'number' && Number.isFinite(durationStr) && durationStr > 0) {
     return Math.round(durationStr);
   }
 
-  if (typeof durationStr !== 'string' || !durationStr.trim()) {
-    return 120; // Default 2 hours fallback if missing
+  if (typeof durationStr === 'string' && durationStr.trim()) {
+    const str = durationStr.trim().toUpperCase();
+    const regex = /^PT(?:(\d+)H)?(?:(\d+)M)?$/;
+    const match = str.match(regex);
+
+    if (match) {
+      const hours = parseInt(match[1] || '0', 10);
+      const minutes = parseInt(match[2] || '0', 10);
+      const total = hours * 60 + minutes;
+      if (total > 0) return total;
+    }
+
+    const numericOnly = parseInt(str, 10);
+    if (!Number.isNaN(numericOnly) && numericOnly > 0) {
+      return numericOnly;
+    }
   }
 
-  const str = durationStr.trim().toUpperCase();
-  const regex = /^PT(?:(\d+)H)?(?:(\d+)M)?$/;
-  const match = str.match(regex);
-
-  if (match) {
-    const hours = parseInt(match[1] || '0', 10);
-    const minutes = parseInt(match[2] || '0', 10);
-    const total = hours * 60 + minutes;
-    return total > 0 ? total : 120;
-  }
-
-  const numericOnly = parseInt(str, 10);
-  if (!Number.isNaN(numericOnly) && numericOnly > 0) {
-    return numericOnly;
+  // If duration is missing, calculate reasonable estimate from distance (~750 km/h cruise + 30 min taxi/takeoff/landing)
+  if (typeof distanceKm === 'number' && distanceKm > 0) {
+    return Math.max(30, Math.round((distanceKm / 750) * 60 + 30));
   }
 
   return 120;
@@ -135,15 +138,16 @@ export function parseAeroDataBoxDirectRoutes(
       .map((f) => String(f).trim().toUpperCase())
       .filter((f) => f.length >= 3);
 
-    const durationMinutes = parseIsoDurationMinutes(
-      item.duration ?? item.flightDurationMinutes ?? item.averageDuration,
-    );
-
     const distanceKm = typeof item.distanceKm === 'number' && item.distanceKm > 0
       ? Math.round(item.distanceKm)
       : typeof item.distance === 'number' && item.distance > 0
       ? Math.round(item.distance)
       : 0;
+
+    const durationMinutes = parseIsoDurationMinutes(
+      item.duration ?? item.flightDurationMinutes ?? item.averageDuration,
+      distanceKm,
+    );
 
     const daysOfWeek = parseDaysOfWeek(
       item.operatingDays ?? item.daysOfWeek ?? item.days,
@@ -204,7 +208,32 @@ export async function fetchDirectRoutesFromAeroDataBox(
     'x-rapidapi-host': config.apiHost || 'aerodatabox.p.rapidapi.com',
   };
 
-  const response = await fetcher(url, { method: 'GET', headers });
+  const timeoutMs = 10000;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetcher(url, {
+      method: 'GET',
+      headers,
+      signal: controller.signal,
+    });
+  } catch (fetchError) {
+    if (
+      (fetchError instanceof DOMException && fetchError.name === 'AbortError') ||
+      (fetchError instanceof Error &&
+        (fetchError.name === 'AbortError' ||
+          fetchError.name === 'TimeoutError' ||
+          fetchError.message.includes('abort') ||
+          fetchError.message.includes('timeout')))
+    ) {
+      throw new Error(`AeroDataBox API request timed out after ${timeoutMs}ms`);
+    }
+    throw fetchError;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (response.status === 404) {
     return [];

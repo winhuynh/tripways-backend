@@ -103,14 +103,33 @@ import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/flight/affiliate-handoff/index.ts"
 
 [functions.flight-route-cache]
-enabled = false
+enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/flight/route-cache/index.ts"
+
+[functions.flight-airport-routes-cache]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/flight/airport-routes-cache/index.ts"
+
+[functions.ingestion-routes]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/ingestion/routes/index.ts"
+
+[functions.location-suggest]
+enabled = true
+verify_jwt = false
+import_map = "./functions/deno.json"
+entrypoint = "./functions/v1/location-suggest/index.ts"
 
 [functions.sitemap-query]
 enabled = true
 verify_jwt = false
 import_map = "./functions/deno.json"
 entrypoint = "./functions/v1/sitemap/query/index.ts"
+
 

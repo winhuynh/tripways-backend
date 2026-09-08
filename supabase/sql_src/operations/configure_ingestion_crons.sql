@@ -57,7 +57,7 @@ BEGIN
     'tripways-aerodatabox-weekly',
     '0 3 * * 0',
     $cron$SELECT net.http_post(
-        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion/routes',
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion-routes',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
           'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
@@ -73,7 +73,7 @@ BEGIN
     'tripways-travelpayouts-top-warm',
     '0 4 */3 * *',
     $cron$SELECT net.http_post(
-        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/flight/route-cache',
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/flight-route-cache',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
           'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret')
@@ -88,7 +88,7 @@ BEGIN
     'tripways-travelpayouts-day6-smart-refresh',
     '0 5 * * *',
     $cron$SELECT net.http_post(
-        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/flight/route-cache',
+        url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/flight-route-cache',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
           'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret')

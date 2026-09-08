@@ -36,12 +36,7 @@
     "lounges": [
       {
         "name": "Narita TraveLounge",
-        "amenities": [
-          "snacks",
-          "coffee",
-          "runway_view",
-          "wifi"
-        ],
+        "amenities": ["snacks", "coffee", "runway_view", "wifi"],
         "source_url": null,
         "affiliate_url": null,
         "location_type": "airside",

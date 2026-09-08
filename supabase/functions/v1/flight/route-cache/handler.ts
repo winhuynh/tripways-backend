@@ -44,8 +44,6 @@ export function createRouteCacheHandler(
       }
 
       const client = options.getSupabaseClient();
-      const adminClient = (typeof client.schema === 'function' ? client.schema('admin') : client) ??
-        client;
 
       const leaseParams = {
         p_origin_iata: parsed.originIata,
@@ -54,7 +52,7 @@ export function createRouteCacheHandler(
         p_market_code: parsed.market ?? 'us',
       };
 
-      const { data: leaseData, error: leaseError } = await adminClient.rpc(
+      const { data: leaseData, error: leaseError } = await client.rpc(
         'rpc_acquire_price_refresh_lease',
         leaseParams,
       );
@@ -94,7 +92,7 @@ export function createRouteCacheHandler(
           token: Deno.env.get('TRAVELPAYOUTS_TOKEN') ?? Deno.env.get('TRAVELPAYOUTS_API_TOKEN'),
         };
 
-        let observations: NormalizedPriceObservation[] = [];
+        let observations: NormalizedPriceObservation[];
         try {
           observations = await fetchPrices(config, {
             originIata: parsed.originIata,
@@ -105,7 +103,10 @@ export function createRouteCacheHandler(
           });
         } catch (providerError) {
           logEdgeWarn('ROUTE_CACHE_PROVIDER_FETCH_FAILED', providerError, logContext);
+          throw new Error('ERR_FLIGHT_ROUTE_CACHE_UNAVAILABLE');
         }
+
+        const leaseToken = (leaseObj.lease_token ?? leaseObj.lease_id ?? null) as string | null;
 
         const publishParams = {
           p_origin_iata: parsed.originIata,
@@ -113,9 +114,10 @@ export function createRouteCacheHandler(
           p_currency_code: parsed.currency ?? 'USD',
           p_market_code: parsed.market ?? 'us',
           p_observations: observations,
+          p_lease_token: leaseToken,
         };
 
-        const { data: publishData, error: publishError } = await adminClient.rpc(
+        const { data: publishData, error: publishError } = await client.rpc(
           'rpc_publish_price_observations',
           publishParams,
         );
@@ -135,10 +137,12 @@ export function createRouteCacheHandler(
         });
 
         const result = {
-          ...(typeof publishData === 'object' && publishData !== null ? publishData : {}),
+          status: 'fresh',
           origin: parsed.originIata,
           destination: parsed.destIata ?? null,
+          count: observations.length,
           observations,
+          ...(typeof publishData === 'object' && publishData !== null ? publishData : {}),
         };
 
         return successResponse(result, 200, { 'x-request-id': requestId });

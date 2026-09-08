@@ -4,7 +4,10 @@
 -- Responsibilities: Refresh route search and all page models before flipping the current marker.
 -- ============================================================================
 
-CREATE OR REPLACE FUNCTION public.publish_read_model_version(p_source_type TEXT DEFAULT 'development_fixture')
+CREATE OR REPLACE FUNCTION public.publish_read_model_version(
+  p_source_type TEXT DEFAULT 'development_fixture',
+  p_allow_empty BOOLEAN DEFAULT FALSE
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 VOLATILE
@@ -90,7 +93,7 @@ BEGIN
 
     v_page_counts := admin.refresh_page_read_models(v_version_id);
 
-    IF v_route_count = 0 THEN
+    IF v_route_count = 0 AND NOT p_allow_empty THEN
       RAISE EXCEPTION USING
         ERRCODE = '23514',
         MESSAGE = 'ERR_PUBLICATION_INCOMPLETE';
@@ -108,16 +111,17 @@ BEGIN
 
       RETURN admin.build_rpc_error(
         NULL,
-        'ERR_PUBLICATION_FAILED',
-        'Read-model publication failed.'
+        CASE
+          WHEN SQLERRM ~ '^ERR_[A-Z0-9_]+$' THEN SQLERRM
+          ELSE 'ERR_PUBLICATION_FAILED'
+        END,
+        'Publication candidate failed before activation: ' || SQLERRM
       );
   END;
 
-  -- STEP 03: Flip all page and search readers to the complete candidate atomically.
+  -- STEP 03: Flip the active version pointer under the advisory lock.
   UPDATE public.publication_versions
-  SET
-    is_current = FALSE,
-    status = 'retired'
+  SET is_current = FALSE
   WHERE is_current = TRUE;
 
   UPDATE public.publication_versions
@@ -127,20 +131,43 @@ BEGIN
     published_at = now()
   WHERE id = v_version_id;
 
-  -- STEP 04: Prune stale retired and failed versions, preserving only current and immediate rollback candidate.
-  DELETE FROM public.publication_versions
+  -- STEP 04: Retire old versions and prune stale non-current state.
+  UPDATE public.publication_versions
+  SET status = 'retired'
   WHERE id <> v_version_id
-    AND NOT EXISTS (
-      SELECT 1
-      FROM (
-        SELECT id
-        FROM public.publication_versions
-        WHERE status = 'retired'
-        ORDER BY published_at DESC NULLS LAST, created_at DESC
-        LIMIT 1
-      ) AS rollback_candidate
-      WHERE rollback_candidate.id = publication_versions.id
-    );
+    AND status = 'published';
+
+  DELETE FROM public.flight_route_options
+  WHERE publication_version_id IN (
+    SELECT id
+    FROM public.publication_versions
+    WHERE status = 'retired'
+  );
+
+  DELETE FROM public.city_page_read_models
+  WHERE publication_version_id IN (
+    SELECT id
+    FROM public.publication_versions
+    WHERE status = 'retired'
+  );
+
+  DELETE FROM public.airport_page_read_models
+  WHERE publication_version_id IN (
+    SELECT id
+    FROM public.publication_versions
+    WHERE status = 'retired'
+  );
+
+  DELETE FROM public.route_page_read_models
+  WHERE publication_version_id IN (
+    SELECT id
+    FROM public.publication_versions
+    WHERE status = 'retired'
+  );
+
+  DELETE FROM public.publication_versions
+  WHERE (status = 'retired' AND started_at < now() - interval '7 days')
+     OR (status = 'failed' AND started_at < now() - interval '1 day');
 
   RETURN jsonb_build_object(
     'data', jsonb_build_object(
@@ -153,6 +180,10 @@ BEGIN
   );
 END;
 $$;
+
+REVOKE ALL ON FUNCTION public.publish_read_model_version(TEXT, BOOLEAN)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.publish_read_model_version(TEXT, BOOLEAN) TO service_role;
 
 REVOKE ALL ON FUNCTION public.publish_read_model_version(TEXT)
 FROM public, anon, authenticated;
