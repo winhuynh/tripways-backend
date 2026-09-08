@@ -740,15 +740,7 @@ BEGIN
         a.longitude,
         CASE
           WHEN a.iata = v_origin_iata THEN 0
-          ELSE (
-            6371 * 2 * asin(
-              sqrt(
-                power(sin(radians(a.latitude - v_origin_lat) / 2), 2) +
-                cos(radians(v_origin_lat)) * cos(radians(a.latitude)) *
-                power(sin(radians(a.longitude - v_origin_lon) / 2), 2)
-              )
-            )
-          )
+          ELSE admin.calculate_haversine_distance_km(a.latitude, a.longitude, v_origin_lat, v_origin_lon)
         END AS distance_km
       FROM public.airports a
       LEFT JOIN public.cities c ON c.id = a.city_id

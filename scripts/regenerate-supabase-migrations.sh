@@ -148,6 +148,7 @@ emit_migration \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_get_ourairports_denylist.sql" \
+  "supabase/sql_src/functions/ingestion/get_route_price_observations_dto.sql" \
   "supabase/sql_src/functions/ingestion/rpc_acquire_price_refresh_lease.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_price_observations.sql" \
   "supabase/sql_src/functions/ingestion/rpc_acquire_airport_route_refresh_lease.sql" \

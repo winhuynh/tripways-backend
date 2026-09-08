@@ -250,28 +250,7 @@ BEGIN
   END IF;
 
   -- Query and return canonical DTO with observation_ref (Finding R6)
-  SELECT coalesce(jsonb_agg(
-    jsonb_build_object(
-      'observation_ref', p.public_reference,
-      'observed_amount', p.observed_amount,
-      'currency_code', p.currency_code,
-      'departure_date', p.departure_date,
-      'direct', p.direct,
-      'transfer_count', p.transfer_count,
-      'duration_minutes', p.duration_minutes,
-      'observed_at', p.observed_at,
-      'valid_until', p.valid_until
-    ) ORDER BY p.observed_amount ASC NULLS LAST
-  ), '[]'::JSONB)
-  INTO v_published_observations
-  FROM public.flight_route_prices AS p
-  JOIN public.airports AS oa ON oa.id = p.origin_airport_id AND oa.iata = v_origin_norm
-  LEFT JOIN public.airports AS da ON da.id = p.destination_airport_id AND da.iata = v_dest_norm
-  WHERE p.status = 'published'
-    AND p.valid_until > now()
-    AND p.currency_code = v_curr_norm
-    AND p.market_code = v_market_norm
-    AND (v_dest_norm IS NULL OR da.id IS NOT NULL);
+  v_published_observations := admin.get_route_price_observations_dto(v_origin_norm, v_dest_norm, v_curr_norm, v_market_norm);
 
   RETURN jsonb_build_object(
     'published_count', v_inserted_count,
