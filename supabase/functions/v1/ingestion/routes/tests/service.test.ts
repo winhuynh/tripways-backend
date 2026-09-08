@@ -24,11 +24,17 @@ Deno.test('ingestDirectRoutesForAirports batch processes airports and calls rpc'
     );
   };
 
-  let rpcCalledWith: { functionName: string; args: Record<string, unknown> } | null = null;
+  const rpcCalls: { functionName: string; args: Record<string, unknown> }[] = [];
 
   const mockDbClient: RouteIngestionDbClient = {
     rpc(functionName, args) {
-      rpcCalledWith = { functionName, args };
+      rpcCalls.push({ functionName, args });
+      if (functionName === 'rpc_purge_expired_direct_flight_routes') {
+        return Promise.resolve({
+          data: { status: 'success', source_code: 'aerodatabox', deleted_count: 3 },
+          error: null,
+        });
+      }
       return Promise.resolve({
         data: { status: 'success', upserted_count: 1 },
         error: null,
@@ -41,6 +47,7 @@ Deno.test('ingestDirectRoutesForAirports batch processes airports and calls rpc'
     {
       apiKey: 'test-key-12345678',
       fetchFn: mockFetch,
+      delayMs: 0,
     },
     mockDbClient,
   );
@@ -48,17 +55,19 @@ Deno.test('ingestDirectRoutesForAirports batch processes airports and calls rpc'
   assert.equal(result.status, 'success');
   assert.equal(result.total_airports_processed, 1);
   assert.equal(result.total_routes_upserted, 1);
+  assert.equal(result.total_routes_purged, 3);
   assert.equal(result.errors.length, 0);
 
-  assert.ok(rpcCalledWith !== null);
-  assert.equal(
-    (rpcCalledWith as { functionName: string }).functionName,
-    'rpc_ingest_direct_flight_routes',
+  const ingestCall = rpcCalls.find((c) => c.functionName === 'rpc_ingest_direct_flight_routes');
+  assert.ok(ingestCall !== undefined);
+  assert.equal(ingestCall?.args.p_source_code, 'aerodatabox');
+
+  const purgeCall = rpcCalls.find((c) =>
+    c.functionName === 'rpc_purge_expired_direct_flight_routes'
   );
-  assert.equal(
-    (rpcCalledWith as { args: { p_source_code: string } }).args.p_source_code,
-    'aerodatabox',
-  );
+  assert.ok(purgeCall !== undefined);
+  assert.equal(purgeCall?.args.p_source_code, 'aerodatabox');
+  assert.equal(purgeCall?.args.p_retention_interval, '7 days');
 });
 
 Deno.test('ingestDirectRoutesForAirports handles empty or invalid airport lists gracefully', async () => {
@@ -78,4 +87,5 @@ Deno.test('ingestDirectRoutesForAirports handles empty or invalid airport lists 
 
   assert.equal(result.total_airports_processed, 0);
   assert.equal(result.total_routes_upserted, 0);
+  assert.equal(result.total_routes_purged, 0);
 });

@@ -180,6 +180,93 @@ FROM public, anon, authenticated;
 
 GRANT EXECUTE ON FUNCTION public.rpc_ingest_direct_flight_routes(TEXT, JSONB) TO service_role;
 
+-- >>> supabase/sql_src/functions/ingestion/purge_expired_direct_flight_routes.sql
+
+-- ============================================================================
+-- Function: admin.purge_expired_direct_flight_routes
+-- Purpose: Permanently delete cached direct flight routes older than the allowed retention period (ToS Article 5.5).
+-- Responsibilities:
+--   - Remove expired routes for a specified data source.
+--   - Return count of permanently deleted records.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.purge_expired_direct_flight_routes(
+  p_source_code TEXT,
+  p_retention_interval INTERVAL DEFAULT '7 days'::INTERVAL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_source_id UUID;
+  v_deleted_count INTEGER := 0;
+BEGIN
+  IF p_source_code IS NULL OR pg_catalog.btrim(p_source_code) = '' THEN
+    RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_INVALID_SOURCE_CODE';
+  END IF;
+
+  SELECT id INTO v_source_id
+  FROM admin.data_sources
+  WHERE code = p_source_code;
+
+  IF v_source_id IS NOT NULL THEN
+    DELETE FROM public.direct_flight_routes
+    WHERE source_id = v_source_id
+      AND last_synced_at < (pg_catalog.now() - p_retention_interval);
+
+    GET DIAGNOSTICS v_deleted_count = ROW_COUNT;
+  END IF;
+
+  RETURN pg_catalog.jsonb_build_object(
+    'status', 'success',
+    'source_code', p_source_code,
+    'deleted_count', v_deleted_count
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.purge_expired_direct_flight_routes(TEXT, INTERVAL)
+FROM public, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION admin.purge_expired_direct_flight_routes(TEXT, INTERVAL) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/rpc_purge_expired_direct_flight_routes.sql
+
+-- ============================================================================
+-- Function: public.rpc_purge_expired_direct_flight_routes
+-- Purpose: Public RPC wrapper for worker services to purge expired cached routes.
+-- Responsibilities: Forward call to admin purge function, enforce service_role only.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_purge_expired_direct_flight_routes(
+  p_source_code TEXT,
+  p_retention_interval TEXT DEFAULT '7 days'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+DECLARE
+  v_interval INTERVAL;
+BEGIN
+  BEGIN
+    v_interval := pg_catalog.coalesce(pg_catalog.nullif(p_retention_interval, '')::INTERVAL, '7 days'::INTERVAL);
+  EXCEPTION WHEN OTHERS THEN
+    v_interval := '7 days'::INTERVAL;
+  END;
+
+  RETURN admin.purge_expired_direct_flight_routes(p_source_code, v_interval);
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.rpc_purge_expired_direct_flight_routes(TEXT, TEXT)
+FROM public, anon, authenticated;
+
+GRANT EXECUTE ON FUNCTION public.rpc_purge_expired_direct_flight_routes(TEXT, TEXT) TO service_role;
+
 -- >>> supabase/sql_src/functions/ingestion/publish_base_data_batch.sql
 
 -- ============================================================================
@@ -1159,6 +1246,165 @@ REVOKE ALL ON FUNCTION admin.rpc_publish_price_observations(TEXT, TEXT, TEXT, TE
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION admin.rpc_publish_price_observations(TEXT, TEXT, TEXT, TEXT, JSONB) TO service_role;
 
+-- >>> supabase/sql_src/functions/ingestion/rpc_acquire_airport_route_refresh_lease.sql
+
+-- ============================================================================
+-- Function: admin.rpc_acquire_airport_route_refresh_lease
+-- Purpose: Atomically acquire an on-demand route cache refresh lease or return fresh data.
+-- Responsibilities:
+--   - Validate origin IATA against active registered airports.
+--   - Return 'fresh' if routes synced within 7 days exist.
+--   - Coordinate leases to prevent thundering herd calls to AeroDataBox.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.rpc_acquire_airport_route_refresh_lease(
+  p_origin_iata TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_origin_norm CHAR(3);
+  v_airport_id UUID;
+  v_fresh_count INTEGER := 0;
+  v_lease RECORD;
+BEGIN
+  v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
+
+  IF v_origin_norm !~ '^[A-Z]{3}$' THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_IATA');
+  END IF;
+
+  -- 1. Ensure airport exists and is active in master directory
+  SELECT id INTO v_airport_id
+  FROM public.airports
+  WHERE iata = v_origin_norm
+    AND status = 'active'
+  LIMIT 1;
+
+  IF v_airport_id IS NULL THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_UNKNOWN_AIRPORT');
+  END IF;
+
+  -- 2. Check for fresh direct routes (TTL 7 days)
+  SELECT count(*) INTO v_fresh_count
+  FROM public.direct_flight_routes
+  WHERE origin_iata = v_origin_norm
+    AND is_active = TRUE
+    AND last_synced_at >= (pg_catalog.now() - INTERVAL '7 days');
+
+  IF v_fresh_count > 0 THEN
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'fresh',
+      'origin', v_origin_norm,
+      'count', v_fresh_count
+    );
+  END IF;
+
+  -- 3. Check or upsert lease state
+  INSERT INTO admin.airport_route_cache_leases (
+    origin_iata, status, lease_expires_at, last_attempted_at, next_allowed_refresh_at
+  ) VALUES (
+    v_origin_norm, 'refreshing', pg_catalog.now() + INTERVAL '30 seconds', pg_catalog.now(), pg_catalog.now() + INTERVAL '30 seconds'
+  )
+  ON CONFLICT (origin_iata)
+  DO UPDATE SET
+    last_attempted_at = pg_catalog.now(),
+    status = CASE
+      WHEN airport_route_cache_leases.lease_expires_at < pg_catalog.now() THEN 'refreshing'
+      ELSE airport_route_cache_leases.status
+    END,
+    lease_expires_at = CASE
+      WHEN airport_route_cache_leases.lease_expires_at < pg_catalog.now() THEN pg_catalog.now() + INTERVAL '30 seconds'
+      ELSE airport_route_cache_leases.lease_expires_at
+    END
+  RETURNING * INTO v_lease;
+
+  IF v_lease.status = 'refreshing' AND v_lease.lease_expires_at >= pg_catalog.now() THEN
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'lease_acquired',
+      'origin', v_origin_norm,
+      'lease_id', v_lease.id
+    );
+  ELSIF v_lease.next_allowed_refresh_at > pg_catalog.now() AND v_lease.status IN ('empty', 'failed') THEN
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'cooldown',
+      'origin', v_origin_norm,
+      'next_allowed_refresh_at', v_lease.next_allowed_refresh_at
+    );
+  ELSE
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'refreshing',
+      'origin', v_origin_norm
+    );
+  END IF;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.rpc_acquire_airport_route_refresh_lease(TEXT)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.rpc_acquire_airport_route_refresh_lease(TEXT) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/rpc_finalize_airport_route_refresh_lease.sql
+
+-- ============================================================================
+-- Function: admin.rpc_finalize_airport_route_refresh_lease
+-- Purpose: Finalize the lease state after an on-demand route ingestion attempt.
+-- Responsibilities: Update status to fresh/empty/failed and set cooldown.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.rpc_finalize_airport_route_refresh_lease(
+  p_origin_iata TEXT,
+  p_status TEXT,
+  p_failure_code TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_origin_norm CHAR(3);
+  v_status_norm VARCHAR(20);
+BEGIN
+  v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
+  v_status_norm := pg_catalog.lower(pg_catalog.btrim(COALESCE(p_status, '')));
+
+  IF v_origin_norm !~ '^[A-Z]{3}$' THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_IATA');
+  END IF;
+
+  IF v_status_norm NOT IN ('fresh', 'empty', 'failed') THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_STATUS');
+  END IF;
+
+  UPDATE admin.airport_route_cache_leases
+  SET
+    status = v_status_norm,
+    lease_expires_at = NULL,
+    last_succeeded_at = CASE WHEN v_status_norm = 'fresh' THEN pg_catalog.now() ELSE last_succeeded_at END,
+    next_allowed_refresh_at = CASE
+      WHEN v_status_norm = 'fresh' THEN pg_catalog.now() + INTERVAL '7 days'
+      ELSE pg_catalog.now() + INTERVAL '24 hours'
+    END,
+    failure_code = p_failure_code,
+    updated_at = pg_catalog.now()
+  WHERE origin_iata = v_origin_norm;
+
+  RETURN pg_catalog.jsonb_build_object(
+    'status', 'success',
+    'origin', v_origin_norm,
+    'lease_status', v_status_norm
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT) TO service_role;
+
 -- >>> supabase/sql_src/operations/configure_ingestion_crons.sql
 
 -- ============================================================================
@@ -1207,6 +1453,7 @@ BEGIN
   WHERE job.jobname IN (
     'tripways-ourairports-daily',
     'tripways-aerodatabox-monthly',
+    'tripways-aerodatabox-weekly',
     'tripways-travelpayouts-top-warm',
     'tripways-travelpayouts-day6-smart-refresh'
   );
@@ -1214,18 +1461,18 @@ BEGIN
   -- Note: OurAirports base-data ingestion is on-demand (static master reference data).
   -- It is invoked manually via CLI (pnpm ourairports:import-local) or administrative trigger.
 
-  -- 1. AeroDataBox Monthly Direct Routes Batch (Tầng 2 - Ngày 1 lúc 03:00 UTC)
+  -- 1. AeroDataBox Weekly Direct Routes Batch (Tầng 2 - Chủ Nhật lúc 03:00 UTC, 7 ngày 1 lần)
   SELECT cron.schedule(
-    'tripways-aerodatabox-monthly',
-    '0 3 1 * *',
+    'tripways-aerodatabox-weekly',
+    '0 3 * * 0',
     $cron$SELECT net.http_post(
         url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion/routes',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
           'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
-          'Idempotency-Key', 'aerodatabox-' || to_char(CURRENT_DATE, 'YYYY-MM')
+          'Idempotency-Key', 'aerodatabox-' || to_char(CURRENT_DATE, 'IYYY-IW')
         ),
-        body := jsonb_build_object('providerMode', 'aerodatabox', 'scope', 'top_airports')
+        body := jsonb_build_object('providerMode', 'aerodatabox', 'scope', 'top_hubs', 'limit', 80)
       );$cron$
   )
   INTO v_aerodatabox_job;

@@ -13,6 +13,10 @@ Deno.test('parseRouteIngestionRequest validates airport IATAs and scope', () => 
   assert.equal(scoped.scope, 'top_airports');
   assert.equal(scoped.limit, 300);
 
+  const hubScoped = parseRouteIngestionRequest({ scope: 'top_hubs', limit: 80 });
+  assert.equal(hubScoped.scope, 'top_hubs');
+  assert.equal(hubScoped.limit, 80);
+
   assert.throws(() => parseRouteIngestionRequest(null), /ERR_INVALID_REQUEST/);
   assert.throws(() => parseRouteIngestionRequest({}), /ERR_INVALID_REQUEST/);
   assert.throws(() => parseRouteIngestionRequest({ airports: [] }), /ERR_INVALID_REQUEST/);
@@ -34,6 +38,7 @@ Deno.test('handleRouteIngestionRequest rejects unauthorized requests without val
         status: 'success',
         total_airports_processed: 1,
         total_routes_upserted: 1,
+        total_routes_purged: 0,
         results: [],
         errors: [],
       });
@@ -71,6 +76,7 @@ Deno.test('handleRouteIngestionRequest processes valid authenticated request', a
         status: 'success',
         total_airports_processed: payload.airports?.length ?? 0,
         total_routes_upserted: 5,
+        total_routes_purged: 2,
         results: [],
         errors: [],
       });

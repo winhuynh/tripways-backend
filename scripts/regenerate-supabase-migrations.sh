@@ -87,7 +87,8 @@ emit_migration \
   "supabase/sql_src/schema/ingestion/raw_import_batches.sql" \
   "supabase/sql_src/schema/ingestion/raw_base_data_records.sql" \
   "supabase/sql_src/schema/ingestion/ourairports_denylist.sql" \
-  "supabase/sql_src/schema/ingestion/route_price_cache_leases.sql"
+  "supabase/sql_src/schema/ingestion/route_price_cache_leases.sql" \
+  "supabase/sql_src/schema/ingestion/airport_route_cache_leases.sql"
 
 emit_migration \
   "20260714080400_pseo_schema.sql" \
@@ -142,11 +143,15 @@ emit_migration \
   "base data ingestion functions" \
   "supabase/sql_src/functions/ingestion/ingest_direct_flight_routes_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_ingest_direct_flight_routes.sql" \
+  "supabase/sql_src/functions/ingestion/purge_expired_direct_flight_routes.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_purge_expired_direct_flight_routes.sql" \
   "supabase/sql_src/functions/ingestion/publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_base_data_batch.sql" \
   "supabase/sql_src/functions/ingestion/rpc_get_ourairports_denylist.sql" \
   "supabase/sql_src/functions/ingestion/rpc_acquire_price_refresh_lease.sql" \
   "supabase/sql_src/functions/ingestion/rpc_publish_price_observations.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_acquire_airport_route_refresh_lease.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_finalize_airport_route_refresh_lease.sql" \
   "supabase/sql_src/operations/configure_ingestion_crons.sql"
 
 

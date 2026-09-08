@@ -21,6 +21,7 @@ const expectedTables = [
   ['schema/ingestion/raw_base_data_records.sql', 'admin.raw_base_data_records'],
   ['schema/ingestion/ourairports_denylist.sql', 'admin.ourairports_denylist'],
   ['schema/ingestion/route_price_cache_leases.sql', 'admin.route_price_cache_leases'],
+  ['schema/ingestion/airport_route_cache_leases.sql', 'admin.airport_route_cache_leases'],
 ] as const;
 
 Deno.test('ingestion stores one admin table per source file', async () => {
@@ -162,13 +163,45 @@ Deno.test('one cron installer manages dynamic flight and price ingestion with on
   assert.ok(includesSql(sql, 'create extension if not exists pg_cron'));
   assert.ok(includesSql(sql, 'create extension if not exists pg_net'));
   assert.ok(includesSql(sql, 'cron.schedule('));
-  assert.ok(sql.includes("'tripways-aerodatabox-monthly'"));
+  assert.ok(sql.includes("'tripways-aerodatabox-weekly'"));
+  assert.ok(sql.includes("'tripways-aerodatabox-monthly'")); // unscheduled/retired
   assert.ok(sql.includes("'tripways-travelpayouts-top-warm'"));
   assert.ok(sql.includes("'tripways-travelpayouts-day6-smart-refresh'"));
   assert.ok(sql.includes("'tripways-ourairports-daily'")); // unscheduled/retired
   assert.ok(includesSql(sql, 'cron.unschedule'));
   assert.ok(sql.includes('vault.decrypted_secrets'));
   assert.ok(includesSql(sql, 'err_cron_vault_prerequisites_missing'));
+});
+
+Deno.test('purge expired direct flight routes function enforces retention limits securely', async () => {
+  const adminSql = await readSource('functions/ingestion/purge_expired_direct_flight_routes.sql');
+  assert.ok(
+    includesSql(adminSql, 'create or replace function admin.purge_expired_direct_flight_routes'),
+  );
+  assert.ok(includesSql(adminSql, 'delete from public.direct_flight_routes'));
+  assert.ok(includesSql(adminSql, 'last_synced_at <'));
+  assert.ok(
+    includesSql(
+      adminSql,
+      'grant execute on function admin.purge_expired_direct_flight_routes(text, interval) to service_role',
+    ),
+  );
+  assert.equal(includesSql(adminSql, 'to anon'), false);
+  assert.equal(includesSql(adminSql, 'to authenticated'), false);
+
+  const rpcSql = await readSource('functions/ingestion/rpc_purge_expired_direct_flight_routes.sql');
+  assert.ok(
+    includesSql(rpcSql, 'create or replace function public.rpc_purge_expired_direct_flight_routes'),
+  );
+  assert.ok(includesSql(rpcSql, 'admin.purge_expired_direct_flight_routes'));
+  assert.ok(
+    includesSql(
+      rpcSql,
+      'grant execute on function public.rpc_purge_expired_direct_flight_routes(text, text) to service_role',
+    ),
+  );
+  assert.equal(includesSql(rpcSql, 'to anon'), false);
+  assert.equal(includesSql(rpcSql, 'to authenticated'), false);
 });
 
 Deno.test('OurAirports source fixture records lean source configuration', async () => {
@@ -212,6 +245,45 @@ Deno.test('direct flight routes ingestion functions enforce service_role and tra
     includesSql(
       rpcSql,
       'grant execute on function public.rpc_ingest_direct_flight_routes(text, jsonb) to service_role',
+    ),
+  );
+});
+
+Deno.test('airport route cache lease functions enforce service_role and lease lifecycle', async () => {
+  const acquireSql = await readSource(
+    'functions/ingestion/rpc_acquire_airport_route_refresh_lease.sql',
+  );
+  assert.ok(
+    includesSql(
+      acquireSql,
+      'create or replace function admin.rpc_acquire_airport_route_refresh_lease',
+    ),
+  );
+  assert.ok(includesSql(acquireSql, 'security definer'));
+  assert.ok(includesSql(acquireSql, "set search_path = ''"));
+  assert.ok(includesSql(acquireSql, 'admin.airport_route_cache_leases'));
+  assert.ok(
+    includesSql(
+      acquireSql,
+      'grant execute on function admin.rpc_acquire_airport_route_refresh_lease(text) to service_role',
+    ),
+  );
+
+  const finalizeSql = await readSource(
+    'functions/ingestion/rpc_finalize_airport_route_refresh_lease.sql',
+  );
+  assert.ok(
+    includesSql(
+      finalizeSql,
+      'create or replace function admin.rpc_finalize_airport_route_refresh_lease',
+    ),
+  );
+  assert.ok(includesSql(finalizeSql, 'security definer'));
+  assert.ok(includesSql(finalizeSql, "set search_path = ''"));
+  assert.ok(
+    includesSql(
+      finalizeSql,
+      'grant execute on function admin.rpc_finalize_airport_route_refresh_lease(text, text, text) to service_role',
     ),
   );
 });

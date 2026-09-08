@@ -21,7 +21,7 @@ BEGIN
   IF (SELECT count(*) FROM cron.job
       WHERE active
         AND jobname IN (
-          'tripways-aerodatabox-monthly',
+          'tripways-aerodatabox-weekly',
           'tripways-travelpayouts-top-warm',
           'tripways-travelpayouts-day6-smart-refresh'
         )) <> 3

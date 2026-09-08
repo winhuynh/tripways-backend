@@ -13,13 +13,19 @@ Deno.serve(async (req) => {
     workerSecret,
     async execute(payload) {
       let airportList = payload.airports ?? [];
-      if (airportList.length === 0 && payload.scope === 'top_airports') {
+      if (
+        airportList.length === 0 &&
+        (payload.scope === 'top_hubs' || payload.scope === 'top_airports')
+      ) {
+        const targetLimit = payload.limit ?? 80;
         const { data, error } = await supabaseClient
           .from('airports')
           .select('iata')
-          .or('airport_type.eq.large_airport,is_hub.eq.true')
+          .eq('status', 'active')
           .not('iata', 'is', null)
-          .limit(payload.limit ?? 350);
+          .or('is_hub.eq.true,airport_type.eq.large_airport')
+          .order('is_hub', { ascending: false })
+          .limit(targetLimit);
 
         if (error) {
           throw new Error(`ERR_DB_AIRPORTS_LOOKUP_FAILED: ${error.message}`);
@@ -29,7 +35,10 @@ Deno.serve(async (req) => {
 
       return await ingestDirectRoutesForAirports(
         airportList,
-        { apiKey: aerodataboxApiKey },
+        {
+          apiKey: aerodataboxApiKey,
+          delayMs: 250,
+        },
         supabaseClient,
       );
     },

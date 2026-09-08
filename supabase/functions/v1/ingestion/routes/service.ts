@@ -15,6 +15,7 @@ export interface IngestRoutesResult {
   status: 'success' | 'partial_failure';
   total_airports_processed: number;
   total_routes_upserted: number;
+  total_routes_purged: number;
   results: {
     origin_iata: string;
     route_count: number;
@@ -40,6 +41,7 @@ export async function ingestDirectRoutesForAirports(
       status: 'success',
       total_airports_processed: 0,
       total_routes_upserted: 0,
+      total_routes_purged: 0,
       results: [],
       errors: [],
     };
@@ -48,9 +50,14 @@ export async function ingestDirectRoutesForAirports(
   let totalUpserted = 0;
   const results: IngestRoutesResult['results'] = [];
   const errors: IngestRoutesResult['errors'] = [];
+  const delayMs = config.delayMs ?? 0;
 
-  for (const iata of uniqueIatas) {
+  for (const [i, iata] of uniqueIatas.entries()) {
     try {
+      if (delayMs > 0 && i > 0) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+
       const routes: AeroDataBoxRoute[] = await fetchDirectRoutesFromAeroDataBox(iata, config);
 
       if (routes.length === 0) {
@@ -83,10 +90,28 @@ export async function ingestDirectRoutesForAirports(
     }
   }
 
+  // Enforce 7-day TTL: purge expired routes older than 7 days (ToS Article 5.5)
+  let totalPurged = 0;
+  try {
+    const { data: purgeData, error: purgeError } = await dbClient.rpc(
+      'rpc_purge_expired_direct_flight_routes',
+      {
+        p_source_code: 'aerodatabox',
+        p_retention_interval: '7 days',
+      },
+    );
+    if (!purgeError && purgeData && typeof purgeData === 'object') {
+      totalPurged = (purgeData as { deleted_count?: number }).deleted_count ?? 0;
+    }
+  } catch {
+    // Purge failure should not fail overall ingestion status
+  }
+
   return {
     status: errors.length === 0 ? 'success' : 'partial_failure',
     total_airports_processed: uniqueIatas.length,
     total_routes_upserted: totalUpserted,
+    total_routes_purged: totalPurged,
     results,
     errors,
   };

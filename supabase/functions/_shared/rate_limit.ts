@@ -28,3 +28,39 @@ async function sha256(value: string): Promise<string> {
     .map((byte) => byte.toString(16).padStart(2, '0'))
     .join('');
 }
+
+export interface MemoryRateLimiterOptions {
+  limit?: number;
+  windowMs?: number;
+  maxEntries?: number;
+}
+
+export function createMemoryRateLimiter(options?: MemoryRateLimiterOptions) {
+  const limit = options?.limit ?? 60;
+  const windowMs = options?.windowMs ?? 60_000;
+  const maxEntries = options?.maxEntries ?? 10_000;
+  const attempts = new Map<string, { count: number; resetAt: number }>();
+
+  return {
+    consume(subject: string): void {
+      const now = Date.now();
+      const current = attempts.get(subject);
+      if (!current || current.resetAt <= now) {
+        if (attempts.size >= maxEntries) attempts.clear();
+        attempts.set(subject, { count: 1, resetAt: now + windowMs });
+        return;
+      }
+      if (current.count >= limit) {
+        throw new Error('ERR_RATE_LIMITED');
+      }
+      current.count += 1;
+    },
+    async consumeRequest(action: string, request: Request): Promise<void> {
+      const [, ipHash] = await buildRateLimitSubjectHashes(action, request);
+      this.consume(ipHash);
+    },
+    reset(): void {
+      attempts.clear();
+    },
+  };
+}

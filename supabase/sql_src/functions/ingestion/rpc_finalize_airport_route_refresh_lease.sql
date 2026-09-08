@@ -1,0 +1,55 @@
+-- ============================================================================
+-- Function: admin.rpc_finalize_airport_route_refresh_lease
+-- Purpose: Finalize the lease state after an on-demand route ingestion attempt.
+-- Responsibilities: Update status to fresh/empty/failed and set cooldown.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.rpc_finalize_airport_route_refresh_lease(
+  p_origin_iata TEXT,
+  p_status TEXT,
+  p_failure_code TEXT DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_origin_norm CHAR(3);
+  v_status_norm VARCHAR(20);
+BEGIN
+  v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
+  v_status_norm := pg_catalog.lower(pg_catalog.btrim(COALESCE(p_status, '')));
+
+  IF v_origin_norm !~ '^[A-Z]{3}$' THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_IATA');
+  END IF;
+
+  IF v_status_norm NOT IN ('fresh', 'empty', 'failed') THEN
+    RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_STATUS');
+  END IF;
+
+  UPDATE admin.airport_route_cache_leases
+  SET
+    status = v_status_norm,
+    lease_expires_at = NULL,
+    last_succeeded_at = CASE WHEN v_status_norm = 'fresh' THEN pg_catalog.now() ELSE last_succeeded_at END,
+    next_allowed_refresh_at = CASE
+      WHEN v_status_norm = 'fresh' THEN pg_catalog.now() + INTERVAL '7 days'
+      ELSE pg_catalog.now() + INTERVAL '24 hours'
+    END,
+    failure_code = p_failure_code,
+    updated_at = pg_catalog.now()
+  WHERE origin_iata = v_origin_norm;
+
+  RETURN pg_catalog.jsonb_build_object(
+    'status', 'success',
+    'origin', v_origin_norm,
+    'lease_status', v_status_norm
+  );
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT)
+FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT) TO service_role;

@@ -11,7 +11,7 @@ export type RouteIngestionLogEvent = {
 
 export type RouteIngestionRequestPayload = {
   airports?: string[];
-  scope?: 'top_airports' | 'all_eligible';
+  scope?: 'top_hubs' | 'top_airports' | 'all_eligible';
   limit?: number;
 };
 
@@ -27,10 +27,10 @@ export function parseRouteIngestionRequest(payload: unknown): RouteIngestionRequ
   }
 
   const obj = payload as Record<string, unknown>;
-  const scope =
-    typeof obj.scope === 'string' && ['top_airports', 'all_eligible'].includes(obj.scope)
-      ? (obj.scope as 'top_airports' | 'all_eligible')
-      : undefined;
+  const scope = typeof obj.scope === 'string' &&
+      ['top_hubs', 'top_airports', 'all_eligible'].includes(obj.scope)
+    ? (obj.scope as 'top_hubs' | 'top_airports' | 'all_eligible')
+    : undefined;
 
   const limit = typeof obj.limit === 'number' && obj.limit > 0 && obj.limit <= 1000
     ? obj.limit

@@ -44,6 +44,7 @@ BEGIN
   WHERE job.jobname IN (
     'tripways-ourairports-daily',
     'tripways-aerodatabox-monthly',
+    'tripways-aerodatabox-weekly',
     'tripways-travelpayouts-top-warm',
     'tripways-travelpayouts-day6-smart-refresh'
   );
@@ -51,18 +52,18 @@ BEGIN
   -- Note: OurAirports base-data ingestion is on-demand (static master reference data).
   -- It is invoked manually via CLI (pnpm ourairports:import-local) or administrative trigger.
 
-  -- 1. AeroDataBox Monthly Direct Routes Batch (Tầng 2 - Ngày 1 lúc 03:00 UTC)
+  -- 1. AeroDataBox Weekly Direct Routes Batch (Tầng 2 - Chủ Nhật lúc 03:00 UTC, 7 ngày 1 lần)
   SELECT cron.schedule(
-    'tripways-aerodatabox-monthly',
-    '0 3 1 * *',
+    'tripways-aerodatabox-weekly',
+    '0 3 * * 0',
     $cron$SELECT net.http_post(
         url := (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'project_url') || '/functions/v1/ingestion/routes',
         headers := jsonb_build_object(
           'Content-Type', 'application/json',
           'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'ingestion_worker_secret'),
-          'Idempotency-Key', 'aerodatabox-' || to_char(CURRENT_DATE, 'YYYY-MM')
+          'Idempotency-Key', 'aerodatabox-' || to_char(CURRENT_DATE, 'IYYY-IW')
         ),
-        body := jsonb_build_object('providerMode', 'aerodatabox', 'scope', 'top_airports')
+        body := jsonb_build_object('providerMode', 'aerodatabox', 'scope', 'top_hubs', 'limit', 80)
       );$cron$
   )
   INTO v_aerodatabox_job;

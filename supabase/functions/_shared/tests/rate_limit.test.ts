@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { buildRateLimitSubjectHashes } from '../rate_limit.ts';
+import { buildRateLimitSubjectHashes, createMemoryRateLimiter } from '../rate_limit.ts';
 
 Deno.test('rate limit subjects hash worker/action and trusted request IP separately', async () => {
   const request = new Request('https://example.test', {
@@ -22,4 +22,22 @@ Deno.test('rate limit uses a stable local IP subject when proxy header is absent
   const second = await buildRateLimitSubjectHashes('base-data-worker', request);
 
   assert.deepEqual(first, second);
+});
+
+Deno.test('createMemoryRateLimiter allows requests up to limit and throws ERR_RATE_LIMITED', async () => {
+  const limiter = createMemoryRateLimiter({ limit: 2, windowMs: 10_000 });
+  const request = new Request('https://example.test', {
+    headers: { 'x-forwarded-for': '198.51.100.1' },
+  });
+
+  await limiter.consumeRequest('test-action', request);
+  await limiter.consumeRequest('test-action', request);
+
+  await assert.rejects(
+    () => limiter.consumeRequest('test-action', request),
+    /ERR_RATE_LIMITED/,
+  );
+
+  limiter.reset();
+  await limiter.consumeRequest('test-action', request);
 });

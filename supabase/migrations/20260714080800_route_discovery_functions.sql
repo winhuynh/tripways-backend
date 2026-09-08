@@ -263,6 +263,7 @@ BEGIN
     LIMIT 1
   ) AS price ON TRUE
   WHERE r.is_active = TRUE
+    AND r.last_synced_at >= now() - INTERVAL '7 days'
     AND origin_airport.status = 'active'
     AND destination_airport.status = 'active'
     AND origin_city.id <> destination_city.id;
@@ -332,6 +333,8 @@ BEGIN
   ) AS price ON TRUE
   WHERE r1.is_active = TRUE
     AND r2.is_active = TRUE
+    AND r1.last_synced_at >= now() - INTERVAL '7 days'
+    AND r2.last_synced_at >= now() - INTERVAL '7 days'
     AND origin_airport.status = 'active'
     AND destination_airport.status = 'active'
     AND origin_city.id <> destination_city.id

@@ -1,14 +1,13 @@
 import { getServiceRoleClient } from '@shared/supabase.ts';
 import { errorResponse } from '@shared/edge.ts';
+import { createMemoryRateLimiter } from '@shared/rate_limit.ts';
 import {
   createAffiliateHandoffHandler,
   DEFAULT_DISCLOSURE,
   isAllowlistedAviasalesUrl,
 } from './handler.ts';
 
-const attempts = new Map<string, { count: number; resetAt: number }>();
-const rateLimit = 30;
-const rateWindowMs = 60_000;
+const rateLimiter = createMemoryRateLimiter({ limit: 30, windowMs: 60_000 });
 
 const handler = createAffiliateHandoffHandler(async (observationRef) => {
   const { data, error } = await getServiceRoleClient().rpc('rpc_get_flight_affiliate_handoff', {
@@ -43,22 +42,10 @@ const handler = createAffiliateHandoffHandler(async (observationRef) => {
 
 Deno.serve(async (request) => {
   try {
-    consumeRateLimit(request);
+    const subject = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+    rateLimiter.consume(subject);
     return await handler(request);
   } catch (error) {
     return errorResponse(error);
   }
 });
-
-function consumeRateLimit(request: Request): void {
-  const now = Date.now();
-  const subject = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-  const current = attempts.get(subject);
-  if (!current || current.resetAt <= now) {
-    if (attempts.size >= 10_000) attempts.clear();
-    attempts.set(subject, { count: 1, resetAt: now + rateWindowMs });
-    return;
-  }
-  if (current.count >= rateLimit) throw new Error('ERR_RATE_LIMITED');
-  current.count += 1;
-}

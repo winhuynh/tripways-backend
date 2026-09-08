@@ -16,6 +16,7 @@ export interface AeroDataBoxConfig {
   baseUrl?: string;
   apiHost?: string;
   fetchFn?: typeof fetch;
+  delayMs?: number;
 }
 
 export function parseIsoDurationMinutes(durationStr: unknown): number {
