@@ -793,7 +793,7 @@ GRANT EXECUTE ON FUNCTION admin.refresh_page_read_models(UUID) TO service_role;
 -- ============================================================================
 
 CREATE OR REPLACE FUNCTION public.publish_read_model_version(
-  p_source_type TEXT DEFAULT 'development_fixture',
+  p_source_type TEXT DEFAULT NULL,
   p_allow_empty BOOLEAN DEFAULT FALSE
 )
 RETURNS JSONB
@@ -805,8 +805,21 @@ DECLARE
   v_version_id UUID;
   v_route_count INTEGER;
   v_page_counts JSONB;
+  v_source_type TEXT;
 BEGIN
-  IF p_source_type NOT IN ('production', 'staging', 'development_fixture') THEN
+  v_source_type := p_source_type;
+  IF v_source_type IS NULL THEN
+    SELECT source_type INTO v_source_type
+    FROM public.publication_versions
+    WHERE is_current = TRUE
+    LIMIT 1;
+
+    IF v_source_type IS NULL THEN
+      v_source_type := 'development_fixture';
+    END IF;
+  END IF;
+
+  IF v_source_type NOT IN ('production', 'staging', 'development_fixture') THEN
     RETURN admin.build_rpc_error(NULL, 'ERR_INVALID_REQUEST', 'Invalid publication source type.');
   END IF;
 
@@ -816,7 +829,7 @@ BEGIN
   );
 
   INSERT INTO public.publication_versions (source_type)
-  VALUES (p_source_type)
+  VALUES (v_source_type)
   RETURNING id
   INTO v_version_id;
 
@@ -828,7 +841,7 @@ BEGIN
     WITH page_eligibility AS (
       SELECT
         registry.id,
-        p_source_type = 'production'
+        v_source_type = 'production'
         AND registry.status = 'published'
         AND CASE
         WHEN registry.page_type = 'city' THEN EXISTS (
@@ -868,8 +881,8 @@ BEGIN
       is_indexable = eligibility.is_eligible,
       noindex_reason = CASE
         WHEN eligibility.is_eligible THEN NULL
-        WHEN p_source_type = 'development_fixture' THEN 'development_fixture'
-        WHEN p_source_type = 'staging' THEN 'staging_environment'
+        WHEN v_source_type = 'development_fixture' THEN 'development_fixture'
+        WHEN v_source_type = 'staging' THEN 'staging_environment'
         WHEN registry.status <> 'published' THEN 'not_published'
         WHEN registry.page_type IN ('city', 'airport', 'city_route') THEN 'source_not_seo_eligible'
         ELSE COALESCE(registry.noindex_reason, 'unsupported_page_type')

@@ -107,6 +107,15 @@ export async function ingestDirectRoutesForAirports(
     // Purge failure should not fail overall ingestion status
   }
 
+  // Link batch ingestion to publication (Finding R5)
+  if (totalUpserted > 0 || totalPurged > 0) {
+    try {
+      await dbClient.rpc('publish_read_model_version', { p_allow_empty: true });
+    } catch {
+      // Publication failure should not fail overall ingestion
+    }
+  }
+
   return {
     status: errors.length === 0 ? 'success' : 'partial_failure',
     total_airports_processed: uniqueIatas.length,

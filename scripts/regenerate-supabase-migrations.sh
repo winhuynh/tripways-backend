@@ -156,6 +156,10 @@ emit_migration \
   "supabase/sql_src/functions/ingestion/transport_publish_price_observations.sql" \
   "supabase/sql_src/functions/ingestion/transport_acquire_airport_route_refresh_lease.sql" \
   "supabase/sql_src/functions/ingestion/transport_finalize_airport_route_refresh_lease.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_get_top_routes_to_warm.sql" \
+  "supabase/sql_src/functions/ingestion/rpc_get_day6_active_routes_to_refresh.sql" \
+  "supabase/sql_src/functions/ingestion/transport_get_top_routes_to_warm.sql" \
+  "supabase/sql_src/functions/ingestion/transport_get_day6_active_routes_to_refresh.sql" \
   "supabase/sql_src/operations/configure_ingestion_crons.sql"
 
 

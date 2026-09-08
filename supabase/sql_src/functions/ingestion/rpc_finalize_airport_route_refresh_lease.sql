@@ -20,6 +20,9 @@ DECLARE
   v_status_norm VARCHAR(20);
   v_failure_code VARCHAR(50);
   v_row_count INTEGER := 0;
+  v_lease_token UUID;
+  v_lease_expires_at TIMESTAMPTZ;
+  v_lease_status VARCHAR(20);
 BEGIN
   v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
   v_status_norm := pg_catalog.lower(pg_catalog.btrim(COALESCE(p_status, '')));
@@ -38,6 +41,24 @@ BEGIN
 
   IF p_lease_token IS NULL THEN
     RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_LEASE_TOKEN_REQUIRED');
+  END IF;
+
+  -- Lock lease row and verify token fencing BEFORE finalizing (Finding R3)
+  SELECT lease_token, lease_expires_at, status
+  INTO v_lease_token, v_lease_expires_at, v_lease_status
+  FROM admin.airport_route_cache_leases
+  WHERE origin_iata = v_origin_norm
+  FOR UPDATE;
+
+  IF v_lease_token IS NULL
+     OR v_lease_token <> p_lease_token
+     OR v_lease_expires_at < pg_catalog.now()
+     OR v_lease_status <> 'refreshing' THEN
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'failed',
+      'error', 'ERR_LEASE_LOST',
+      'origin', v_origin_norm
+    );
   END IF;
 
   UPDATE admin.airport_route_cache_leases

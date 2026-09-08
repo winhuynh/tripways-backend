@@ -180,33 +180,111 @@ export function createRouteCacheHandler(
 
       // Handle batch cron mode without origin
       if (!parsed.originIata && parsed.mode) {
-        let hubIatas = ['SGN', 'SIN', 'BKK'];
-        if (typeof client.from === 'function') {
+        let routesToProcess: Array<{ origin: string; dest?: string }> = [];
+
+        if (parsed.mode === 'warm_top_routes') {
           try {
-            const { data: hubs } = await client
-              .from('airports')
-              .select('iata')
-              .or('is_hub.eq.true,iata.in.(SGN,SIN,BKK,HAN,LHR)')
-              .eq('status', 'active')
-              .order('iata', { ascending: true })
-              .limit(10);
-            if (hubs && hubs.length > 0) {
-              hubIatas = hubs.map((h: { iata: string }) => h.iata);
+            const { data: topRoutes } = await client.rpc('rpc_get_top_routes_to_warm', {
+              p_limit: 50,
+            });
+            if (Array.isArray(topRoutes) && topRoutes.length > 0) {
+              routesToProcess = topRoutes.map(
+                (r: { origin_iata: string; destination_iata?: string }) => ({
+                  origin: r.origin_iata,
+                  dest: r.destination_iata,
+                }),
+              );
             }
           } catch {
-            // fallback to default hubs
+            // fallback
+          }
+
+          if (routesToProcess.length === 0) {
+            let hubIatas = ['SGN', 'SIN', 'BKK'];
+            if (typeof client.from === 'function') {
+              try {
+                const { data: hubs } = await client
+                  .from('airports')
+                  .select('iata')
+                  .or('is_hub.eq.true,iata.in.(SGN,SIN,BKK,HAN,LHR)')
+                  .eq('status', 'active')
+                  .order('iata', { ascending: true })
+                  .limit(10);
+                if (hubs && hubs.length > 0) {
+                  hubIatas = hubs.map((h: { iata: string }) => h.iata);
+                }
+              } catch {
+                // fallback
+              }
+            }
+            routesToProcess = hubIatas.map((h) => ({ origin: h }));
+          }
+        } else if (parsed.mode === 'day6_active_refresh') {
+          try {
+            const { data: day6Routes } = await client.rpc(
+              'rpc_get_day6_active_routes_to_refresh',
+              { p_limit: 50 },
+            );
+            if (Array.isArray(day6Routes) && day6Routes.length > 0) {
+              routesToProcess = day6Routes.map(
+                (r: { origin_iata: string; destination_iata?: string }) => ({
+                  origin: r.origin_iata,
+                  dest: r.destination_iata,
+                }),
+              );
+            }
+          } catch {
+            // fallback
+          }
+
+          if (routesToProcess.length === 0) {
+            let hubIatas = ['SGN', 'SIN', 'BKK'];
+            if (typeof client.from === 'function') {
+              try {
+                const { data: hubs } = await client
+                  .from('airports')
+                  .select('iata')
+                  .or('is_hub.eq.true,iata.in.(SGN,SIN,BKK,HAN,LHR)')
+                  .eq('status', 'active')
+                  .order('iata', { ascending: true })
+                  .limit(10);
+                if (hubs && hubs.length > 0) {
+                  hubIatas = hubs.map((h: { iata: string }) => h.iata);
+                }
+              } catch {
+                // fallback
+              }
+            }
+            routesToProcess = hubIatas.map((h) => ({ origin: h }));
           }
         }
 
         const forceRefresh = parsed.mode === 'day6_active_refresh';
         const batchResults: Array<Record<string, unknown>> = [];
+        let totalPublishedCount = 0;
 
-        for (const hub of hubIatas) {
+        for (const target of routesToProcess) {
           try {
-            const itemResult = await processRoute(hub, undefined, forceRefresh);
+            const itemResult = await processRoute(target.origin, target.dest, forceRefresh);
             batchResults.push(itemResult);
+            if (
+              itemResult.status === 'fresh' &&
+              typeof itemResult.count === 'number' &&
+              itemResult.count > 0
+            ) {
+              totalPublishedCount += itemResult.count;
+            }
           } catch (itemErr) {
-            logEdgeWarn('ROUTE_CACHE_BATCH_ITEM_FAILED', { hub, error: itemErr }, logContext);
+            logEdgeWarn('ROUTE_CACHE_BATCH_ITEM_FAILED', { target, error: itemErr }, logContext);
+          }
+        }
+
+        // Link ingestion to publication if new prices published (Finding R5)
+        if (totalPublishedCount > 0) {
+          try {
+            await client.rpc('publish_read_model_version', { p_allow_empty: true });
+          } catch (pubErr) {
+            logEdgeWarn('ROUTE_CACHE_BATCH_PUBLISH_FAILED', pubErr, logContext);
           }
         }
 
@@ -216,6 +294,7 @@ export function createRouteCacheHandler(
           durationMs,
           mode: parsed.mode,
           processedCount: batchResults.length,
+          totalPublished: totalPublishedCount,
         });
 
         return successResponse(
@@ -234,6 +313,15 @@ export function createRouteCacheHandler(
       const originIata = parsed.originIata!;
       const forceRefresh = parsed.mode === 'day6_active_refresh';
       const result = await processRoute(originIata, parsed.destIata, forceRefresh);
+
+      // Link ingestion to publication if new prices were published (Finding R5)
+      if (result.status === 'fresh' && typeof result.count === 'number' && result.count > 0) {
+        try {
+          await client.rpc('publish_read_model_version', { p_allow_empty: true });
+        } catch (pubErr) {
+          logEdgeWarn('ROUTE_CACHE_PUBLISH_FAILED', pubErr, logContext);
+        }
+      }
 
       const durationMs = Math.round(performance.now() - startTime);
       logEdgeInfo('ROUTE_CACHE_COMPLETED', {

@@ -19,6 +19,7 @@ DECLARE
   v_aerodatabox_job       BIGINT;
   v_tp_warm_job           BIGINT;
   v_tp_day6_job           BIGINT;
+  v_maintenance_job       BIGINT;
 BEGIN
   SELECT secret.decrypted_secret
   INTO v_project_url
@@ -46,7 +47,8 @@ BEGIN
     'tripways-aerodatabox-monthly',
     'tripways-aerodatabox-weekly',
     'tripways-travelpayouts-top-warm',
-    'tripways-travelpayouts-day6-smart-refresh'
+    'tripways-travelpayouts-day6-smart-refresh',
+    'tripways-read-model-daily-maintenance'
   );
 
   -- Note: OurAirports base-data ingestion is on-demand (static master reference data).
@@ -98,10 +100,19 @@ BEGIN
   )
   INTO v_tp_day6_job;
 
+  -- 5. Daily Read-Model Maintenance (Tầng 4 - 06:00 UTC hàng ngày: tự động publish & purge giá hết hạn quá 7 ngày)
+  SELECT cron.schedule(
+    'tripways-read-model-daily-maintenance',
+    '0 6 * * *',
+    $cron$SELECT public.publish_read_model_version(NULL, TRUE);$cron$
+  )
+  INTO v_maintenance_job;
+
   RETURN jsonb_build_object(
     'aerodatabox_job_id', v_aerodatabox_job,
     'tp_warm_job_id', v_tp_warm_job,
-    'tp_day6_job_id', v_tp_day6_job
+    'tp_day6_job_id', v_tp_day6_job,
+    'maintenance_job_id', v_maintenance_job
   );
 END;
 $$;

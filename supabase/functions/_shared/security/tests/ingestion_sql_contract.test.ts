@@ -232,7 +232,7 @@ Deno.test('direct flight routes ingestion functions enforce service_role and tra
   assert.ok(
     includesSql(
       batchSql,
-      'grant execute on function admin.ingest_direct_flight_routes_batch(text, jsonb) to service_role',
+      'grant execute on function admin.ingest_direct_flight_routes_batch(text, jsonb, text, uuid) to service_role',
     ),
   );
 
@@ -244,7 +244,7 @@ Deno.test('direct flight routes ingestion functions enforce service_role and tra
   assert.ok(
     includesSql(
       rpcSql,
-      'grant execute on function public.rpc_ingest_direct_flight_routes(text, jsonb) to service_role',
+      'grant execute on function public.rpc_ingest_direct_flight_routes(text, jsonb, text, uuid) to service_role',
     ),
   );
 });

@@ -154,12 +154,23 @@ export function createAirportRoutesCacheHandler(
               {
                 p_source_code: 'aerodatabox',
                 p_routes: routes,
+                p_origin_iata: parsed.originIata,
+                p_lease_token: leaseToken,
               },
             );
 
             if (ingestError) {
               logEdgeError('AIRPORT_ROUTES_CACHE_INGEST_RPC_ERROR', ingestError, logContext);
               throw ingestError;
+            }
+
+            if (
+              ingestData &&
+              typeof ingestData === 'object' &&
+              (ingestData as Record<string, unknown>).status === 'failed'
+            ) {
+              logEdgeWarn('AIRPORT_ROUTES_CACHE_INGEST_FAILED', ingestData, logContext);
+              throw new Error('ERR_AIRPORT_ROUTES_CACHE_UNAVAILABLE');
             }
 
             if (
@@ -198,6 +209,15 @@ export function createAirportRoutesCacheHandler(
           ) {
             logEdgeWarn('AIRPORT_ROUTES_CACHE_FINALIZE_FAILED', finalizeData, logContext);
             throw new Error('ERR_AIRPORT_ROUTES_CACHE_UNAVAILABLE');
+          }
+
+          // Link ingestion to publication (Finding R5)
+          if (upsertedCount > 0) {
+            try {
+              await client.rpc('publish_read_model_version', { p_allow_empty: true });
+            } catch (pubErr) {
+              logEdgeWarn('AIRPORT_ROUTES_CACHE_PUBLISH_FAILED', pubErr, logContext);
+            }
           }
 
           const durationMs = Math.round(performance.now() - startTime);

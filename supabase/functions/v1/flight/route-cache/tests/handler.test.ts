@@ -430,3 +430,107 @@ Deno.test('route-cache handler: batch day6_active_refresh forces lease refresh',
   assert.equal(json.data.status, 'success');
   assert.equal(forcedRefreshPassed, true);
 });
+
+Deno.test('route-cache handler: batch warm_top_routes uses rpc_get_top_routes_to_warm and triggers publication', async () => {
+  const routesQueried: string[] = [];
+  let publicationTriggered = false;
+
+  const mockClient = createMockSupabaseClient((name, params) => {
+    if (name === 'rpc_get_top_routes_to_warm') {
+      return Promise.resolve({
+        data: [
+          { origin_iata: 'SGN', destination_iata: 'HAN' },
+          { origin_iata: 'BKK', destination_iata: 'SIN' },
+        ],
+        error: null,
+      });
+    }
+    if (name === 'rpc_acquire_price_refresh_lease') {
+      routesQueried.push(`${params.p_origin_iata}->${params.p_destination_iata}`);
+      return Promise.resolve({
+        data: {
+          status: 'fresh',
+          origin: params.p_origin_iata,
+          destination: params.p_destination_iata,
+          count: 2,
+          observations: [],
+        },
+        error: null,
+      });
+    }
+    if (name === 'publish_read_model_version') {
+      publicationTriggered = true;
+      return Promise.resolve({ data: { status: 'published' }, error: null });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+
+  const handler = createRouteCacheHandler({
+    getSupabaseClient: () => mockClient,
+  });
+
+  const request = new Request('http://local/route-cache', {
+    method: 'POST',
+    body: JSON.stringify({ mode: 'warm_top_routes' }),
+  });
+
+  const response = await handler(request);
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.data.status, 'success');
+  assert.equal(json.data.processed_count, 2);
+  assert.deepEqual(routesQueried, ['SGN->HAN', 'BKK->SIN']);
+  assert.equal(publicationTriggered, true);
+});
+
+Deno.test('route-cache handler: batch day6_active_refresh uses rpc_get_day6_active_routes_to_refresh', async () => {
+  const routesRefreshed: string[] = [];
+  let publicationTriggered = false;
+
+  const mockClient = createMockSupabaseClient((name, params) => {
+    if (name === 'rpc_get_day6_active_routes_to_refresh') {
+      return Promise.resolve({
+        data: [
+          { origin_iata: 'SGN', destination_iata: 'BKK', currency_code: 'USD', market_code: 'us' },
+        ],
+        error: null,
+      });
+    }
+    if (name === 'rpc_acquire_price_refresh_lease') {
+      assert.equal(params.p_force_refresh, true);
+      routesRefreshed.push(`${params.p_origin_iata}->${params.p_destination_iata}`);
+      return Promise.resolve({
+        data: {
+          status: 'fresh',
+          origin: params.p_origin_iata,
+          destination: params.p_destination_iata,
+          count: 1,
+          observations: [],
+        },
+        error: null,
+      });
+    }
+    if (name === 'publish_read_model_version') {
+      publicationTriggered = true;
+      return Promise.resolve({ data: { status: 'published' }, error: null });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+
+  const handler = createRouteCacheHandler({
+    getSupabaseClient: () => mockClient,
+  });
+
+  const request = new Request('http://local/route-cache', {
+    method: 'POST',
+    body: JSON.stringify({ mode: 'day6_active_refresh' }),
+  });
+
+  const response = await handler(request);
+  assert.equal(response.status, 200);
+  const json = await response.json();
+  assert.equal(json.data.status, 'success');
+  assert.equal(json.data.processed_count, 1);
+  assert.deepEqual(routesRefreshed, ['SGN->BKK']);
+  assert.equal(publicationTriggered, true);
+});

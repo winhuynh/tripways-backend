@@ -9,7 +9,9 @@
 
 CREATE OR REPLACE FUNCTION admin.ingest_direct_flight_routes_batch(
   p_source_code TEXT,
-  p_routes      JSONB
+  p_routes      JSONB,
+  p_origin_iata TEXT DEFAULT NULL,
+  p_lease_token UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -19,6 +21,10 @@ AS $$
 DECLARE
   v_source_id UUID;
   v_count     INTEGER := 0;
+  v_lease_token UUID;
+  v_lease_expires_at TIMESTAMPTZ;
+  v_lease_status VARCHAR(20);
+  v_origin_norm CHAR(3);
 BEGIN
   IF p_source_code IS NULL OR NULLIF(btrim(p_source_code), '') IS NULL THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_INVALID_SOURCE_CODE';
@@ -26,6 +32,31 @@ BEGIN
 
   IF p_routes IS NULL OR jsonb_typeof(p_routes) <> 'array' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_INVALID_ROUTES_PAYLOAD';
+  END IF;
+
+  -- Verify lease fencing if lease token is provided (Finding R3)
+  IF p_lease_token IS NOT NULL THEN
+    IF p_origin_iata IS NULL OR length(trim(p_origin_iata)) <> 3 THEN
+      RETURN jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_IATA', 'upserted_count', 0);
+    END IF;
+    v_origin_norm := upper(trim(p_origin_iata));
+
+    SELECT lease_token, lease_expires_at, status
+    INTO v_lease_token, v_lease_expires_at, v_lease_status
+    FROM admin.airport_route_cache_leases
+    WHERE origin_iata = v_origin_norm
+    FOR UPDATE;
+
+    IF v_lease_token IS NULL
+       OR v_lease_token <> p_lease_token
+       OR v_lease_expires_at < now()
+       OR v_lease_status <> 'refreshing' THEN
+      RETURN jsonb_build_object(
+        'status', 'failed',
+        'error', 'ERR_LEASE_LOST',
+        'upserted_count', 0
+      );
+    END IF;
   END IF;
 
   SELECT id INTO v_source_id
@@ -145,6 +176,6 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB)
+REVOKE ALL ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB, TEXT, UUID)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB, TEXT, UUID) TO service_role;

@@ -18,7 +18,9 @@
 
 CREATE OR REPLACE FUNCTION admin.ingest_direct_flight_routes_batch(
   p_source_code TEXT,
-  p_routes      JSONB
+  p_routes      JSONB,
+  p_origin_iata TEXT DEFAULT NULL,
+  p_lease_token UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -28,6 +30,10 @@ AS $$
 DECLARE
   v_source_id UUID;
   v_count     INTEGER := 0;
+  v_lease_token UUID;
+  v_lease_expires_at TIMESTAMPTZ;
+  v_lease_status VARCHAR(20);
+  v_origin_norm CHAR(3);
 BEGIN
   IF p_source_code IS NULL OR NULLIF(btrim(p_source_code), '') IS NULL THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_INVALID_SOURCE_CODE';
@@ -35,6 +41,31 @@ BEGIN
 
   IF p_routes IS NULL OR jsonb_typeof(p_routes) <> 'array' THEN
     RAISE EXCEPTION USING ERRCODE = '22023', MESSAGE = 'ERR_INVALID_ROUTES_PAYLOAD';
+  END IF;
+
+  -- Verify lease fencing if lease token is provided (Finding R3)
+  IF p_lease_token IS NOT NULL THEN
+    IF p_origin_iata IS NULL OR length(trim(p_origin_iata)) <> 3 THEN
+      RETURN jsonb_build_object('status', 'failed', 'error', 'ERR_INVALID_IATA', 'upserted_count', 0);
+    END IF;
+    v_origin_norm := upper(trim(p_origin_iata));
+
+    SELECT lease_token, lease_expires_at, status
+    INTO v_lease_token, v_lease_expires_at, v_lease_status
+    FROM admin.airport_route_cache_leases
+    WHERE origin_iata = v_origin_norm
+    FOR UPDATE;
+
+    IF v_lease_token IS NULL
+       OR v_lease_token <> p_lease_token
+       OR v_lease_expires_at < now()
+       OR v_lease_status <> 'refreshing' THEN
+      RETURN jsonb_build_object(
+        'status', 'failed',
+        'error', 'ERR_LEASE_LOST',
+        'upserted_count', 0
+      );
+    END IF;
   END IF;
 
   SELECT id INTO v_source_id
@@ -154,9 +185,9 @@ BEGIN
 END;
 $$;
 
-REVOKE ALL ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB)
+REVOKE ALL ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB, TEXT, UUID)
 FROM public, anon, authenticated;
-GRANT EXECUTE ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB, TEXT, UUID) TO service_role;
 
 -- >>> supabase/sql_src/functions/ingestion/rpc_ingest_direct_flight_routes.sql
 
@@ -168,20 +199,22 @@ GRANT EXECUTE ON FUNCTION admin.ingest_direct_flight_routes_batch(TEXT, JSONB) T
 
 CREATE OR REPLACE FUNCTION public.rpc_ingest_direct_flight_routes(
   p_source_code TEXT,
-  p_routes      JSONB
+  p_routes      JSONB,
+  p_origin_iata TEXT DEFAULT NULL,
+  p_lease_token UUID DEFAULT NULL
 )
 RETURNS JSONB
 LANGUAGE sql
 SECURITY INVOKER
 SET search_path = ''
 AS $$
-  SELECT admin.ingest_direct_flight_routes_batch(p_source_code, p_routes);
+  SELECT admin.ingest_direct_flight_routes_batch(p_source_code, p_routes, p_origin_iata, p_lease_token);
 $$;
 
-REVOKE ALL ON FUNCTION public.rpc_ingest_direct_flight_routes(TEXT, JSONB)
+REVOKE ALL ON FUNCTION public.rpc_ingest_direct_flight_routes(TEXT, JSONB, TEXT, UUID)
 FROM public, anon, authenticated;
 
-GRANT EXECUTE ON FUNCTION public.rpc_ingest_direct_flight_routes(TEXT, JSONB) TO service_role;
+GRANT EXECUTE ON FUNCTION public.rpc_ingest_direct_flight_routes(TEXT, JSONB, TEXT, UUID) TO service_role;
 
 -- >>> supabase/sql_src/functions/ingestion/purge_expired_direct_flight_routes.sql
 
@@ -1145,6 +1178,7 @@ DECLARE
   v_lease_expires_at TIMESTAMPTZ;
   v_lease_status VARCHAR(20);
   v_published_observations JSONB := '[]'::JSONB;
+  v_row_count INTEGER := 0;
 BEGIN
   v_origin_norm := upper(trim(p_origin_iata));
   v_dest_norm := CASE WHEN p_destination_iata IS NOT NULL AND length(trim(p_destination_iata)) > 0 THEN upper(trim(p_destination_iata)) ELSE NULL END;
@@ -1176,7 +1210,10 @@ BEGIN
     AND currency_code = v_curr_norm
   FOR UPDATE;
 
-  IF v_lease_token IS NULL OR v_lease_token <> p_lease_token THEN
+  IF v_lease_token IS NULL
+     OR v_lease_token <> p_lease_token
+     OR v_lease_expires_at < now()
+     OR v_lease_status <> 'refreshing' THEN
     RETURN jsonb_build_object(
       'published_count', 0,
       'status', 'failed',
@@ -1203,6 +1240,11 @@ BEGIN
       AND market_code = v_market_norm
       AND currency_code = v_curr_norm
       AND lease_token = p_lease_token;
+
+    GET DIAGNOSTICS v_row_count = ROW_COUNT;
+    IF v_row_count = 0 THEN
+      RETURN jsonb_build_object('published_count', 0, 'status', 'failed', 'error', 'ERR_LEASE_LOST');
+    END IF;
 
     RETURN jsonb_build_object('published_count', 0, 'status', 'empty', 'observations', '[]'::JSONB);
   END IF;
@@ -1314,6 +1356,11 @@ BEGIN
       AND currency_code = v_curr_norm
       AND lease_token = p_lease_token;
 
+    GET DIAGNOSTICS v_row_count = ROW_COUNT;
+    IF v_row_count = 0 THEN
+      RETURN jsonb_build_object('published_count', 0, 'status', 'failed', 'error', 'ERR_LEASE_LOST');
+    END IF;
+
     RETURN jsonb_build_object(
       'published_count', 0,
       'status', 'empty',
@@ -1337,6 +1384,11 @@ BEGIN
     AND market_code = v_market_norm
     AND currency_code = v_curr_norm
     AND lease_token = p_lease_token;
+
+  GET DIAGNOSTICS v_row_count = ROW_COUNT;
+  IF v_row_count = 0 THEN
+    RETURN jsonb_build_object('published_count', 0, 'status', 'failed', 'error', 'ERR_LEASE_LOST');
+  END IF;
 
   -- Query and return canonical DTO with observation_ref (Finding R6)
   SELECT coalesce(jsonb_agg(
@@ -1520,6 +1572,9 @@ DECLARE
   v_status_norm VARCHAR(20);
   v_failure_code VARCHAR(50);
   v_row_count INTEGER := 0;
+  v_lease_token UUID;
+  v_lease_expires_at TIMESTAMPTZ;
+  v_lease_status VARCHAR(20);
 BEGIN
   v_origin_norm := pg_catalog.upper(pg_catalog.btrim(COALESCE(p_origin_iata, '')));
   v_status_norm := pg_catalog.lower(pg_catalog.btrim(COALESCE(p_status, '')));
@@ -1538,6 +1593,24 @@ BEGIN
 
   IF p_lease_token IS NULL THEN
     RETURN pg_catalog.jsonb_build_object('status', 'failed', 'error', 'ERR_LEASE_TOKEN_REQUIRED');
+  END IF;
+
+  -- Lock lease row and verify token fencing BEFORE finalizing (Finding R3)
+  SELECT lease_token, lease_expires_at, status
+  INTO v_lease_token, v_lease_expires_at, v_lease_status
+  FROM admin.airport_route_cache_leases
+  WHERE origin_iata = v_origin_norm
+  FOR UPDATE;
+
+  IF v_lease_token IS NULL
+     OR v_lease_token <> p_lease_token
+     OR v_lease_expires_at < pg_catalog.now()
+     OR v_lease_status <> 'refreshing' THEN
+    RETURN pg_catalog.jsonb_build_object(
+      'status', 'failed',
+      'error', 'ERR_LEASE_LOST',
+      'origin', v_origin_norm
+    );
   END IF;
 
   UPDATE admin.airport_route_cache_leases
@@ -1680,6 +1753,166 @@ REVOKE ALL ON FUNCTION public.rpc_finalize_airport_route_refresh_lease(TEXT, TEX
 FROM public, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.rpc_finalize_airport_route_refresh_lease(TEXT, TEXT, TEXT, UUID) TO service_role;
 
+-- >>> supabase/sql_src/functions/ingestion/rpc_get_top_routes_to_warm.sql
+
+-- ============================================================================
+-- Function: admin.rpc_get_top_routes_to_warm
+-- Purpose: Query top active flight routes/hubs to pre-warm in Travelpayouts price cache.
+-- Responsibilities: Select prominent hub routes and high-frequency city connections.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.rpc_get_top_routes_to_warm(
+  p_limit INTEGER DEFAULT 50
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_limit INTEGER;
+  v_results JSONB;
+BEGIN
+  v_limit := LEAST(GREATEST(COALESCE(p_limit, 50), 1), 200);
+
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'origin_iata', r.origin_iata,
+      'destination_iata', r.destination_iata
+    )
+  ), '[]'::JSONB)
+  INTO v_results
+  FROM (
+    SELECT dfr.origin_iata, dfr.destination_iata
+    FROM public.direct_flight_routes dfr
+    JOIN public.airports oa ON oa.iata = dfr.origin_iata AND oa.status = 'active'
+    JOIN public.airports da ON da.iata = dfr.destination_iata AND da.status = 'active'
+    WHERE dfr.is_active = TRUE
+    GROUP BY dfr.origin_iata, dfr.destination_iata
+    ORDER BY
+      (max(oa.is_hub::INT) + max(da.is_hub::INT)) DESC,
+      count(*) DESC,
+      dfr.origin_iata, dfr.destination_iata
+    LIMIT v_limit
+  ) r;
+
+  RETURN v_results;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.rpc_get_top_routes_to_warm(INTEGER) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.rpc_get_top_routes_to_warm(INTEGER) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/rpc_get_day6_active_routes_to_refresh.sql
+
+-- ============================================================================
+-- Function: admin.rpc_get_day6_active_routes_to_refresh
+-- Purpose: Query routes with active demand in last 30 days that are reaching Day 6 of 7-day TTL.
+-- Responsibilities: Scan route_price_cache_leases for active routes needing proactive refresh.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION admin.rpc_get_day6_active_routes_to_refresh(
+  p_limit INTEGER DEFAULT 50
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+DECLARE
+  v_limit INTEGER;
+  v_results JSONB;
+BEGIN
+  v_limit := LEAST(GREATEST(COALESCE(p_limit, 50), 1), 200);
+
+  SELECT COALESCE(jsonb_agg(
+    jsonb_build_object(
+      'origin_iata', l.origin_iata,
+      'destination_iata', l.destination_iata,
+      'currency_code', l.currency_code,
+      'market_code', l.market_code
+    )
+  ), '[]'::JSONB)
+  INTO v_results
+  FROM (
+    SELECT
+      l.origin_iata,
+      l.destination_iata,
+      l.currency_code,
+      l.market_code
+    FROM admin.route_price_cache_leases l
+    WHERE l.last_attempted_at >= now() - INTERVAL '30 days'
+      AND l.status IN ('fresh', 'empty', 'failed')
+      AND (
+        -- Day 6 check: last successful update was 6+ days ago, or prices expire within 24 hours
+        l.last_succeeded_at <= now() - INTERVAL '6 days'
+        OR EXISTS (
+          SELECT 1
+          FROM public.flight_route_prices p
+          JOIN public.airports oa ON oa.id = p.origin_airport_id AND oa.iata = l.origin_iata
+          LEFT JOIN public.airports da ON da.id = p.destination_airport_id AND da.iata = l.destination_iata
+          WHERE p.status = 'published'
+            AND p.valid_until <= now() + INTERVAL '24 hours'
+            AND p.currency_code = l.currency_code
+            AND p.market_code = l.market_code
+            AND (l.destination_iata IS NULL OR da.id IS NOT NULL)
+        )
+      )
+    ORDER BY l.last_attempted_at DESC
+    LIMIT v_limit
+  ) l;
+
+  RETURN v_results;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION admin.rpc_get_day6_active_routes_to_refresh(INTEGER) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION admin.rpc_get_day6_active_routes_to_refresh(INTEGER) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/transport_get_top_routes_to_warm.sql
+
+-- ============================================================================
+-- Function: public.rpc_get_top_routes_to_warm
+-- Purpose: PostgREST transport wrapper for top routes to warm.
+-- Responsibilities: Forward call to internal admin implementation, enforce service_role only.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_get_top_routes_to_warm(
+  p_limit INTEGER DEFAULT 50
+)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+  SELECT admin.rpc_get_top_routes_to_warm(p_limit);
+$$;
+
+REVOKE ALL ON FUNCTION public.rpc_get_top_routes_to_warm(INTEGER) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_get_top_routes_to_warm(INTEGER) TO service_role;
+
+-- >>> supabase/sql_src/functions/ingestion/transport_get_day6_active_routes_to_refresh.sql
+
+-- ============================================================================
+-- Function: public.rpc_get_day6_active_routes_to_refresh
+-- Purpose: PostgREST transport wrapper for day 6 active demand routes refresh.
+-- Responsibilities: Forward call to internal admin implementation, enforce service_role only.
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.rpc_get_day6_active_routes_to_refresh(
+  p_limit INTEGER DEFAULT 50
+)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY INVOKER
+SET search_path = ''
+AS $$
+  SELECT admin.rpc_get_day6_active_routes_to_refresh(p_limit);
+$$;
+
+REVOKE ALL ON FUNCTION public.rpc_get_day6_active_routes_to_refresh(INTEGER) FROM public, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.rpc_get_day6_active_routes_to_refresh(INTEGER) TO service_role;
+
 -- >>> supabase/sql_src/operations/configure_ingestion_crons.sql
 
 -- ============================================================================
@@ -1703,6 +1936,7 @@ DECLARE
   v_aerodatabox_job       BIGINT;
   v_tp_warm_job           BIGINT;
   v_tp_day6_job           BIGINT;
+  v_maintenance_job       BIGINT;
 BEGIN
   SELECT secret.decrypted_secret
   INTO v_project_url
@@ -1730,7 +1964,8 @@ BEGIN
     'tripways-aerodatabox-monthly',
     'tripways-aerodatabox-weekly',
     'tripways-travelpayouts-top-warm',
-    'tripways-travelpayouts-day6-smart-refresh'
+    'tripways-travelpayouts-day6-smart-refresh',
+    'tripways-read-model-daily-maintenance'
   );
 
   -- Note: OurAirports base-data ingestion is on-demand (static master reference data).
@@ -1782,10 +2017,19 @@ BEGIN
   )
   INTO v_tp_day6_job;
 
+  -- 5. Daily Read-Model Maintenance (Tầng 4 - 06:00 UTC hàng ngày: tự động publish & purge giá hết hạn quá 7 ngày)
+  SELECT cron.schedule(
+    'tripways-read-model-daily-maintenance',
+    '0 6 * * *',
+    $cron$SELECT public.publish_read_model_version(NULL, TRUE);$cron$
+  )
+  INTO v_maintenance_job;
+
   RETURN jsonb_build_object(
     'aerodatabox_job_id', v_aerodatabox_job,
     'tp_warm_job_id', v_tp_warm_job,
-    'tp_day6_job_id', v_tp_day6_job
+    'tp_day6_job_id', v_tp_day6_job,
+    'maintenance_job_id', v_maintenance_job
   );
 END;
 $$;

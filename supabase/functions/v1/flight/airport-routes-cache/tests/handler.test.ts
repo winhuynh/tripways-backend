@@ -141,10 +141,67 @@ Deno.test('airport-routes-cache handler: lease acquired calls AeroDataBox and in
   const ingestCall = rpcCalls.find((c) => c.name === 'rpc_ingest_direct_flight_routes');
   assert.ok(ingestCall !== undefined);
   assert.equal(ingestCall?.params.p_source_code, 'aerodatabox');
+  assert.equal(ingestCall?.params.p_origin_iata, 'VCL');
+  assert.equal(ingestCall?.params.p_lease_token, '123e4567-e89b-12d3-a456-426614174000');
 
   const finalizeCall = rpcCalls.find((c) => c.name === 'rpc_finalize_airport_route_refresh_lease');
   assert.ok(finalizeCall !== undefined);
   assert.equal(finalizeCall?.params.p_status, 'fresh');
+
+  const publishCall = rpcCalls.find((c) => c.name === 'publish_read_model_version');
+  assert.ok(publishCall !== undefined);
+});
+
+Deno.test('airport-routes-cache handler: ingest returning ERR_LEASE_LOST aborts and returns error', async () => {
+  const mockClient = createMockSupabaseClient((name) => {
+    if (name === 'rpc_acquire_airport_route_refresh_lease') {
+      return Promise.resolve({
+        data: {
+          status: 'lease_acquired',
+          origin: 'VCL',
+          lease_token: '123e4567-e89b-12d3-a456-426614174000',
+        },
+        error: null,
+      });
+    }
+    if (name === 'rpc_ingest_direct_flight_routes') {
+      return Promise.resolve({
+        data: { status: 'failed', error: 'ERR_LEASE_LOST', upserted_count: 0 },
+        error: null,
+      });
+    }
+    return Promise.resolve({ data: null, error: null });
+  });
+
+  const handler = createAirportRoutesCacheHandler({
+    getSupabaseClient: () => mockClient,
+    fetchRoutes: () =>
+      Promise.resolve([
+        {
+          origin_iata: 'VCL',
+          destination_iata: 'SGN',
+          airline_iata: 'VN',
+          airline_name: 'Vietnam Airlines',
+          flight_numbers: ['VN1461'],
+          flight_duration_minutes: 75,
+          distance_km: 600,
+          days_of_week: [1],
+          aircraft_types: ['A321'],
+          source_record_id: 'aerodatabox-VCL-SGN-VN',
+        },
+      ]),
+  });
+
+  const request = new Request('http://localhost/functions/v1/flight/airport-routes-cache', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ origin: 'VCL' }),
+  });
+
+  const response = await handler(request);
+  assert.equal(response.status, 503);
+  const body = await response.json();
+  assert.equal(body.error.code, 'ERR_AIRPORT_ROUTES_CACHE_UNAVAILABLE');
 });
 
 Deno.test('airport-routes-cache handler: unknown airport returns 404', async () => {
