@@ -42,8 +42,7 @@ const handler = createAffiliateHandoffHandler(async (observationRef) => {
 
 Deno.serve(async (request) => {
   try {
-    const subject = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
-    rateLimiter.consume(subject);
+    await rateLimiter.consumeRequest('affiliate-handoff', request);
     return await handler(request);
   } catch (error) {
     return errorResponse(error);

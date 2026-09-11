@@ -16,6 +16,23 @@ Deno.test('rate limit subjects hash worker/action and trusted request IP separat
   assert.equal(subjects.includes('203.0.113.10'), false);
 });
 
+Deno.test('rate limit subjects prioritize cf-connecting-ip over x-forwarded-for', async () => {
+  const request = new Request('https://example.test', {
+    headers: {
+      'cf-connecting-ip': '198.51.100.99',
+      'x-forwarded-for': '203.0.113.10, 10.0.0.1',
+    },
+  });
+
+  const subjects = await buildRateLimitSubjectHashes('test-action', request);
+  const directCfRequest = new Request('https://example.test', {
+    headers: { 'cf-connecting-ip': '198.51.100.99' },
+  });
+  const directSubjects = await buildRateLimitSubjectHashes('test-action', directCfRequest);
+
+  assert.equal(subjects[1], directSubjects[1]);
+});
+
 Deno.test('rate limit uses a stable local IP subject when proxy header is absent', async () => {
   const request = new Request('https://example.test');
   const first = await buildRateLimitSubjectHashes('base-data-worker', request);

@@ -1,5 +1,9 @@
 import { getServiceRoleClient } from '@shared/supabase.ts';
+import { errorResponse } from '@shared/edge.ts';
+import { createMemoryRateLimiter } from '@shared/rate_limit.ts';
 import { createRouteSearchHandler } from './handler.ts';
+
+const rateLimiter = createMemoryRateLimiter({ limit: 60, windowMs: 60_000 });
 
 const handleRequest = createRouteSearchHandler(async (input) => {
   const { data, error } = await getServiceRoleClient().rpc('rpc_search_routes', {
@@ -18,4 +22,11 @@ const handleRequest = createRouteSearchHandler(async (input) => {
   return data;
 });
 
-Deno.serve(handleRequest);
+Deno.serve(async (request) => {
+  try {
+    await rateLimiter.consumeRequest('route-search', request);
+    return await handleRequest(request);
+  } catch (error) {
+    return errorResponse(error);
+  }
+});

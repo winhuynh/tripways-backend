@@ -13,7 +13,8 @@ export async function buildRateLimitSubjectHashes(
   subjectId: string,
   request: Request,
 ): Promise<[string, string]> {
-  const forwardedFor = request.headers.get('x-forwarded-for');
+  const forwardedFor = request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-forwarded-for');
   const clientIp = forwardedFor?.split(',')[0]?.trim() || 'local-unknown';
 
   return [
