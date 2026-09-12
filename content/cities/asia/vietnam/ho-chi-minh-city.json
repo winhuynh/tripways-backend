@@ -7,24 +7,24 @@
   "locale": "en-GB",
   "content": {
     "seo": {
-      "h1": "Direct Flights from Ho Chi Minh City",
-      "intro": "Ho Chi Minh City is Vietnam's primary economic engine and busiest aviation gateway. From Tan Son Nhat International Airport (SGN), passengers can connect directly to over 30 international destinations and every major domestic hub.",
-      "title": "Direct Flights from Ho Chi Minh City: Nonstop Routes & Airlines | Tripways",
-      "subheadline": "Explore nonstop routes across Southeast Asia, East Asia, Europe, and Australia",
-      "meta_description": "Discover all nonstop and connecting flights departing from Ho Chi Minh City (SGN). Compare airlines, flight times, and live schedule data."
+      "h1": "Direct Flights from Ho Chi Minh City (SGN)",
+      "intro": "Departing from Tan Son Nhat International Airport (SGN), passengers can fly direct to over 30 international destinations and every major domestic airport across Vietnam. Compare operating airlines, flight times, weekly frequencies, and latest fares.",
+      "title": "Direct Flights from Ho Chi Minh City (SGN): Direct Routes & Airlines | Tripways",
+      "subheadline": "Explore nonstop destinations across Southeast Asia, East Asia, Europe, and Australia",
+      "meta_description": "Find verified nonstop direct flights from Ho Chi Minh City (SGN). Compare airlines, flight times, weekly schedules, and fares across Asia, Europe, and Australia."
     },
     "faqs": [
       {
-        "answer": "Vietnam Airlines and Vietjet Air operate the widest network of international routes, supplemented by regional carriers like Singapore Airlines, Thai Airways, and Cathay Pacific.",
-        "question": "Which airlines operate the most international flights from Ho Chi Minh City?"
+        "answer": "Vietnam Airlines and Vietjet Air operate the largest direct network from SGN, complemented by regional and international flag carriers including Singapore Airlines, Thai Airways, Cathay Pacific, and Emirates.",
+        "question": "Which airlines operate direct international flights from Ho Chi Minh City?"
       },
       {
-        "answer": "It is strongly recommended to arrive at least 3 hours prior to scheduled departure due to immigration and security screening queues at Terminal 2.",
-        "question": "How early should I arrive at SGN for international departures?"
+        "answer": "The longest nonstop flight departing from Ho Chi Minh City connects to Western Europe, including direct flights to London Heathrow (LHR) and Paris (CDG), taking approximately 12 to 13 hours.",
+        "question": "What is the longest direct flight from Ho Chi Minh City?"
       },
       {
-        "answer": "Fares are generally lowest during shoulder seasons in September to November and March to May, avoiding the peak Lunar New Year (Tet) travel period.",
-        "question": "What is the cheapest month to fly out of Ho Chi Minh City?"
+        "answer": "The shortest international direct flight from Ho Chi Minh City is to Phnom Penh (PNH), Cambodia, with a scheduled flying time of roughly 50 minutes to 1 hour.",
+        "question": "What is the shortest direct flight from Ho Chi Minh City?"
       }
     ],
     "internal_link_groups": [

@@ -119,6 +119,7 @@ BEGIN
           'country', jsonb_build_object(
             'name', fd.country_name,
             'slug', fd.country_slug,
+            'code', fd.country_code,
             'region', fd.region
           ),
           'origin_airports', fd.origin_airports,
@@ -150,6 +151,7 @@ BEGIN
             COALESCE(dest_c.longitude, (SELECT a.longitude FROM public.airports a WHERE a.city_id = dest_c.id AND a.longitude IS NOT NULL ORDER BY (a.airport_type = 'large_airport') DESC, a.name ASC LIMIT 1)) AS longitude,
             dest_co.name AS country_name,
             dest_co.slug AS country_slug,
+            dest_co.iso2 AS country_code,
             COALESCE(dest_co.subregion, dest_co.region, 'Asia') AS region,
             array_agg(DISTINCT opt.origin_airport_iata ORDER BY opt.origin_airport_iata) AS origin_airports,
             array_agg(DISTINCT opt.destination_airport_iata ORDER BY opt.destination_airport_iata) AS destination_airports,
@@ -208,6 +210,7 @@ BEGIN
             dest_c.longitude,
             dest_co.name,
             dest_co.slug,
+            dest_co.iso2,
             dest_co.subregion,
             dest_co.region,
             opt.route_path
